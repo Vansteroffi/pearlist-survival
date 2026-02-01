@@ -31,7 +31,7 @@ onAuthStateChanged(auth, (user) => {
             document.getElementById("game-controls").classList.remove("hidden");
             loadLeaderboard();
         } else {
-            alert("Accès réservé ICAM !");
+            alert("Accès réservé aux mails ICAM !");
             auth.signOut();
         }
     }
@@ -67,15 +67,27 @@ class BootScene extends Phaser.Scene {
         this.load.image("player", "player_harmonized.png");
         this.load.image("obstacle", "obstacle_harmonized.png");
         this.load.image("pearl", "pearl_harmonized.png");
-        // Particules blanches pour la traînée et dorées pour les perles
-        this.load.image("p_white", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QMfCSIuGvG9AAAAF0lEQVQI12P4//8/AwMDEwMSYCRAnYIAd6ID/8P9f9MAAAAASUVORK5CYII=");
-        this.load.image("p_gold", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QMfCSIdGvG9AAAAF0lEQVQI12P8//8/AwMDEwMSYCRAnYIAd6ID/8P9f9MAAAAASUVORK5CYII=");
+        
+        // Chargement audio (Vérifie la présence des fichiers sur GitHub)
         this.load.audio('music_action', 'music.mp3');
         this.load.audio('sea_ambience', 'sea.mp3');
         this.load.audio('crash_sound', 'crash.mp3');
         this.load.audio('coin_sound', 'coin.mp3');
     }
-    create() { this.scene.start("MainScene"); }
+    create() { 
+        // Création des textures particules sans fichiers externes
+        const graphics = this.make.graphics({ x: 0, y: 0, add: false });
+        graphics.fillStyle(0xffffff, 1);
+        graphics.fillRect(0, 0, 4, 4);
+        graphics.generateTexture('p_white', 4, 4);
+        
+        const goldGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        goldGraphics.fillStyle(0xffd700, 1);
+        goldGraphics.fillRect(0, 0, 4, 4);
+        goldGraphics.generateTexture('p_gold', 4, 4);
+
+        this.scene.start("MainScene"); 
+    }
 }
 
 class MainScene extends Phaser.Scene {
@@ -91,13 +103,13 @@ class MainScene extends Phaser.Scene {
 
         this.bg = this.add.tileSprite(0, 0, 480, 720, "background").setOrigin(0);
 
-        // TRAÎNÉE DU BATEAU
+        // SYSTÈME DE TRAÎNÉE BLANCHE
         this.trailEmitter = this.add.particles(0, 0, "p_white", {
-            speedY: { min: 100, max: 200 },
+            speedY: { min: 80, max: 150 },
             scale: { start: 1.5, end: 0 },
-            alpha: { start: 0.6, end: 0 },
+            alpha: { start: 0.5, end: 0 },
             lifespan: 600,
-            frequency: 30,
+            frequency: 40,
             blendMode: 'ADD'
         });
 
@@ -107,12 +119,12 @@ class MainScene extends Phaser.Scene {
         this.trailEmitter.startFollow(this.player);
         this.trailEmitter.followOffset.set(0, 35);
 
-        // ÉCLATS DE PERLES (Caché au début)
+        // SYSTÈME D'ÉCLATS DORÉS
         this.pearlEmitter = this.add.particles(0, 0, "p_gold", {
-            speed: { min: 100, max: 250 },
+            speed: { min: 100, max: 200 },
             angle: { min: 0, max: 360 },
             scale: { start: 2, end: 0 },
-            lifespan: 500,
+            lifespan: 400,
             gravityY: 200,
             emitting: false
         });
@@ -121,17 +133,17 @@ class MainScene extends Phaser.Scene {
         this.pearls = this.physics.add.group();
 
         try {
-            this.sea = this.sound.add('sea_ambience', { loop: true, volume: 0.4 });
-            this.music = this.sound.add('music_action', { loop: true, volume: 0.5 });
-            this.crash = this.sound.add('crash_sound', { volume: 0.8 });
-            this.coinEffect = this.sound.add('coin_sound', { volume: 0.6 });
+            this.sea = this.sound.add('sea_ambience', { loop: true, volume: 0.3 });
+            this.music = this.sound.add('music_action', { loop: true, volume: 0.4 });
+            this.crash = this.sound.add('crash_sound', { volume: 0.7 });
+            this.coinEffect = this.sound.add('coin_sound', { volume: 0.5 });
             this.sea.play();
-        } catch(e) {}
+        } catch(e) { console.log("Audio non chargé"); }
 
         this.physics.add.overlap(this.player, this.obstacles, () => this.gameOver(), null, this);
         this.physics.add.overlap(this.player, this.pearls, (pl, p) => {
-            this.pearlEmitter.emitParticleAt(p.x, p.y, 15); // EXPLOSION DORÉE
-            p.destroy(); GameState.pearls++; GameState.score += 20;
+            this.pearlEmitter.emitParticleAt(p.x, p.y, 12);
+            p.destroy(); GameState.pearls++; GameState.score += 25;
             if(this.coinEffect) this.coinEffect.play();
         }, null, this);
 
@@ -158,7 +170,7 @@ class MainScene extends Phaser.Scene {
         if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) this.changeLane(1);
 
         const dt = delta / 1000;
-        this.currentSpeed += 5 * dt; 
+        this.currentSpeed += 4 * dt; 
         const move = this.currentSpeed * dt;
         
         this.bg.tilePositionY -= move;
@@ -169,28 +181,28 @@ class MainScene extends Phaser.Scene {
         if (this.distanceTraveledSinceLastSpawn >= this.spawnDistanceThreshold) {
             this.spawnWave();
             this.distanceTraveledSinceLastSpawn = 0;
-            if(this.spawnDistanceThreshold > 320) this.spawnDistanceThreshold -= 0.8;
+            if(this.spawnDistanceThreshold > 300) this.spawnDistanceThreshold -= 0.5;
         }
 
         GameState.score += (move * 0.01); 
         document.getElementById("score-display").innerText = Math.floor(GameState.score);
         document.getElementById("pearls-display").innerText = GameState.pearls;
-        this.obstacles.getChildren().forEach(o => { if(o.y > 850) o.destroy(); });
+        this.obstacles.getChildren().forEach(o => { if(o.y > 800) o.destroy(); });
     }
 
     changeLane(dir) {
         const next = this.laneIndex + dir;
         if (next < 0 || next > 2) return;
         this.laneIndex = next;
-        this.tweens.add({ targets: this.player, x: [130, 240, 350][this.laneIndex], duration: 160, ease: "Cubic.easeOut" });
+        this.tweens.add({ targets: this.player, x: [130, 240, 350][this.laneIndex], duration: 150, ease: "Power2" });
     }
 
     spawnWave() {
         const lanes = [130, 240, 350];
         const shuffled = lanes.sort(() => 0.5 - Math.random());
         const obs = this.obstacles.create(shuffled[0], -100, "obstacle").setScale(0.85);
-        obs.body.setCircle(obs.width * 0.35, obs.width * 0.15, obs.height * 0.15);
-        if(Math.random() < 0.4) {
+        obs.body.setCircle(obs.width * 0.3, obs.width * 0.2, obs.height * 0.2);
+        if(Math.random() < 0.45) {
             this.pearls.create(shuffled[1], -150, "pearl").setScale(0.6).body.setCircle(20);
         }
     }
@@ -201,11 +213,11 @@ class MainScene extends Phaser.Scene {
         GameState.playing = false;
         this.trailEmitter.stop();
         this.physics.pause();
-        this.cameras.main.shake(300, 0.02);
+        this.cameras.main.shake(250, 0.02);
         if(this.music) this.music.stop();
         if(this.crash) this.crash.play();
         document.getElementById("final-score").innerText = Math.floor(GameState.score);
-        document.getElementById("player-name-end").innerText = currentUser ? currentUser.displayName : "Marin";
+        document.getElementById("player-name-end").innerText = currentUser ? currentUser.displayName.split(' ')[0] : "Marin";
         saveScoreIfBest(GameState.score);
         showMenuState("gameover");
     }
@@ -255,7 +267,7 @@ function setupDomHandlers() {
 
 const phaserConfig = {
     type: Phaser.AUTO, width: 480, height: 720, parent: "game-container",
-    pixelArt: false, antialias: true, roundPixels: false,
+    pixelArt: false, antialias: true,
     physics: { default: "arcade", arcade: { fps: 60 } },
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: [BootScene, MainScene]
