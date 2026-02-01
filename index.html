@@ -5,6 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Pearlist - L'Odyssée ICAM</title>
   <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Styles rapides pour la nouvelle modale des lots */
+    .hidden { display: none !important; }
+    .overlay {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center;
+    }
+    .btn-gold {
+      background: #ffb700 !important;
+      color: #3e2723 !important;
+      font-weight: bold;
+    }
+    .prize-image {
+      width: 100%;
+      border-radius: 8px;
+      border: 3px solid #5d4037;
+      margin: 15px 0;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    }
+  </style>
 </head>
 <body>
   <div class="app">
@@ -18,7 +38,7 @@
     <main class="layout">
       <aside class="aside-left">
         <div class="logo-container">
-          <img src="logo.png" alt="Pearlist Logo" class="logo-img">
+          <img src="logo.png" alt="Pearlist Logo" class="logo-img" style="max-width: 150px;">
         </div>
       </aside>
 
@@ -27,7 +47,7 @@
           
           <div id="hud" class="hud hidden" style="left: 20px; transform: none; flex-direction: column; align-items: flex-start; gap: 8px;">
             <div class="hud__pill">
-              <div class="hud__label">Miles</div>
+              <div class="hud__label">Milles</div>
               <div class="hud__value" id="score-display">0</div>
             </div>
             <div class="hud__pill">
@@ -51,31 +71,48 @@
           </div>
 
           <div id="leaderboard-modal" class="overlay hidden" style="z-index: 2000;">
-            <div class="panel panel--paper" style="max-width: 90%; width: 350px; position: relative;">
-              <button id="close-modal-x" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 28px; cursor: pointer; color: var(--wood-dark);">×</button>
-              <h2>🏆 TOP 10 MARINS</h2>
-              <ul id="modal-highscore-list" class="highscore-list" style="text-align: left; margin: 20px 0; max-height: 300px; overflow-y: auto;">
-                </ul>
-              <button id="btn-close-modal" class="btn btn-primary" style="width: 100%;">RETOUR</button>
+            <div class="panel panel--paper" style="max-width: 90%; width: 400px; position: relative; max-height: 90vh; overflow-y: auto;">
+              <button id="close-modal-x" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 32px; cursor: pointer; color: #3e2723;">&times;</button>
+              
+              <div id="view-rankings">
+                <h2 style="margin-top:10px;">🏆 TOP 10 MARINS</h2>
+                <ul id="modal-highscore-list" class="highscore-list" style="text-align: left; margin: 20px 0;">
+                  </ul>
+                <button id="btn-show-prizes" class="btn btn-gold" style="width: 100%; margin-bottom: 10px;">🎁 VOIR LES TRÉSORS (LOTS)</button>
+                <button id="btn-close-modal" class="btn btn-primary" style="width: 100%;">RETOUR</button>
+              </div>
+
+              <div id="view-prizes" class="hidden">
+                <h2 style="margin-top:10px;">🎁 BUTIN À GAGNER</h2>
+                <p style="font-size: 0.9rem;">Voici les récompenses pour les meilleurs navigateurs :</p>
+                <img src="lots.png" alt="Lots à gagner" class="prize-image">
+                <button id="btn-back-to-rank" class="btn btn-primary" style="width: 100%;">RETOUR AU CLASSEMENT</button>
+              </div>
             </div>
           </div>
 
           <div id="howto" class="overlay hidden">
             <div class="panel panel--paper">
               <h2>Manœuvres</h2>
-              <p>Évite les rochers et ramasse les perles !</p>
-              <button id="btn-back-menu" class="btn btn-primary">RETOUR</button>
+              <ul style="text-align: left; margin: 20px 0; line-height: 1.6;">
+                <li><b>Mobile :</b> Tapote à gauche ou à droite de l'écran.</li>
+                <li><b>Clavier :</b> Flèches ← et →.</li>
+                <li><b>But :</b> Évite les rochers et ramasse les perles !</li>
+              </ul>
+              <button id="btn-back-menu" class="btn btn-primary">RETOUR AU PORT</button>
             </div>
           </div>
 
           <div id="game-over" class="overlay hidden">
             <div class="panel panel--paper">
-              <h2 style="color:var(--danger)">NAUFRAGE !</h2>
-              <p><span id="player-name-end">Marin</span> a parcouru :</p>
-              <h1 id="final-score" style="font-size: 3rem; margin: 10px 0;">0</h1>
+              <h2 style="color: #d32f2f;">NAUFRAGE !</h2>
+              <p><span id="player-name-end" style="font-weight: bold;">Marin</span> a parcouru :</p>
+              <h1 id="final-score" style="font-size: 3.5rem; margin: 10px 0;">0</h1>
               <p>milles marins</p>
-              <button id="btn-restart" class="btn btn-primary btn-lg">REESSAYER</button>
-              <button id="btn-show-leaderboard" class="btn" style="margin-top:12px; width:100%">VOIR LE CLASSEMENT</button>
+              <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; margin-top: 15px;">
+                <button id="btn-restart" class="btn btn-primary btn-lg">REPRENDRE LA BARRE</button>
+                <button id="btn-show-leaderboard" class="btn">VOIR LE CLASSEMENT</button>
+              </div>
             </div>
           </div>
         </div>
@@ -84,7 +121,9 @@
       <aside class="sidebar">
         <div class="card card--paper">
           <h3>🏆 Classement Live</h3>
-          <ul id="live-highscore-list" class="highscore-list"></ul>
+          <ul id="live-highscore-list" class="highscore-list">
+            <li>Chargement...</li>
+          </ul>
         </div>
       </aside>
     </main>
