@@ -4,15 +4,23 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Pearlist - L'Odyssée ICAM</title>
+  <link href="https://fonts.googleapis.com/css2?family=Almendra+SC&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <style>
+    /* Application de la police pirate à tout le projet */
+    body, h1, h2, h3, button, .brand__title, .hud__label, .hud__value { 
+      font-family: 'Almendra SC', serif !important; 
+    }
     .hidden { display: none !important; }
     .overlay {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center;
+      z-index: 1000;
     }
-    .btn-gold { background: #ffb700 !important; color: #3e2723 !important; font-weight: bold; }
-    .prize-image { width: 100%; border-radius: 8px; border: 3px solid #5d4037; margin: 15px 0; }
+    .btn-gold { background: #ffb700 !important; color: #3e2723 !important; font-weight: bold; border: 2px solid #5d4037; }
+    /* Image des lots sans bordure comme demandé */
+    .prize-image { width: 100%; margin: 15px 0; border: none !important; box-shadow: none !important; }
+    #leaderboard-modal .panel { max-width: 90%; width: 400px; position: relative; max-height: 90vh; overflow-y: auto; }
   </style>
 </head>
 <body>
@@ -60,13 +68,13 @@
           </div>
 
           <div id="leaderboard-modal" class="overlay hidden" style="z-index: 2000;">
-            <div class="panel panel--paper" style="max-width: 90%; width: 400px; position: relative; max-height: 90vh; overflow-y: auto;">
-              <button id="close-modal-x" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 32px; cursor: pointer;">&times;</button>
+            <div class="panel panel--paper">
+              <button id="close-modal-x" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 32px; cursor: pointer; font-family: Arial;">&times;</button>
               
               <div id="view-rankings">
-                <h2 style="margin-top:10px;">🏆 TOP 10 MARINS</h2>
+                <h2 style="margin-top:10px;">🏆 LES MEILLEURS MARINS</h2>
                 <ul id="modal-highscore-list" class="highscore-list" style="text-align: left; margin: 20px 0;"></ul>
-                <button id="btn-show-prizes" class="btn btn-gold" style="width: 100%; margin-bottom: 10px;">🎁 VOIR LES TRÉSORS (LOTS)</button>
+                <button id="btn-show-prizes" class="btn btn-gold" style="width: 100%; margin-bottom: 10px;">🎁 VOIR LES TRÉSORS</button>
                 <button id="btn-close-modal" class="btn btn-primary" style="width: 100%;">RETOUR</button>
               </div>
 
@@ -81,7 +89,7 @@
           <div id="howto" class="overlay hidden">
             <div class="panel panel--paper">
               <h2>Manœuvres</h2>
-              <p>Évite les rochers et ramasse les perles !</p>
+              <p>Évite les rochers, ramasse les perles et va le plus loin possible !</p>
               <button id="btn-back-menu" class="btn btn-primary">RETOUR</button>
             </div>
           </div>
@@ -101,7 +109,7 @@
 
       <aside class="sidebar">
         <div class="card card--paper">
-          <h3>🏆 Classement Live</h3>
+          <h3>🏆 Les Meilleurs Marins</h3>
           <ul id="live-highscore-list" class="highscore-list"></ul>
         </div>
       </aside>
