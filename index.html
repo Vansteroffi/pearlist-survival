@@ -39,12 +39,10 @@
           <div id="main-menu" class="overlay">
             <div class="panel panel--paper">
               <h1>PEARLIST</h1>
-              <p id="auth-status">Embarque avec ton mail ICAM pour entrer dans la légende.</p>
-              
+              <p id="auth-status">Embarque avec ton mail ICAM.</p>
               <div id="auth-section">
                  <button id="btn-login" class="btn btn-primary btn-lg">🔑 CONNEXION GOOGLE</button>
               </div>
-
               <div id="game-controls" class="hidden">
                 <button id="btn-play" class="btn btn-primary btn-lg">PRENDRE LA MER</button>
                 <button id="btn-howto" class="btn" style="margin-top:12px; width:100%">MANŒUVRES</button>
@@ -52,26 +50,32 @@
             </div>
           </div>
 
+          <div id="leaderboard-modal" class="overlay hidden" style="z-index: 2000;">
+            <div class="panel panel--paper" style="max-width: 90%; width: 350px; position: relative;">
+              <button id="close-modal-x" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 28px; cursor: pointer; color: var(--wood-dark);">×</button>
+              <h2>🏆 TOP 10 MARINS</h2>
+              <ul id="modal-highscore-list" class="highscore-list" style="text-align: left; margin: 20px 0; max-height: 300px; overflow-y: auto;">
+                </ul>
+              <button id="btn-close-modal" class="btn btn-primary" style="width: 100%;">RETOUR</button>
+            </div>
+          </div>
+
           <div id="howto" class="overlay hidden">
             <div class="panel panel--paper">
-              <h2>L'Art de la Navigation</h2>
-              <ul style="text-align: left; margin-bottom: 20px;">
-                <li><b>Mobile :</b> Tapote à bâbord ou à tribord.</li>
-                <li><b>Clavier :</b> Flèches ← et →.</li>
-                <li><b>But :</b> Vogue loin et récolte les perles !</li>
-              </ul>
-              <button id="btn-back-menu" class="btn btn-primary">RETOUR AU PORT</button>
+              <h2>Manœuvres</h2>
+              <p>Évite les rochers et ramasse les perles !</p>
+              <button id="btn-back-menu" class="btn btn-primary">RETOUR</button>
             </div>
           </div>
 
           <div id="game-over" class="overlay hidden">
             <div class="panel panel--paper">
               <h2 style="color:var(--danger)">NAUFRAGE !</h2>
-              <p>Le Vieux Loup de Mer <span id="player-name-end" style="font-weight:bold">...</span> a parcouru :</p>
+              <p><span id="player-name-end">Marin</span> a parcouru :</p>
               <h1 id="final-score" style="font-size: 3rem; margin: 10px 0;">0</h1>
               <p>milles marins</p>
-              <button id="btn-restart" class="btn btn-primary btn-lg">REPRENDRE LA BARRE</button>
-              <button id="btn-menu" class="btn" style="margin-top:12px; width:100%">CLASSEMENT</button>
+              <button id="btn-restart" class="btn btn-primary btn-lg">REESSAYER</button>
+              <button id="btn-show-leaderboard" class="btn" style="margin-top:12px; width:100%">VOIR LE CLASSEMENT</button>
             </div>
           </div>
         </div>
@@ -79,10 +83,8 @@
 
       <aside class="sidebar">
         <div class="card card--paper">
-          <h3>🏆 Top Marins ICAM</h3>
-          <ul id="live-highscore-list" class="highscore-list">
-            <li>Équipage en cours d'appel...</li>
-          </ul>
+          <h3>🏆 Classement Live</h3>
+          <ul id="live-highscore-list" class="highscore-list"></ul>
         </div>
       </aside>
     </main>
