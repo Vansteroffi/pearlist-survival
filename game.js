@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDocs, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDp-ngw6gIqgi7-vhlSvLepnAusaSw2vFE",
@@ -21,7 +21,6 @@ let currentUser = null;
 const Bus = new Phaser.Events.EventEmitter();
 const GameState = { playing: false, score: 0, pearls: 0 };
 
-// --- AUTH ---
 onAuthStateChanged(auth, (user) => {
     if (user) {
         const domain = user.email.split('@')[1];
@@ -39,7 +38,6 @@ onAuthStateChanged(auth, (user) => {
 });
 
 async function loadLeaderboard() {
-    const list = document.getElementById("live-highscore-list");
     const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
     const snap = await getDocs(q);
     let html = ""; let rank = 1;
@@ -47,7 +45,25 @@ async function loadLeaderboard() {
         html += `<li><span>#${rank} ${d.data().name}</span> <b>${Math.floor(d.data().score)}</b></li>`;
         rank++;
     });
-    list.innerHTML = html || "<li>Aucun record</li>";
+    document.getElementById("live-highscore-list").innerHTML = html;
+    document.getElementById("modal-highscore-list").innerHTML = html;
+}
+
+// FONCTION POUR ENREGISTRER LE SCORE (VERIFIE LE RECORD)
+async function saveScoreIfBest(newScore) {
+    if (!currentUser) return;
+    const userRef = doc(db, "leaderboard", currentUser.uid);
+    const snap = await getDoc(userRef);
+    const roundedScore = Math.floor(newScore);
+
+    if (!snap.exists() || roundedScore > (snap.data().score || 0)) {
+        await setDoc(userRef, {
+            name: currentUser.displayName,
+            score: roundedScore,
+            date: Date.now()
+        }, { merge: true });
+        loadLeaderboard();
+    }
 }
 
 class BootScene extends Phaser.Scene {
@@ -78,7 +94,6 @@ class MainScene extends Phaser.Scene {
         this.laneIndex = 1;
 
         this.bg = this.add.tileSprite(0, 0, 480, 720, "background").setOrigin(0);
-        
         this.player = this.physics.add.sprite(240, 600, "player").setScale(0.8);
         this.player.body.setCircle(this.player.width * 0.25, this.player.width * 0.25, this.player.height * 0.3);
 
@@ -116,13 +131,12 @@ class MainScene extends Phaser.Scene {
         showMenuState("menu");
     }
 
-    update(time, delta) {
+    update(_, delta) {
         if (!GameState.playing || this.isGameOver) return;
 
         if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) this.changeLane(-1);
         if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) this.changeLane(1);
 
-        // Facteur de temps pour être indépendant du framerate
         const dt = delta / 1000;
         this.currentSpeed += 5 * dt; 
         const move = this.currentSpeed * dt;
@@ -143,7 +157,6 @@ class MainScene extends Phaser.Scene {
         document.getElementById("pearls-display").innerText = GameState.pearls;
 
         this.obstacles.getChildren().forEach(o => { if(o.y > 850) o.destroy(); });
-        this.pearls.getChildren().forEach(p => { if(p.y > 850) p.destroy(); });
     }
 
     changeLane(dir) {
@@ -157,7 +170,6 @@ class MainScene extends Phaser.Scene {
         const lanes = [130, 240, 350];
         const randomValue = Math.random();
         let spawnedLanes = [];
-
         const doubleChance = Math.min(0.6, 0.2 + (this.currentSpeed / 2000));
 
         if (randomValue > 0.1) {
@@ -169,7 +181,6 @@ class MainScene extends Phaser.Scene {
                 spawnedLanes.push(shuffled[i]);
             }
         }
-
         if(Math.random() < 0.4) {
             const free = lanes.filter(l => !spawnedLanes.includes(l));
             if(free.length > 0) {
@@ -187,19 +198,17 @@ class MainScene extends Phaser.Scene {
         this.cameras.main.shake(300, 0.02);
         if(this.music) this.music.stop();
         if(this.crash) this.crash.play();
+        
         document.getElementById("final-score").innerText = Math.floor(GameState.score);
         document.getElementById("player-name-end").innerText = currentUser ? currentUser.displayName : "Marin";
-        setDoc(doc(db, "leaderboard", currentUser.uid), {
-            name: currentUser.displayName,
-            score: Math.floor(GameState.score),
-            date: Date.now()
-        }, { merge: true }).then(() => loadLeaderboard());
+        
+        saveScoreIfBest(GameState.score);
         showMenuState("gameover");
     }
 }
 
 function showMenuState(s) {
-    ["main-menu", "howto", "game-over", "hud"].forEach(id => document.getElementById(id)?.classList.add("hidden"));
+    ["main-menu", "howto", "game-over", "hud", "leaderboard-modal"].forEach(id => document.getElementById(id)?.classList.add("hidden"));
     if (s === "menu") document.getElementById("main-menu").classList.remove("hidden");
     if (s === "play") document.getElementById("hud").classList.remove("hidden");
     if (s === "gameover") document.getElementById("game-over").classList.remove("hidden");
@@ -209,7 +218,17 @@ function setupDomHandlers() {
     document.getElementById("btn-login").onclick = () => signInWithPopup(auth, provider);
     document.getElementById("btn-play").onclick = () => Bus.emit("start");
     document.getElementById("btn-restart").onclick = () => Bus.emit("restart");
-    document.getElementById("btn-menu").onclick = () => window.location.reload();
+    
+    // Bouton Classement
+    document.getElementById("btn-show-leaderboard").onclick = () => {
+        document.getElementById("leaderboard-modal").classList.remove("hidden");
+        loadLeaderboard();
+    };
+
+    // Fermer classement
+    document.getElementById("btn-close-modal").onclick = () => document.getElementById("leaderboard-modal").classList.add("hidden");
+    document.getElementById("close-modal-x").onclick = () => document.getElementById("leaderboard-modal").classList.add("hidden");
+
     document.getElementById("btn-howto").onclick = () => {
         document.getElementById("main-menu").classList.add("hidden");
         document.getElementById("howto").classList.remove("hidden");
@@ -221,19 +240,9 @@ function setupDomHandlers() {
 }
 
 const phaserConfig = {
-    type: Phaser.AUTO,
-    width: 480, height: 720,
-    parent: "game-container",
-    pixelArt: false,
-    antialias: true,
-    roundPixels: false,
-    physics: { 
-        default: "arcade",
-        arcade: { 
-            fps: 60,
-            fixedStep: true // Force un calcul physique stable
-        }
-    },
+    type: Phaser.AUTO, width: 480, height: 720, parent: "game-container",
+    pixelArt: false, antialias: true, roundPixels: false,
+    physics: { default: "arcade", arcade: { fps: 60 } },
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: [BootScene, MainScene]
 };
