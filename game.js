@@ -21,7 +21,6 @@ let currentUser = null;
 const Bus = new Phaser.Events.EventEmitter();
 const GameState = { playing: false, score: 0, pearls: 0 };
 
-// --- LOGIQUE AUTH & SCORE ---
 onAuthStateChanged(auth, (user) => {
     if (user) {
         const domain = user.email.split('@')[1];
@@ -61,7 +60,6 @@ async function saveScoreIfBest(newScore) {
     }
 }
 
-// --- JEU PHASER ---
 class BootScene extends Phaser.Scene {
     constructor() { super("BootScene"); }
     preload() {
@@ -69,7 +67,9 @@ class BootScene extends Phaser.Scene {
         this.load.image("player", "player_harmonized.png");
         this.load.image("obstacle", "obstacle_harmonized.png");
         this.load.image("pearl", "pearl_harmonized.png");
-        this.load.image("white_particle", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QMfCSIuGvG9AAAAF0lEQVQI12P4//8/AwMDEwMSYCRAnYIAd6ID/8P9f9MAAAAASUVORK5CYII="); // Petit point blanc
+        // Particules blanches pour la traînée et dorées pour les perles
+        this.load.image("p_white", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QMfCSIuGvG9AAAAF0lEQVQI12P4//8/AwMDEwMSYCRAnYIAd6ID/8P9f9MAAAAASUVORK5CYII=");
+        this.load.image("p_gold", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QMfCSIdGvG9AAAAF0lEQVQI12P8//8/AwMDEwMSYCRAnYIAd6ID/8P9f9MAAAAASUVORK5CYII=");
         this.load.audio('music_action', 'music.mp3');
         this.load.audio('sea_ambience', 'sea.mp3');
         this.load.audio('crash_sound', 'crash.mp3');
@@ -91,10 +91,10 @@ class MainScene extends Phaser.Scene {
 
         this.bg = this.add.tileSprite(0, 0, 480, 720, "background").setOrigin(0);
 
-        // --- TRAÎNÉE (Sillage) ---
-        this.emitter = this.add.particles(0, 0, "white_particle", {
+        // TRAÎNÉE DU BATEAU
+        this.trailEmitter = this.add.particles(0, 0, "p_white", {
             speedY: { min: 100, max: 200 },
-            scale: { start: 1, end: 0 },
+            scale: { start: 1.5, end: 0 },
             alpha: { start: 0.6, end: 0 },
             lifespan: 600,
             frequency: 30,
@@ -104,9 +104,18 @@ class MainScene extends Phaser.Scene {
         this.player = this.physics.add.sprite(240, 600, "player").setScale(0.8);
         this.player.body.setCircle(this.player.width * 0.25, this.player.width * 0.25, this.player.height * 0.3);
         
-        // On attache les particules au bateau
-        this.emitter.startFollow(this.player);
-        this.emitter.followOffset.set(0, 30); // Place la traînée derrière le bateau
+        this.trailEmitter.startFollow(this.player);
+        this.trailEmitter.followOffset.set(0, 35);
+
+        // ÉCLATS DE PERLES (Caché au début)
+        this.pearlEmitter = this.add.particles(0, 0, "p_gold", {
+            speed: { min: 100, max: 250 },
+            angle: { min: 0, max: 360 },
+            scale: { start: 2, end: 0 },
+            lifespan: 500,
+            gravityY: 200,
+            emitting: false
+        });
 
         this.obstacles = this.physics.add.group();
         this.pearls = this.physics.add.group();
@@ -121,6 +130,7 @@ class MainScene extends Phaser.Scene {
 
         this.physics.add.overlap(this.player, this.obstacles, () => this.gameOver(), null, this);
         this.physics.add.overlap(this.player, this.pearls, (pl, p) => {
+            this.pearlEmitter.emitParticleAt(p.x, p.y, 15); // EXPLOSION DORÉE
             p.destroy(); GameState.pearls++; GameState.score += 20;
             if(this.coinEffect) this.coinEffect.play();
         }, null, this);
@@ -144,7 +154,6 @@ class MainScene extends Phaser.Scene {
 
     update(_, delta) {
         if (!GameState.playing || this.isGameOver) return;
-
         if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) this.changeLane(-1);
         if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) this.changeLane(1);
 
@@ -166,7 +175,6 @@ class MainScene extends Phaser.Scene {
         GameState.score += (move * 0.01); 
         document.getElementById("score-display").innerText = Math.floor(GameState.score);
         document.getElementById("pearls-display").innerText = GameState.pearls;
-
         this.obstacles.getChildren().forEach(o => { if(o.y > 850) o.destroy(); });
     }
 
@@ -182,7 +190,6 @@ class MainScene extends Phaser.Scene {
         const shuffled = lanes.sort(() => 0.5 - Math.random());
         const obs = this.obstacles.create(shuffled[0], -100, "obstacle").setScale(0.85);
         obs.body.setCircle(obs.width * 0.35, obs.width * 0.15, obs.height * 0.15);
-        
         if(Math.random() < 0.4) {
             this.pearls.create(shuffled[1], -150, "pearl").setScale(0.6).body.setCircle(20);
         }
@@ -192,15 +199,13 @@ class MainScene extends Phaser.Scene {
         if (this.isGameOver) return;
         this.isGameOver = true;
         GameState.playing = false;
-        this.emitter.stop(); // Arrête la traînée
+        this.trailEmitter.stop();
         this.physics.pause();
         this.cameras.main.shake(300, 0.02);
         if(this.music) this.music.stop();
         if(this.crash) this.crash.play();
-        
         document.getElementById("final-score").innerText = Math.floor(GameState.score);
         document.getElementById("player-name-end").innerText = currentUser ? currentUser.displayName : "Marin";
-        
         saveScoreIfBest(GameState.score);
         showMenuState("gameover");
     }
@@ -218,7 +223,6 @@ function setupDomHandlers() {
     document.getElementById("btn-play").onclick = () => Bus.emit("start");
     document.getElementById("btn-restart").onclick = () => Bus.emit("restart");
     
-    // Logique des Pop-ups
     document.getElementById("btn-show-leaderboard").onclick = () => {
         document.getElementById("leaderboard-modal").classList.remove("hidden");
         document.getElementById("view-rankings").classList.remove("hidden");
@@ -253,4 +257,11 @@ const phaserConfig = {
     type: Phaser.AUTO, width: 480, height: 720, parent: "game-container",
     pixelArt: false, antialias: true, roundPixels: false,
     physics: { default: "arcade", arcade: { fps: 60 } },
-    scale: { mode: Phaser.Scale.FIT,
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    scene: [BootScene, MainScene]
+};
+
+window.addEventListener('DOMContentLoaded', () => {
+    setupDomHandlers();
+    new Phaser.Game(phaserConfig);
+});
