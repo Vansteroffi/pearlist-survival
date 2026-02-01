@@ -21,12 +21,14 @@ let currentUser = null;
 const Bus = new Phaser.Events.EventEmitter();
 const GameState = { playing: false, score: 0, pearls: 0 };
 
+// GESTION CONNEXION
 onAuthStateChanged(auth, (user) => {
     if (user) {
         const domain = user.email.split('@')[1];
         if (ALLOWED_DOMAINS.includes(domain)) {
             currentUser = user;
-            document.getElementById("auth-status").innerHTML = `⚓ Bienvenue, <b>${user.displayName.split(' ')[0]}</b> !`;
+            const firstName = user.displayName.split(' ')[0];
+            document.getElementById("auth-status").innerHTML = `⚓ Bienvenue Capitaine <b>${firstName}</b> !`;
             document.getElementById("auth-section").classList.add("hidden");
             document.getElementById("game-controls").classList.remove("hidden");
             loadLeaderboard();
@@ -60,6 +62,7 @@ async function saveScoreIfBest(newScore) {
     }
 }
 
+// SCÈNE DE CHARGEMENT
 class BootScene extends Phaser.Scene {
     constructor() { super("BootScene"); }
     preload() {
@@ -67,29 +70,26 @@ class BootScene extends Phaser.Scene {
         this.load.image("player", "player_harmonized.png");
         this.load.image("obstacle", "obstacle_harmonized.png");
         this.load.image("pearl", "pearl_harmonized.png");
-        
-        // Chargement audio (Vérifie la présence des fichiers sur GitHub)
         this.load.audio('music_action', 'music.mp3');
         this.load.audio('sea_ambience', 'sea.mp3');
         this.load.audio('crash_sound', 'crash.mp3');
         this.load.audio('coin_sound', 'coin.mp3');
     }
     create() { 
-        // Création des textures particules sans fichiers externes
+        // Création textures particules sans fichiers externes
         const graphics = this.make.graphics({ x: 0, y: 0, add: false });
         graphics.fillStyle(0xffffff, 1);
         graphics.fillRect(0, 0, 4, 4);
         graphics.generateTexture('p_white', 4, 4);
-        
         const goldGraphics = this.make.graphics({ x: 0, y: 0, add: false });
         goldGraphics.fillStyle(0xffd700, 1);
         goldGraphics.fillRect(0, 0, 4, 4);
         goldGraphics.generateTexture('p_gold', 4, 4);
-
         this.scene.start("MainScene"); 
     }
 }
 
+// SCÈNE PRINCIPALE
 class MainScene extends Phaser.Scene {
     constructor() { super("MainScene"); }
 
@@ -103,13 +103,13 @@ class MainScene extends Phaser.Scene {
 
         this.bg = this.add.tileSprite(0, 0, 480, 720, "background").setOrigin(0);
 
-        // SYSTÈME DE TRAÎNÉE BLANCHE
+        // TRAÎNÉE BOOSTÉE
         this.trailEmitter = this.add.particles(0, 0, "p_white", {
-            speedY: { min: 80, max: 150 },
-            scale: { start: 1.5, end: 0 },
-            alpha: { start: 0.5, end: 0 },
-            lifespan: 600,
-            frequency: 40,
+            speedY: { min: 120, max: 250 },
+            scale: { start: 2, end: 0 },
+            alpha: { start: 0.7, end: 0 },
+            lifespan: 800,
+            frequency: 15,
             blendMode: 'ADD'
         });
 
@@ -117,14 +117,14 @@ class MainScene extends Phaser.Scene {
         this.player.body.setCircle(this.player.width * 0.25, this.player.width * 0.25, this.player.height * 0.3);
         
         this.trailEmitter.startFollow(this.player);
-        this.trailEmitter.followOffset.set(0, 35);
+        this.trailEmitter.followOffset.set(0, 40);
 
-        // SYSTÈME D'ÉCLATS DORÉS
+        // ÉCLATS DE PERLES
         this.pearlEmitter = this.add.particles(0, 0, "p_gold", {
             speed: { min: 100, max: 200 },
             angle: { min: 0, max: 360 },
-            scale: { start: 2, end: 0 },
-            lifespan: 400,
+            scale: { start: 2.5, end: 0 },
+            lifespan: 500,
             gravityY: 200,
             emitting: false
         });
@@ -138,11 +138,11 @@ class MainScene extends Phaser.Scene {
             this.crash = this.sound.add('crash_sound', { volume: 0.7 });
             this.coinEffect = this.sound.add('coin_sound', { volume: 0.5 });
             this.sea.play();
-        } catch(e) { console.log("Audio non chargé"); }
+        } catch(e) {}
 
         this.physics.add.overlap(this.player, this.obstacles, () => this.gameOver(), null, this);
         this.physics.add.overlap(this.player, this.pearls, (pl, p) => {
-            this.pearlEmitter.emitParticleAt(p.x, p.y, 12);
+            this.pearlEmitter.emitParticleAt(p.x, p.y, 15);
             p.destroy(); GameState.pearls++; GameState.score += 25;
             if(this.coinEffect) this.coinEffect.play();
         }, null, this);
@@ -170,7 +170,7 @@ class MainScene extends Phaser.Scene {
         if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) this.changeLane(1);
 
         const dt = delta / 1000;
-        this.currentSpeed += 4 * dt; 
+        this.currentSpeed += 4.5 * dt; 
         const move = this.currentSpeed * dt;
         
         this.bg.tilePositionY -= move;
@@ -181,7 +181,7 @@ class MainScene extends Phaser.Scene {
         if (this.distanceTraveledSinceLastSpawn >= this.spawnDistanceThreshold) {
             this.spawnWave();
             this.distanceTraveledSinceLastSpawn = 0;
-            if(this.spawnDistanceThreshold > 300) this.spawnDistanceThreshold -= 0.5;
+            if(this.spawnDistanceThreshold > 280) this.spawnDistanceThreshold -= 0.6;
         }
 
         GameState.score += (move * 0.01); 
@@ -241,20 +241,16 @@ function setupDomHandlers() {
         document.getElementById("view-prizes").classList.add("hidden");
         loadLeaderboard();
     };
-
     document.getElementById("btn-show-prizes").onclick = () => {
         document.getElementById("view-rankings").classList.add("hidden");
         document.getElementById("view-prizes").classList.remove("hidden");
     };
-
     document.getElementById("btn-back-to-rank").onclick = () => {
         document.getElementById("view-prizes").classList.add("hidden");
         document.getElementById("view-rankings").classList.remove("hidden");
     };
-
     document.getElementById("btn-close-modal").onclick = () => document.getElementById("leaderboard-modal").classList.add("hidden");
     document.getElementById("close-modal-x").onclick = () => document.getElementById("leaderboard-modal").classList.add("hidden");
-
     document.getElementById("btn-howto").onclick = () => {
         document.getElementById("main-menu").classList.add("hidden");
         document.getElementById("howto").classList.remove("hidden");
