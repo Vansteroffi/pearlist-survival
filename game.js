@@ -21,6 +21,7 @@ let currentUser = null;
 const Bus = new Phaser.Events.EventEmitter();
 const GameState = { playing: false, score: 0, pearls: 0 };
 
+// --- LOGIQUE AUTH & SCORE ---
 onAuthStateChanged(auth, (user) => {
     if (user) {
         const domain = user.email.split('@')[1];
@@ -49,23 +50,18 @@ async function loadLeaderboard() {
     document.getElementById("modal-highscore-list").innerHTML = html;
 }
 
-// FONCTION POUR ENREGISTRER LE SCORE (VERIFIE LE RECORD)
 async function saveScoreIfBest(newScore) {
     if (!currentUser) return;
     const userRef = doc(db, "leaderboard", currentUser.uid);
     const snap = await getDoc(userRef);
     const roundedScore = Math.floor(newScore);
-
     if (!snap.exists() || roundedScore > (snap.data().score || 0)) {
-        await setDoc(userRef, {
-            name: currentUser.displayName,
-            score: roundedScore,
-            date: Date.now()
-        }, { merge: true });
+        await setDoc(userRef, { name: currentUser.displayName, score: roundedScore, date: Date.now() }, { merge: true });
         loadLeaderboard();
     }
 }
 
+// --- JEU PHASER ---
 class BootScene extends Phaser.Scene {
     constructor() { super("BootScene"); }
     preload() {
@@ -73,6 +69,7 @@ class BootScene extends Phaser.Scene {
         this.load.image("player", "player_harmonized.png");
         this.load.image("obstacle", "obstacle_harmonized.png");
         this.load.image("pearl", "pearl_harmonized.png");
+        this.load.image("white_particle", "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QMfCSIuGvG9AAAAF0lEQVQI12P4//8/AwMDEwMSYCRAnYIAd6ID/8P9f9MAAAAASUVORK5CYII="); // Petit point blanc
         this.load.audio('music_action', 'music.mp3');
         this.load.audio('sea_ambience', 'sea.mp3');
         this.load.audio('crash_sound', 'crash.mp3');
@@ -86,16 +83,30 @@ class MainScene extends Phaser.Scene {
 
     create() {
         this.isGameOver = false;
-        GameState.score = 0;
-        GameState.pearls = 0;
+        GameState.score = 0; GameState.pearls = 0;
         this.distanceTraveledSinceLastSpawn = 0;
         this.spawnDistanceThreshold = 450; 
         this.currentSpeed = 300; 
         this.laneIndex = 1;
 
         this.bg = this.add.tileSprite(0, 0, 480, 720, "background").setOrigin(0);
+
+        // --- TRAÎNÉE (Sillage) ---
+        this.emitter = this.add.particles(0, 0, "white_particle", {
+            speedY: { min: 100, max: 200 },
+            scale: { start: 1, end: 0 },
+            alpha: { start: 0.6, end: 0 },
+            lifespan: 600,
+            frequency: 30,
+            blendMode: 'ADD'
+        });
+
         this.player = this.physics.add.sprite(240, 600, "player").setScale(0.8);
         this.player.body.setCircle(this.player.width * 0.25, this.player.width * 0.25, this.player.height * 0.3);
+        
+        // On attache les particules au bateau
+        this.emitter.startFollow(this.player);
+        this.emitter.followOffset.set(0, 30); // Place la traînée derrière le bateau
 
         this.obstacles = this.physics.add.group();
         this.pearls = this.physics.add.group();
@@ -168,25 +179,12 @@ class MainScene extends Phaser.Scene {
 
     spawnWave() {
         const lanes = [130, 240, 350];
-        const randomValue = Math.random();
-        let spawnedLanes = [];
-        const doubleChance = Math.min(0.6, 0.2 + (this.currentSpeed / 2000));
-
-        if (randomValue > 0.1) {
-            const shuffled = lanes.sort(() => 0.5 - Math.random());
-            const count = (Math.random() < doubleChance) ? 2 : 1;
-            for(let i=0; i < count; i++) {
-                const obs = this.obstacles.create(shuffled[i], -100, "obstacle").setScale(0.85);
-                obs.body.setCircle(obs.width * 0.35, obs.width * 0.15, obs.height * 0.15);
-                spawnedLanes.push(shuffled[i]);
-            }
-        }
+        const shuffled = lanes.sort(() => 0.5 - Math.random());
+        const obs = this.obstacles.create(shuffled[0], -100, "obstacle").setScale(0.85);
+        obs.body.setCircle(obs.width * 0.35, obs.width * 0.15, obs.height * 0.15);
+        
         if(Math.random() < 0.4) {
-            const free = lanes.filter(l => !spawnedLanes.includes(l));
-            if(free.length > 0) {
-                const pLane = free[Math.floor(Math.random() * free.length)];
-                this.pearls.create(pLane, -150, "pearl").setScale(0.6).body.setCircle(20);
-            }
+            this.pearls.create(shuffled[1], -150, "pearl").setScale(0.6).body.setCircle(20);
         }
     }
 
@@ -194,6 +192,7 @@ class MainScene extends Phaser.Scene {
         if (this.isGameOver) return;
         this.isGameOver = true;
         GameState.playing = false;
+        this.emitter.stop(); // Arrête la traînée
         this.physics.pause();
         this.cameras.main.shake(300, 0.02);
         if(this.music) this.music.stop();
@@ -219,13 +218,24 @@ function setupDomHandlers() {
     document.getElementById("btn-play").onclick = () => Bus.emit("start");
     document.getElementById("btn-restart").onclick = () => Bus.emit("restart");
     
-    // Bouton Classement
+    // Logique des Pop-ups
     document.getElementById("btn-show-leaderboard").onclick = () => {
         document.getElementById("leaderboard-modal").classList.remove("hidden");
+        document.getElementById("view-rankings").classList.remove("hidden");
+        document.getElementById("view-prizes").classList.add("hidden");
         loadLeaderboard();
     };
 
-    // Fermer classement
+    document.getElementById("btn-show-prizes").onclick = () => {
+        document.getElementById("view-rankings").classList.add("hidden");
+        document.getElementById("view-prizes").classList.remove("hidden");
+    };
+
+    document.getElementById("btn-back-to-rank").onclick = () => {
+        document.getElementById("view-prizes").classList.add("hidden");
+        document.getElementById("view-rankings").classList.remove("hidden");
+    };
+
     document.getElementById("btn-close-modal").onclick = () => document.getElementById("leaderboard-modal").classList.add("hidden");
     document.getElementById("close-modal-x").onclick = () => document.getElementById("leaderboard-modal").classList.add("hidden");
 
@@ -243,11 +253,4 @@ const phaserConfig = {
     type: Phaser.AUTO, width: 480, height: 720, parent: "game-container",
     pixelArt: false, antialias: true, roundPixels: false,
     physics: { default: "arcade", arcade: { fps: 60 } },
-    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-    scene: [BootScene, MainScene]
-};
-
-window.addEventListener('DOMContentLoaded', () => {
-    setupDomHandlers();
-    new Phaser.Game(phaserConfig);
-});
+    scale: { mode: Phaser.Scale.FIT,
