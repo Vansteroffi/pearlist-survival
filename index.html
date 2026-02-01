@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Pearlist - L'Odyssée ICAM</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand__title">PEARLIST</span>
+        <span class="brand__subtitle">L'Odyssée des Marins ICAM</span>
+      </div>
+    </header>
+
+    <main class="layout">
+      <aside class="aside-left">
+        <div class="logo-container">
+          <img src="logo.png" alt="Pearlist Logo" class="logo-img">
+        </div>
+      </aside>
+
+      <section class="game-wrap">
+        <div id="game-container" class="game-container">
+          
+          <div id="hud" class="hud hidden" style="left: 20px; transform: none; flex-direction: column; align-items: flex-start; gap: 8px;">
+            <div class="hud__pill">
+              <div class="hud__label">Miles</div>
+              <div class="hud__value" id="score-display">0</div>
+            </div>
+            <div class="hud__pill">
+              <div class="hud__label">Perles</div>
+              <div class="hud__value" id="pearls-display">0</div>
+            </div>
+          </div>
+
+          <div id="main-menu" class="overlay">
+            <div class="panel panel--paper">
+              <h1>PEARLIST</h1>
+              <p id="auth-status">Embarque avec ton mail ICAM pour entrer dans la légende.</p>
+              
+              <div id="auth-section">
+                 <button id="btn-login" class="btn btn-primary btn-lg">🔑 CONNEXION GOOGLE</button>
+              </div>
+
+              <div id="game-controls" class="hidden">
+                <button id="btn-play" class="btn btn-primary btn-lg">PRENDRE LA MER</button>
+                <button id="btn-howto" class="btn" style="margin-top:12px; width:100%">MANŒUVRES</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="howto" class="overlay hidden">
+            <div class="panel panel--paper">
+              <h2>L'Art de la Navigation</h2>
+              <ul style="text-align: left; margin-bottom: 20px;">
+                <li><b>Mobile :</b> Tapote à bâbord ou à tribord.</li>
+                <li><b>Clavier :</b> Flèches ← et →.</li>
+                <li><b>But :</b> Vogue loin et récolte les perles !</li>
+              </ul>
+              <button id="btn-back-menu" class="btn btn-primary">RETOUR AU PORT</button>
+            </div>
+          </div>
+
+          <div id="game-over" class="overlay hidden">
+            <div class="panel panel--paper">
+              <h2 style="color:var(--danger)">NAUFRAGE !</h2>
+              <p>Le Vieux Loup de Mer <span id="player-name-end" style="font-weight:bold">...</span> a parcouru :</p>
+              <h1 id="final-score" style="font-size: 3rem; margin: 10px 0;">0</h1>
+              <p>milles marins</p>
+              <button id="btn-restart" class="btn btn-primary btn-lg">REPRENDRE LA BARRE</button>
+              <button id="btn-menu" class="btn" style="margin-top:12px; width:100%">CLASSEMENT</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="sidebar">
+        <div class="card card--paper">
+          <h3>🏆 Top Marins ICAM</h3>
+          <ul id="live-highscore-list" class="highscore-list">
+            <li>Équipage en cours d'appel...</li>
+          </ul>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
+  <script type="module" src="game.js"></script>
+</body>
+</html>
