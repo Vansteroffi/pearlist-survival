@@ -148,14 +148,15 @@ class MainScene extends Phaser.Scene {
         }, null, this);
 
         // EASTER EGG CLIC SCORE
-        document.getElementById("score-display").onclick = () => {
-            const s = Math.floor(GameState.score);
-            if(s >= 50 && s <= 100 && GameState.playing) {
-                this.physics.pause();
-                GameState.playing = false;
-                document.getElementById("secret-modal").classList.remove("hidden");
-            }
-        };
+document.getElementById("score-display").onclick = () => {
+    const s = Math.floor(GameState.score);
+    // MODIFIE LA LIGNE CI-DESSOUS :
+    if(s >= 50 && s <= 100 && GameState.playing) { 
+        this.physics.pause();
+        GameState.playing = false;
+        document.getElementById("secret-modal").classList.remove("hidden");
+    }
+};
 
         this.cursors = this.input.keyboard.createCursorKeys();
         this.input.on("pointerdown", (p) => { if(GameState.playing) this.changeLane((p.x < 240) ? -1 : 1); });
