@@ -4,23 +4,60 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Pearlist - L'Odyssée ICAM</title>
+  
   <link href="https://fonts.googleapis.com/css2?family=Almendra+SC&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
+  
   <style>
-    /* Application de la police pirate à tout le projet */
+    /* Global & Police */
     body, h1, h2, h3, button, .brand__title, .hud__label, .hud__value { 
       font-family: 'Almendra SC', serif !important; 
     }
     .hidden { display: none !important; }
+    
+    /* Overlays (Menus) */
     .overlay {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center;
       z-index: 1000;
     }
+
+    /* Bouton Paramètres (Engrenage) */
+    .settings-btn { 
+      position: absolute; top: 15px; right: 15px; z-index: 1001; 
+      cursor: pointer; font-size: 24px; background: rgba(0,0,0,0.5); 
+      border-radius: 50%; width: 45px; height: 45px; 
+      display: flex; align-items: center; justify-content: center; 
+      border: 2px solid #ffb700; color: #ffb700; 
+    }
+
+    /* Score cliquable pour l'Easter Egg */
+    #score-display { cursor: pointer; transition: transform 0.2s; }
+    #score-display:hover { transform: scale(1.1); color: #ffb700; }
+
+    /* Cadre Doré pour l'image des Trésors */
+    .prize-image-gold { 
+      width: 100%; 
+      margin: 15px 0; 
+      border: 5px solid #ffb700; /* Contour Or */
+      border-radius: 20px;       /* Coins arrondis */
+      box-shadow: 0 0 20px rgba(255, 183, 0, 0.6); /* Éclat */
+      display: block;
+    }
+
+    /* Fenêtre Secrète (Easter Egg) */
+    .secret-panel { 
+      background: #0d0d0d !important; 
+      color: #00ff00 !important; 
+      border: 3px solid #00ff00 !important; 
+      font-family: 'Courier New', monospace !important;
+      padding: 30px;
+      text-align: center;
+      box-shadow: 0 0 30px rgba(0, 255, 0, 0.4);
+    }
+
     .btn-gold { background: #ffb700 !important; color: #3e2723 !important; font-weight: bold; border: 2px solid #5d4037; }
-    /* Image des lots sans bordure comme demandé */
-    .prize-image { width: 100%; margin: 15px 0; border: none !important; box-shadow: none !important; }
-    #leaderboard-modal .panel { max-width: 90%; width: 400px; position: relative; max-height: 90vh; overflow-y: auto; }
+    #error-msg { color: #ff5252; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 5px; margin: 10px 0; font-size: 0.9rem; }
   </style>
 </head>
 <body>
@@ -35,16 +72,18 @@
     <main class="layout">
       <aside class="aside-left">
         <div class="logo-container">
-          <img src="logo.png" alt="Pearlist Logo" class="logo-img" style="max-width: 150px;">
+          <img src="logo.png" alt="Logo" style="max-width: 150px;">
         </div>
       </aside>
 
       <section class="game-wrap">
         <div id="game-container" class="game-container">
           
+          <div id="btn-settings" class="settings-btn" title="Couper/Activer le son">⚙️</div>
+
           <div id="hud" class="hud hidden" style="left: 20px; transform: none; flex-direction: column; align-items: flex-start; gap: 8px;">
             <div class="hud__pill">
-              <div class="hud__label">Milles</div>
+              <div class="hud__label">Milles (Clique moi entre 1500-1600)</div>
               <div class="hud__value" id="score-display">0</div>
             </div>
             <div class="hud__pill">
@@ -59,6 +98,8 @@
               <p id="auth-status">Embarque avec ton mail ICAM.</p>
               <div id="auth-section">
                  <button id="btn-login" class="btn btn-primary btn-lg">🔑 CONNEXION GOOGLE</button>
+                 <div id="error-msg" class="hidden"></div>
+                 <button id="btn-logout" class="btn hidden" style="margin-top: 10px; font-size: 0.8rem;">CHANGER DE COMPTE</button>
               </div>
               <div id="game-controls" class="hidden">
                 <button id="btn-play" class="btn btn-primary btn-lg">PRENDRE LA MER</button>
@@ -67,21 +108,28 @@
             </div>
           </div>
 
+          <div id="secret-modal" class="overlay hidden" style="z-index: 3000;">
+            <div class="panel secret-panel">
+              <h2 style="color: #00ff00;">> ACCÈS CRYPTÉ DÉROBÉ</h2>
+              <p style="margin: 20px 0;">Bravo Capitaine. Voici ta clé de déchiffrement :</p>
+              <h1 id="decryption-key" style="font-size: 2.5rem; letter-spacing: 5px;">SECRET_KEY_2026</h1>
+              <button id="btn-close-secret" class="btn" style="margin-top:30px; border: 1px solid #00ff00; color: #00ff00; background: transparent;">REPRENDRE LA BARRE</button>
+            </div>
+          </div>
+
           <div id="leaderboard-modal" class="overlay hidden" style="z-index: 2000;">
-            <div class="panel panel--paper">
-              <button id="close-modal-x" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 32px; cursor: pointer; font-family: Arial;">&times;</button>
-              
+            <div class="panel panel--paper" style="max-width: 90%; width: 400px; position: relative;">
+              <button id="close-modal-x" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 32px; cursor: pointer;">&times;</button>
               <div id="view-rankings">
-                <h2 style="margin-top:10px;">🏆 LES MEILLEURS MARINS</h2>
-                <ul id="modal-highscore-list" class="highscore-list" style="text-align: left; margin: 20px 0;"></ul>
-                <button id="btn-show-prizes" class="btn btn-gold" style="width: 100%; margin-bottom: 10px;">🎁 VOIR LES TRÉSORS</button>
+                <h2>🏆 MEILLEURS MARINS</h2>
+                <ul id="modal-highscore-list" class="highscore-list" style="text-align: left;"></ul>
+                <button id="btn-show-prizes" class="btn btn-gold" style="width: 100%; margin: 10px 0;">🎁 VOIR LES TRÉSORS</button>
                 <button id="btn-close-modal" class="btn btn-primary" style="width: 100%;">RETOUR</button>
               </div>
-
               <div id="view-prizes" class="hidden">
-                <h2 style="margin-top:10px;">🎁 BUTIN À GAGNER</h2>
-                <img src="lots.png" alt="Lots à gagner" class="prize-image">
-                <button id="btn-back-to-rank" class="btn btn-primary" style="width: 100%;">RETOUR AU CLASSEMENT</button>
+                <h2>🎁 BUTIN À GAGNER</h2>
+                <img src="lots.png" alt="Lots" class="prize-image-gold">
+                <button id="btn-back-to-rank" class="btn btn-primary" style="width: 100%;">RETOUR</button>
               </div>
             </div>
           </div>
@@ -97,9 +145,8 @@
           <div id="game-over" class="overlay hidden">
             <div class="panel panel--paper">
               <h2 style="color: #d32f2f;">NAUFRAGE !</h2>
-              <p><span id="player-name-end" style="font-weight: bold;">Marin</span> a parcouru :</p>
-              <h1 id="final-score" style="font-size: 3.5rem; margin: 10px 0;">0</h1>
-              <p>milles marins</p>
+              <p><span id="player-name-end">Marin</span> a parcouru :</p>
+              <h1 id="final-score" style="font-size: 3.5rem;">0</h1>
               <button id="btn-restart" class="btn btn-primary btn-lg" style="width:100%">REESSAYER</button>
               <button id="btn-show-leaderboard" class="btn" style="margin-top:10px; width:100%">CLASSEMENT</button>
             </div>
