@@ -24,7 +24,6 @@ let isMuted = false;
 const Bus = new Phaser.Events.EventEmitter();
 const GameState = { playing: false, score: 0, pearls: 0 };
 
-// AUTHENTIFICATION
 onAuthStateChanged(auth, (user) => {
     const errorEl = document.getElementById("error-msg");
     const logoutBtn = document.getElementById("btn-logout");
@@ -41,7 +40,7 @@ onAuthStateChanged(auth, (user) => {
             loadLeaderboard();
         } else {
             authStatus.innerHTML = "🚫 Accès Refusé";
-            errorEl.innerHTML = `Compte non ICAM.`;
+            errorEl.innerHTML = `Utilise ton mail ICAM (actuel: ${user.email})`;
             errorEl.classList.remove("hidden");
             logoutBtn.classList.remove("hidden");
             loginBtn.classList.add("hidden");
@@ -55,7 +54,6 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-// CLASSEMENT
 async function loadLeaderboard() {
     const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
     const snap = await getDocs(q);
@@ -79,7 +77,6 @@ async function saveScoreIfBest(newScore) {
     }
 }
 
-// SCÈNE BOOT
 class BootScene extends Phaser.Scene {
     constructor() { super("BootScene"); }
     preload() {
@@ -101,17 +98,14 @@ class BootScene extends Phaser.Scene {
     }
 }
 
-// SCÈNE JEU
 class MainScene extends Phaser.Scene {
     constructor() { super("MainScene"); }
     create() {
         this.isGameOver = false; GameState.score = 0; GameState.pearls = 0;
         this.currentSpeed = 300; this.laneIndex = 1;
         this.distanceTraveledSinceLastSpawn = 0; this.spawnDistanceThreshold = 450;
-
         this.bg = this.add.tileSprite(0, 0, 480, 720, "background").setOrigin(0);
 
-        // TRAÎNÉE
         this.trailEmitter = this.add.particles(0, 0, "p_white", {
             speedY: { min: 120, max: 250 }, scale: { start: 2, end: 0 },
             alpha: { start: 0.7, end: 0 }, lifespan: 800, frequency: 15, blendMode: 'ADD'
@@ -130,7 +124,6 @@ class MainScene extends Phaser.Scene {
         this.obstacles = this.physics.add.group();
         this.pearls = this.physics.add.group();
 
-        // AUDIO
         try {
             this.sea = this.sound.add('sea_ambience', { loop: true, volume: 0.3 });
             this.music = this.sound.add('music_action', { loop: true, volume: 0.4 });
@@ -147,16 +140,15 @@ class MainScene extends Phaser.Scene {
             if(this.coinEffect) this.coinEffect.play();
         }, null, this);
 
-        // EASTER EGG CLIC SCORE
-document.getElementById("score-display").onclick = () => {
-    const s = Math.floor(GameState.score);
-    // MODIFIE LA LIGNE CI-DESSOUS :
-    if(s >= 50 && s <= 100 && GameState.playing) { 
-        this.physics.pause();
-        GameState.playing = false;
-        document.getElementById("secret-modal").classList.remove("hidden");
-    }
-};
+        // EASTER EGG CLIC SCORE (Mode Test 50-100)
+        document.getElementById("score-display").onclick = () => {
+            const s = Math.floor(GameState.score);
+            if(s >= 50 && s <= 100 && GameState.playing) {
+                this.physics.pause(); GameState.playing = false;
+                if(this.music) this.music.pause();
+                document.getElementById("secret-modal").classList.remove("hidden");
+            }
+        };
 
         this.cursors = this.input.keyboard.createCursorKeys();
         this.input.on("pointerdown", (p) => { if(GameState.playing) this.changeLane((p.x < 240) ? -1 : 1); });
@@ -168,11 +160,10 @@ document.getElementById("score-display").onclick = () => {
         });
         Bus.on("restart", () => { if(this.music) this.music.stop(); this.scene.restart(); });
         
-        // Reprendre après l'Easter Egg
         document.getElementById("btn-close-secret").onclick = () => {
             document.getElementById("secret-modal").classList.add("hidden");
-            this.physics.resume();
-            GameState.playing = true;
+            this.physics.resume(); GameState.playing = true;
+            if(this.music && !isMuted) this.music.resume();
         };
 
         this.physics.pause(); showMenuState("menu");
@@ -244,11 +235,10 @@ function setupDomHandlers() {
     document.getElementById("btn-play").onclick = () => Bus.emit("start");
     document.getElementById("btn-restart").onclick = () => Bus.emit("restart");
     
-    // Paramètres Son
     document.getElementById("btn-settings").onclick = () => {
         isMuted = !isMuted;
         if(window.gameInstance) window.gameInstance.sound.mute = isMuted;
-        document.getElementById("btn-settings").innerText = isMuted ? "🔇" : "⚙️";
+        document.getElementById("btn-settings").innerText = isMuted ? "🔇" : "🔊";
     };
 
     document.getElementById("btn-show-leaderboard").onclick = () => {
