@@ -150,7 +150,7 @@ class MainScene extends Phaser.Scene {
         // EASTER EGG CLIC SCORE
         document.getElementById("score-display").onclick = () => {
             const s = Math.floor(GameState.score);
-            if(s >= 1500 && s <= 1600 && GameState.playing) {
+            if(s >= 50 && s <= 100 && GameState.playing) {
                 this.physics.pause();
                 GameState.playing = false;
                 document.getElementById("secret-modal").classList.remove("hidden");
