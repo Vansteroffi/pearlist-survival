@@ -145,10 +145,10 @@
 
     <div class="top-controls">
       <button class="btn-pixel" id="homeBtn">
-        <img src="/Images/home.png" alt="Home">
+        <img src="Images/home.png" alt="Home">
       </button>
       <button class="btn-pixel" id="muteBtn">
-        <img src="/Images/unmute.png" id="muteIcon" alt="Mute">
+        <img src="Images/unmute.png" id="muteIcon" alt="Mute">
       </button>
     </div>
 
@@ -306,7 +306,7 @@
     e.stopPropagation();
     playClick();
     music.muted = !music.muted;
-    muteIcon.src = music.muted ? "/Images/mute.png" : "/Images/unmute.png";
+    muteIcon.src = music.muted ? "Images/mute.png" : "Images/unmute.png";
   };
 
   homeBtn.onclick = (e) => {
@@ -332,4 +332,5 @@
   typeText();
 </script>
 </body>
+
 </html>
