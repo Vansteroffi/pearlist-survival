@@ -28,7 +28,7 @@
       top: 15px;
       right: 15px;
       display: flex;
-      flex-direction: column; /* On les empile verticalement */
+      flex-direction: column;
       gap: 10px;
       z-index: 100;
     }
@@ -116,14 +116,14 @@
 </head>
 <body>
 
-  <audio id="bgMusic" src="/Sons/jungle.mp3" loop></audio>
-  <audio id="clickSound" src="/Sons/pop.mp3"></audio>
+  <audio id="bgMusic" src="Sons/jungle.mp3" loop></audio>
+  <audio id="clickSound" src="Sons/pop.mp3"></audio>
 
   <div class="game-wrapper">
     <div class="scanlines"></div>
 
     <div class="top-controls">
-      <button class="btn-pixel" id="homeBtn" onclick="location.href='accueil.html'">
+      <button class="btn-pixel" id="homeBtn">
         <img src="Images/home.png" alt="Home">
       </button>
       <button class="btn-pixel" id="muteBtn">
@@ -177,6 +177,7 @@
     let index = 0;
     let charIndex = 0;
     let isTyping = false;
+    let typingInterval = null; // Stockage de l'intervalle
     let musicStarted = false;
 
     function playClick() {
@@ -201,6 +202,7 @@
 
       const currentText = dialogues[index];
 
+      // Gestion visuelle d'Edward
       if (currentRoute === "intro") {
         edwardImg.src = "Images/leroux_angry.png";
         edwardImg.classList.add("shake-char");
@@ -217,16 +219,22 @@
         return;
       }
 
-      const intervalId = setInterval(() => {
+      typingInterval = setInterval(() => {
         textEl.textContent += currentText[charIndex];
         charIndex++;
 
         if (charIndex >= currentText.length) {
-          clearInterval(intervalId);
-          isTyping = false;
-          if (index < dialogues.length - 1) arrowEl.style.display = "block";
+          finishTyping();
         }
       }, 40);
+    }
+
+    // Fonction pour finaliser le texte (utilisée à la fin de l'anim ou au skip)
+    function finishTyping() {
+      clearInterval(typingInterval);
+      textEl.textContent = dialogues[index];
+      isTyping = false;
+      if (index < dialogues.length - 1) arrowEl.style.display = "block";
     }
 
     function showChoices() {
@@ -253,14 +261,16 @@
     }
 
     function nextDialogue() {
-      if (isTyping) return;
+      if (isTyping) {
+        finishTyping();
+        return;
+      }
       index++;
       if (index < dialogues.length) {
         typeText();
       }
     }
 
-    // Son de clic sur Home (avant redirection)
     homeBtn.onclick = (e) => {
       e.stopPropagation();
       playClick();
@@ -285,6 +295,4 @@
     typeText();
   </script>
 </body>
-
 </html>
-

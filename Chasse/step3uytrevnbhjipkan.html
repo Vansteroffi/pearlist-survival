@@ -137,8 +137,8 @@
 </head>
 <body>
 
-  <audio id="bgMusic" src="/Sons/ocean.mp3" loop></audio>
-  <audio id="clickSound" src="/Sons/pop.mp3"></audio>
+  <audio id="bgMusic" src="Sons/bateau.wav" loop></audio>
+  <audio id="clickSound" src="Sons/pop.mp3"></audio>
   
   <div class="game-wrapper">
     <div class="scanlines"></div>
@@ -200,6 +200,7 @@
   let dialogues = texts[currentText];
   let index = 0;
   let isTyping = false;
+  let typingInterval = null; // Variable pour stocker l'intervalle
   let musicStarted = false;
 
   const textEl = document.getElementById("text");
@@ -258,15 +259,21 @@
     const current = dialogues[index];
     let charIndex = 0;
 
-    const interval = setInterval(() => {
+    typingInterval = setInterval(() => {
       textEl.textContent += current[charIndex++];
       if (charIndex >= current.length) {
-        clearInterval(interval);
-        isTyping = false;
-        if (index < dialogues.length - 1) arrowEl.style.display = "block";
-        else if (progression[currentText]) showChoices();
+        finishTyping();
       }
     }, 40);
+  }
+
+  // Nouvelle fonction pour finaliser l'état après l'écriture
+  function finishTyping() {
+    clearInterval(typingInterval);
+    textEl.textContent = dialogues[index];
+    isTyping = false;
+    if (index < dialogues.length - 1) arrowEl.style.display = "block";
+    else if (progression[currentText]) showChoices();
   }
 
   function showChoices() {
@@ -294,7 +301,12 @@
   }
 
   function nextDialogue() {
-    if (isTyping) return;
+    // Si on clique pendant l'écriture, on finit le texte d'un coup
+    if (isTyping) {
+      finishTyping();
+      return;
+    }
+    
     index++;
     if (index < dialogues.length) {
       typeText();
@@ -332,5 +344,4 @@
   typeText();
 </script>
 </body>
-
 </html>

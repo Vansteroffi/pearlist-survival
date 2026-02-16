@@ -103,8 +103,8 @@
 </head>
 
 <body>
-  <audio id="bgMusic" src="/Musique/taverne.wav" loop></audio>
-  <audio id="clickSound" src="/Sons/pop.mp3"></audio>
+  <audio id="bgMusic" src="Musique/taverne.wav" loop></audio>
+  <audio id="clickSound" src="Sons/pop.mp3"></audio>
 
   <div class="game-wrapper">
     <div class="scanlines"></div>
@@ -120,7 +120,7 @@
 
     <div class="scene">
       <div class="bar-bg"></div>
-      <img class="barman" src="Images/big_barman.png" alt="Barman">
+      <img class="barman" src="Imagesbig_barman.png" alt="Barman">
     </div>
 
     <div class="dialogue-box" id="dialogueBox">
@@ -268,7 +268,6 @@
       e.stopPropagation();
       playClick();
       music.muted = !music.muted;
-      // ICI : On a enlevé le / devant Images
       muteIcon.src = music.muted ? "Images/mute.png" : "Images/unmute.png";
     };
 
@@ -289,6 +288,4 @@
     typeText();
   </script>
 </body>
-
 </html>
-

@@ -101,8 +101,8 @@
 </head>
 
 <body>
-  <audio id="bgMusic" src="/Sons/bateau.wav" loop></audio>
-  <audio id="clickSound" src="/Sons/pop.mp3"></audio>
+  <audio id="bgMusic" src="Sons/bateau.wav" loop></audio>
+  <audio id="clickSound" src="Sons/pop.mp3"></audio>
 
   <div class="game-wrapper">
     <div class="scanlines"></div>
@@ -280,7 +280,6 @@
     e.stopPropagation();
     playClick();
     music.muted = !music.muted;
-    // ICI AUSSI : On enlève le /
     muteIcon.src = music.muted ? "Images/mute.png" : "Images/unmute.png";
   };
 
@@ -307,6 +306,4 @@
   typeText();
 </script>
 </body>
-
 </html>
-
