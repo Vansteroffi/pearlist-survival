@@ -45,11 +45,11 @@ const sceneEl = document.querySelector(".scene"); // pour changer le fond
 
 // associe chaque scène à son image de fond
 const backgrounds = {
-  pont: "url('/Images/pont.png')",
-  trappe: "url('/Images/trappe.png')",
-  cale: "url('/Images/cale.png')",
-  piece: "url('/Images/piece.png')",
-  intro: "url('/Images/pont.png')" // fond par défaut pour l'intro
+  pont: "url('Images/pont.png')",
+  trappe: "url('Images/trappe.png')",
+  cale: "url('Images/cale.png')",
+  piece: "url('Images/piece.png')",
+  intro: "url('Images/pont.png')" // fond par défaut pour l'intro
 };
 
 function updateBackground() {
@@ -145,3 +145,4 @@ dialogueBox.addEventListener("click", () => {
 // Démarrage
 updateBackground();
 typeText();
+
