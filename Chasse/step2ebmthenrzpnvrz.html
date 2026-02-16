@@ -280,7 +280,8 @@
     e.stopPropagation();
     playClick();
     music.muted = !music.muted;
-    muteIcon.src = music.muted ? "/Images/mute.png" : "/Images/unmute.png";
+    // ICI AUSSI : On enlève le /
+    muteIcon.src = music.muted ? "Images/mute.png" : "Images/unmute.png";
   };
 
   homeBtn.onclick = (e) => {
@@ -306,4 +307,5 @@
   typeText();
 </script>
 </body>
+
 </html>
