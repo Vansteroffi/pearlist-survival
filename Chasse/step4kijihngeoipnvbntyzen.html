@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Chasse au Trésor - Étape 4</title>
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: #1a1a1a; overflow: hidden; }
+    body { display: flex; justify-content: center; align-items: center; font-family: "Pixelify Sans", sans-serif; color: #3e2723; }
+
+    .game-wrapper { aspect-ratio: 9 / 16; width: min(60vh, 90vw); display: flex; flex-direction: column; overflow: hidden; position: relative; background: #000; border: 2px solid #333; }
+
+    .scanlines { position: absolute; inset: 0; background: linear-gradient(to bottom, transparent, transparent 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1)); background-size: 100% 4px; pointer-events: none; z-index: 50; }
+
+    .top-controls { position: absolute; top: 15px; right: 15px; display: flex; flex-direction: column; gap: 10px; z-index: 100; }
+
+    .btn-pixel { width: 48px; height: 48px; background-color: #fff1e0; border: 3px solid #3e2723; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 0 rgba(0,0,0,0.2); padding: 0; transition: transform 0.1s; }
+    .btn-pixel:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.1); }
+    .btn-pixel img { width: 26px; height: auto; image-rendering: pixelated; pointer-events: none; }
+
+    .scene { flex: 1; position: relative; overflow: hidden; }
+    .bar-bg { position: absolute; inset: 0; background-image: url("Images/campement.png"); background-repeat: no-repeat; background-position: center bottom; background-size: cover; image-rendering: pixelated; }
+    
+    .edward { position: absolute; bottom: 5%; left: 50%; width: 60%; height: 70%; transform: translateX(-50%); object-fit: contain; image-rendering: pixelated; animation: idle 1s infinite steps(1); z-index: 5; }
+    .shake-char { animation: shake 0.2s ease-in-out infinite; }
+
+    @keyframes idle { 0%, 100% { transform: translateX(-50%) translateY(0); } 50% { transform: translateX(-50%) translateY(-2px); } }
+    @keyframes shake { 0% { transform: translateX(-50%) translate(0, 0); } 25% { transform: translateX(-50%) translate(2px, 2px); } 50% { transform: translateX(-50%) translate(-2px, -2px); } 75% { transform: translateX(-50%) translate(2px, -2px); } 100% { transform: translateX(-50%) translate(0, 0); } }
+
+    .dialogue-box { width: 100%; background-color: #fff1e0; border-top: 4px solid #3e2723; padding: 20px; position: relative; cursor: pointer; z-index: 10; animation: slideUp 0.6s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
+    @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    .text { font-size: 1.4rem; line-height: 1.4; min-height: 4.2em; }
+    .choices { margin-top: 15px; padding-top: 10px; border-top: 2px dashed rgba(62, 39, 35, 0.3); width: 100%; position: relative; }
+    .choices:empty { border-top: none; margin-top: 0; }
+
+    .choice-btn { display: block; width: 100%; text-align: left; padding: 8px 0; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 1.2rem; color: #5d4037; transition: all 0.2s; }
+    .choice-btn:hover { color: #d32f2f; padding-left: 10px; font-weight: bold; }
+    .choice-btn::before { content: "➤ "; opacity: 0; transition: opacity 0.2s; }
+    .choice-btn:hover::before { opacity: 1; }
+
+    .arrow { position: absolute; bottom: 10px; right: 15px; font-size: 24px; color: #d32f2f; display: none; animation: bounce 1s infinite; }
+    @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(3px); } }
+  </style>
+</head>
+<body>
+
+  <audio id="bgMusic" src="Sons/jungle.mp3" loop></audio>
+  <audio id="clickSound" src="Sons/pop.mp3"></audio>
+
+  <div class="game-wrapper">
+    <div class="scanlines"></div>
+
+    <div class="top-controls">
+      <button class="btn-pixel" id="homeBtn">
+        <img src="Images/home.png" alt="Home">
+      </button>
+      <button class="btn-pixel" id="muteBtn">
+        <img src="Images/unmute.png" id="muteIcon" alt="Volume">
+      </button>
+    </div>
+    
+    <div class="scene">
+      <div class="bar-bg"></div>
+      <img class="edward" id="edwardImg" src="Images/le_roux.png" alt="Edward">
+    </div>
+
+    <div class="dialogue-box" id="dialogueBox">
+      <div class="text" id="text"></div>
+      <div class="choices" id="choices"></div>
+      <div class="arrow" id="arrow">▼</div>
+    </div>
+  </div>
+
+  <script>
+    const routes = {
+      intro: ["HÉ TOI ! QUI ES-TU ??", "__CHOICES__"],
+      passer: ["-Personne, je ne fais que passer.", "Dans ce cas là, bouge-toi de là !"],
+      aventurier: [
+        "-Un aventurier à la recherche du trésor de Barbe d'Or.",
+        "-Et toi, qui es-tu ?",
+        "Dans le temps on m'appelait Le Roux mais tu peux m'appeler Edward.",
+        "Hum... Son trésor ? Je ne sais pas ce qu'il en a fait.",
+        "Et honnêtement, ça ne m'intéresse pas !",
+        "Je ne veux plus rien avoir à faire avec lui.",
+        "Écoute...",
+        "Je crois que le barman le connaissait mieux.",
+        "Va lui parler mais bon il est un peu perché.",
+        "Il serait capable de cacher de l'argent dans ses tonneaux."
+      ]
+    };
+
+    const music = document.getElementById("bgMusic"); const clickSfx = document.getElementById("clickSound"); const muteBtn = document.getElementById("muteBtn"); const muteIcon = document.getElementById("muteIcon"); const homeBtn = document.getElementById("homeBtn"); const dialogueBox = document.getElementById("dialogueBox"); const textEl = document.getElementById("text"); const choicesEl = document.getElementById("choices"); const arrowEl = document.getElementById("arrow"); const edwardImg = document.getElementById("edwardImg");
+
+    let currentRoute = "intro"; let dialogues = routes[currentRoute]; let index = 0; let charIndex = 0; let isTyping = false; let musicStarted = false;
+
+    function playClick() { clickSfx.currentTime = 0; clickSfx.play().catch(() => {}); }
+    function startMusic() { if (!musicStarted) { music.volume = 0.4; music.play().catch(() => {}); musicStarted = true; } }
+
+    function typeText() {
+      isTyping = true; arrowEl.style.display = "none"; choicesEl.innerHTML = ""; textEl.textContent = ""; charIndex = 0;
+      const currentText = dialogues[index];
+
+      if (currentRoute === "intro") { edwardImg.src = "Images/leroux_angry.png"; edwardImg.classList.add("shake-char"); dialogueBox.classList.add("shake-char"); } 
+      else { edwardImg.src = "Images/le_roux.png"; edwardImg.classList.remove("shake-char"); dialogueBox.classList.remove("shake-char"); }
+
+      if (currentText === "__CHOICES__") { isTyping = false; showChoices(); return; }
+
+      const intervalId = setInterval(() => {
+        textEl.textContent += currentText[charIndex]; charIndex++;
+        if (charIndex >= currentText.length) { clearInterval(intervalId); isTyping = false; if (index < dialogues.length - 1) arrowEl.style.display = "block"; }
+      }, 40);
+    }
+
+    function showChoices() {
+      textEl.textContent = "QUI ES-TU ??"; 
+      const options = [{ label: "Personne, je ne fais que passer", route: "passer" }, { label: "Un aventurier à la recherche du trésor", route: "aventurier" }];
+      options.forEach(opt => {
+        const btn = document.createElement("button"); btn.className = "choice-btn"; btn.textContent = opt.label;
+        btn.onclick = (e) => { e.stopPropagation(); playClick(); currentRoute = opt.route; dialogues = routes[currentRoute]; index = 0; typeText(); };
+        choicesEl.appendChild(btn);
+      });
+    }
+
+    function nextDialogue() { if (isTyping) return; index++; if (index < dialogues.length) { typeText(); } }
+
+    homeBtn.onclick = (e) => { e.stopPropagation(); playClick(); setTimeout(() => { location.href = 'accueil.html'; }, 100); };
+    muteBtn.onclick = (e) => { e.stopPropagation(); playClick(); music.muted = !music.muted; muteIcon.src = music.muted ? "Images/mute.png" : "Images/unmute.png"; };
+    dialogueBox.addEventListener("click", () => { startMusic(); if (choicesEl.children.length === 0) { playClick(); nextDialogue(); } });
+
+    typeText();
+  </script>
+</body>
+</html>

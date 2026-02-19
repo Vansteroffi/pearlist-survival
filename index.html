@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pearlist - Portail Officiel</title>
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link href="https://fonts.googleapis.com/css2?family=Almendra+SC&family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #ffb700;
+            --dark-brown: #3e2723;
+            --accent: #d32f2f;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #0a0a0a;
+            color: #fff1e0;
+            font-family: "Almendra SC", serif;
+            overflow: hidden;
+        }
+
+        /* Texture bois sombre en fond */
+        body::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: url('https://www.transparenttextures.com/patterns/dark-wood.png');
+            opacity: 0.4;
+            z-index: -1;
+        }
+
+        /* Animation du logo qui flotte */
+        .main-logo {
+            width: 220px;
+            height: auto;
+            margin-bottom: -10px;
+            filter: drop-shadow(0 0 15px rgba(255, 183, 0, 0.2));
+            animation: float 4s ease-in-out infinite;
+            z-index: 10;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+
+        h1 {
+            font-size: 5rem;
+            color: var(--gold);
+            text-shadow: 4px 4px 0px var(--dark-brown), 0 0 20px rgba(255, 183, 0, 0.4);
+            margin: 0 0 60px 0;
+            letter-spacing: 8px;
+            text-align: center;
+        }
+
+        .container {
+            display: flex;
+            gap: 50px;
+            max-width: 1000px;
+            width: 90%;
+            z-index: 5;
+        }
+
+        .card {
+            flex: 1;
+            background: rgba(44, 44, 44, 0.9);
+            border: 4px solid var(--dark-brown);
+            padding: 50px 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 15px 0 #000;
+            text-decoration: none;
+            color: inherit;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Effet de lueur au survol */
+        .card::after {
+            content: "";
+            position: absolute;
+            top: -50%; left: -50%; width: 200%; height: 200%;
+            background: radial-gradient(circle, rgba(255,183,0,0.1) 0%, transparent 70%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-15px) scale(1.05);
+            border-color: var(--gold);
+            box-shadow: 0 20px 30px rgba(255, 183, 0, 0.3), 0 15px 0 var(--dark-brown);
+        }
+
+        .card:hover::after { opacity: 1; }
+
+        .card h2 {
+            font-size: 2.5rem;
+            color: var(--gold);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        .card p {
+            font-family: "Pixelify Sans", sans-serif;
+            font-size: 1.2rem;
+            line-height: 1.5;
+            color: #d1d1d1;
+            margin: 0;
+        }
+
+        .icon {
+            font-size: 6rem;
+            margin-bottom: 25px;
+            display: block;
+            filter: drop-shadow(0 0 10px rgba(255, 183, 0, 0.5));
+            transition: transform 0.3s;
+        }
+
+        .card:hover .icon {
+            transform: rotate(10deg) scale(1.1);
+        }
+
+        /* Décorations de coins */
+        .corner {
+            position: absolute;
+            width: 30px; height: 30px;
+            border: 4px solid var(--gold);
+            opacity: 0;
+            transition: 0.3s;
+        }
+        .card:hover .corner { opacity: 1; }
+        .top-left { top: 10px; left: 10px; border-right: 0; border-bottom: 0; }
+        .bottom-right { bottom: 10px; right: 10px; border-left: 0; border-top: 0; }
+
+        @media (max-width: 768px) {
+            body { overflow-y: auto; padding: 40px 0; }
+            .container { flex-direction: column; align-items: center; }
+            h1 { font-size: 3.5rem; }
+            .card { width: 100%; max-width: 350px; }
+        }
+    </style>
+</head>
+<body>
+
+    <img src="logo.png" alt="Pearlist Logo" class="main-logo">
+    
+    <h1>PEARLIST</h1>
+
+    <div class="container">
+        <a href="/jeu/index.html" class="card">
+            <div class="corner top-left"></div>
+            <span class="icon">⚓</span>
+            <h2>Le Grand Jeu</h2>
+            <p>Hissez les voiles, Capitaine ! L'aventure vous attend sur les mers déchaînées.</p>
+            <div class="corner bottom-right"></div>
+        </a>
+
+        <a href="/chasse/accueil.html" class="card">
+            <div class="corner top-left"></div>
+            <span class="icon">📜</span>
+            <h2>Chasse au Trésor</h2>
+            <p>Déchiffrez les secrets de Jérome Labarre et trouvez le butin légendaire.</p>
+            <div class="corner bottom-right"></div>
+        </a>
+    </div>
+
+</body>
+</html>
