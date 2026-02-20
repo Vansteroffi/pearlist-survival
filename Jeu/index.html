@@ -8,12 +8,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Almendra+SC&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <style>
-    /* STYLE POUR LE FOND EN BOIS (Comme le menu principal) */
+    /* STYLE POUR LE FOND EN BOIS */
     body {
       margin: 0;
       height: 100vh;
       background: #0a0a0a;
       position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
     }
 
     body::before {
@@ -42,7 +45,7 @@
       font-size: 22px;
       cursor: pointer;
       box-shadow: 0 4px 0 #000;
-      z-index: 5000; /* Très haut pour être au-dessus du jeu */
+      z-index: 5000;
       transition: transform 0.1s;
     }
     .home-btn:hover { transform: scale(1.1); background: #ffb700; }
@@ -50,7 +53,9 @@
     body, h1, h2, h3, button, .brand__title, .hud__label, .hud__value { 
       font-family: 'Almendra SC', serif !important; 
     }
+    
     .hidden { display: none !important; }
+    
     .overlay {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center;
@@ -66,35 +71,15 @@
       border: 2px solid #ffb700; color: #ffb700; 
       transition: all 0.2s;
     }
-    .settings-btn:hover { transform: scale(1.1); background: #ffb700; color: #3e2723; }
-
-    /* Score cliquable */
-    #score-display { cursor: pointer; transition: transform 0.2s; }
-    #score-display:hover { transform: scale(1.1); color: #ffb700; }
 
     /* Cadre Doré Trésors */
     .prize-image-gold { 
-      width: 100%; 
-      margin: 15px 0; 
-      border: 5px solid #ffb700;
-      border-radius: 20px;
-      box-shadow: 0 0 20px rgba(255, 183, 0, 0.6);
-      display: block;
-    }
-
-    /* Fenêtre Secrète Or */
-    .secret-panel { 
-      background: #1a1400 !important; 
-      color: #ffb700 !important; 
-      border: 3px solid #ffb700 !important; 
-      padding: 30px;
-      text-align: center;
-      box-shadow: 0 0 30px rgba(255, 183, 0, 0.4);
+      width: 100%; margin: 15px 0; border: 5px solid #ffb700;
+      border-radius: 20px; box-shadow: 0 0 20px rgba(255, 183, 0, 0.6);
     }
 
     .btn-gold { background: #ffb700 !important; color: #3e2723 !important; font-weight: bold; border: 2px solid #5d4037; }
     .panel--paper { text-align: center; }
-    #error-msg { color: #ff5252; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 5px; margin: 10px 0; font-size: 0.9rem; }
   </style>
 </head>
 <body>
@@ -109,7 +94,9 @@
       </div>
     </header>
 
-      <section class="game-wrap">
+    <main class="layout" style="display: flex; gap: 20px; padding: 20px;">
+      
+      <section class="game-wrap" style="flex: 1;">
         <div id="game-container" class="game-container">
           
           <div id="btn-settings" class="settings-btn">🔊</div>
@@ -141,60 +128,27 @@
             </div>
           </div>
 
-          <div id="secret-modal" class="overlay hidden" style="z-index: 3000;">
-            <div class="panel secret-panel">
-              <h2>📜 MESSAGE CODÉ DÉCOUVERT</h2>
-              <p style="margin: 20px 0; color: #eee;">Félicitations Capitaine. Voici la clé de déchiffrement :</p>
-              <h1 id="decryption-key" style="font-size: 2.5rem; letter-spacing: 5px; text-shadow: 2px 2px 0 #000;">SECRET_KEY_2026</h1>
-              <button id="btn-close-secret" class="btn btn-gold" style="margin-top:30px; width: 100%;">REPRENDRE LA BARRE</button>
-            </div>
-          </div>
-
-          <div id="leaderboard-modal" class="overlay hidden" style="z-index: 2000;">
-            <div class="panel panel--paper" style="max-width: 90%; width: 400px; position: relative;">
-              <button id="close-modal-x" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 32px; cursor: pointer;">&times;</button>
-              <div id="view-rankings">
-                <h2>🏆 LES MEILLEURS MARINS</h2>
-                <ul id="modal-highscore-list" class="highscore-list"></ul>
-                <button id="btn-show-prizes" class="btn btn-gold" style="width: 100%; margin: 10px 0;">🎁 VOIR LES TRÉSORS</button>
-                <button id="btn-close-modal" class="btn btn-primary" style="width: 100%;">RETOUR</button>
-              </div>
-              <div id="view-prizes" class="hidden">
-                <h2>🎁 BUTIN À GAGNER</h2>
-                <img src="lots.png" alt="Lots" class="prize-image-gold">
-                <button id="btn-back-to-rank" class="btn btn-primary" style="width: 100%;">RETOUR</button>
-              </div>
-            </div>
-          </div>
-
-          <div id="howto" class="overlay hidden">
-            <div class="panel panel--paper">
-              <h2>Manœuvres</h2>
-              <p>Évite les rochers, ramasse les perles et va le plus loin possible !</p>
-              <button id="btn-back-menu" class="btn btn-primary">RETOUR</button>
-            </div>
-          </div>
-
           <div id="game-over" class="overlay hidden">
             <div class="panel panel--paper">
               <h2 style="color: #d32f2f;">NAUFRAGE !</h2>
-              <p><span id="player-name-end">Marin</span> a parcouru :</p>
               <h1 id="final-score" style="font-size: 3.5rem;">0</h1>
               <button id="btn-restart" class="btn btn-primary btn-lg" style="width:100%">REESSAYER</button>
-              <button id="btn-show-leaderboard" class="btn" style="margin-top:10px; width:100%">CLASSEMENT</button>
             </div>
           </div>
-        </div>
+          
+          </div>
       </section>
 
       <aside class="sidebar">
         <div class="card card--paper">
-          <h3>🏆 Les Meilleurs Marins</h3>
+          <h3>🏆 Meilleurs Marins</h3>
           <ul id="live-highscore-list" class="highscore-list"></ul>
         </div>
       </aside>
+
     </main>
   </div>
+
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
   <script type="module" src="game.js"></script>
 </body>
