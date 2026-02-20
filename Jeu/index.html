@@ -8,6 +8,45 @@
   <link href="https://fonts.googleapis.com/css2?family=Almendra+SC&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <style>
+    /* STYLE POUR LE FOND EN BOIS (Comme le menu principal) */
+    body {
+      margin: 0;
+      height: 100vh;
+      background: #0a0a0a;
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image: url('https://www.transparenttextures.com/patterns/dark-wood.png');
+      opacity: 0.4;
+      z-index: -1;
+    }
+
+    /* Bouton Home (Maison) */
+    .home-btn {
+      position: fixed;
+      top: 15px;
+      left: 15px;
+      width: 45px;
+      height: 45px;
+      background: #fff1e0;
+      border: 3px solid #3e2723;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-decoration: none;
+      font-size: 22px;
+      cursor: pointer;
+      box-shadow: 0 4px 0 #000;
+      z-index: 5000; /* Très haut pour être au-dessus du jeu */
+      transition: transform 0.1s;
+    }
+    .home-btn:hover { transform: scale(1.1); background: #ffb700; }
+
     body, h1, h2, h3, button, .brand__title, .hud__label, .hud__value { 
       font-family: 'Almendra SC', serif !important; 
     }
@@ -59,6 +98,9 @@
   </style>
 </head>
 <body>
+
+  <a href="../index.html" class="home-btn">🏠</a>
+
   <div class="app">
     <header class="topbar">
       <div class="brand">
