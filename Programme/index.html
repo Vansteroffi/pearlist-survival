@@ -5,203 +5,140 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pearlist - L'Agenda du Pirate</title>
     <link href="https://fonts.googleapis.com/css2?family=Almendra+SC&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --gold: #ffb700;
-            --dark-brown: #3e2723;
-            --cream: #fff1e0;
-        }
+    
+    <script>
+        /* ==========================================================
+           📦 MODIFIE TON PROGRAMME ICI (C'EST TRÈS FACILE)
+           ========================================================== */
 
-        body {
+        const MON_PROGRAMME = {
+            
+            "mardi": {
+                titre: "Mardi : La Soirée de Fou",
+                description: "Viens découvrir la soirée de fou qui t'attend !",
+                activites: [
+                    ["18:00", "Ouverture des Portes"],
+                    ["20:30", "Banquet des Flibustiers"],
+                    ["22:00", "Bal des Naufragés"]
+                ]
+            },
+
+            "mercredi": {
+                titre: "Mercredi : Les Épreuves",
+                description: "Aujourd'hui, place à des activités de folie sur l'île.",
+                activites: [
+                    ["10:00", "Grande Chasse aux Perles"],
+                    ["14:00", "Tournoi de la Tortue"],
+                    ["16:30", "Goûter des Marins"]
+                ]
+            },
+
+            "jeudi": {
+                titre: "Jeudi : L'Adieu",
+                description: "Venez fêter le départ des pirates pour l'ultime voyage.",
+                activites: [
+                    ["15:00", "Levée de l'Ancre"],
+                    ["19:00", "Chants de Marins"],
+                    ["21:00", "Feu de Joie"]
+                ]
+            },
+
+            "vendredi": {
+                titre: "Vendredi : Le Verdict",
+                description: "L'heure du verdict final a sonné pour l'équipage.",
+                activites: [
+                    ["11:00", "Dépouillement des Votes"],
+                    ["14:00", "Annonce des Vainqueurs"],
+                    ["15:30", "Partage du Butin"]
+                ]
+            }
+        };
+
+        /* ==========================================================
+           FIN DE LA ZONE DE MODIFICATION (NE PAS TOUCHER EN DESSOUS)
+           ========================================================== */
+    </script>
+
+    <style>
+        :root { --gold: #ffb700; --dark-brown: #3e2723; --cream: #fff1e0; }
+        body { 
             margin: 0; min-height: 100vh; display: flex; flex-direction: column; align-items: center;
-            background: #0a0a0a; color: #fff1e0; 
-            font-family: "Almendra SC", serif; /* POLICE PIRATE PARTOUT */
+            background: #0a0a0a; color: #fff1e0; font-family: "Almendra SC", serif;
             overflow-x: hidden; padding-bottom: 50px;
         }
-
         body::before {
             content: ""; position: fixed; inset: 0;
             background-image: url('https://www.transparenttextures.com/patterns/dark-wood.png');
             opacity: 0.4; z-index: -1;
         }
-
         .home-btn {
             position: fixed; top: 20px; left: 20px; width: 50px; height: 50px;
             background: var(--cream); border-radius: 50%; border: 3px solid var(--dark-brown);
             display: flex; justify-content: center; align-items: center;
             text-decoration: none; font-size: 24px; box-shadow: 0 4px 0 #000; z-index: 1000;
         }
-
-        h1 { 
-            font-size: 4.5rem; color: var(--gold); margin: 60px 0; 
-            text-shadow: 4px 4px 0px var(--dark-brown); text-align: center;
-            letter-spacing: 3px;
-        }
-
+        h1 { font-size: 4.5rem; color: var(--gold); margin: 60px 0; text-shadow: 4px 4px 0px var(--dark-brown); text-align: center; }
         .container { display: flex; gap: 20px; max-width: 1200px; width: 95%; flex-wrap: wrap; justify-content: center; }
-
         .card {
             width: 260px; background: rgba(30, 30, 30, 0.95); border: 4px solid var(--dark-brown);
-            padding: 35px 20px; text-align: center; cursor: pointer;
-            transition: all 0.3s ease; box-shadow: 0 10px 0 #000; position: relative;
+            padding: 35px 20px; text-align: center; cursor: pointer; transition: 0.3s; box-shadow: 0 10px 0 #000;
         }
+        .card:hover { transform: translateY(-10px); border-color: var(--gold); box-shadow: 0 15px 25px rgba(255, 183, 0, 0.3), 0 10px 0 var(--dark-brown); }
+        .card h2 { color: var(--gold); font-size: 2.5rem; margin: 0; text-transform: uppercase; border-bottom: 2px solid var(--gold); }
+        .card p { font-size: 1.3rem; color: #eee; margin: 20px 0; }
+        .click-hint { font-size: 0.9rem; color: var(--gold); text-transform: uppercase; letter-spacing: 2px; }
 
-        .card:hover { 
-            transform: translateY(-10px); border-color: var(--gold); 
-            box-shadow: 0 15px 25px rgba(255, 183, 0, 0.3), 0 10px 0 var(--dark-brown); 
-        }
-
-        .card h2 { 
-            color: var(--gold); font-size: 2.5rem; margin: 0 0 15px 0; 
-            text-transform: uppercase; border-bottom: 2px solid var(--gold);
-            padding-bottom: 5px;
-        }
-
-        .card p { 
-            font-size: 1.3rem; /* Légèrement plus grand pour la lisibilité */
-            color: #eee; margin-bottom: 25px; 
-            line-height: 1.2;
-        }
-
-        .click-hint { 
-            font-size: 0.9rem; color: var(--gold); 
-            text-transform: uppercase; letter-spacing: 2px;
-            display: block; opacity: 0.8;
-        }
-
-        /* MODALE (Le Parchemin) */
-        .modal {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-            z-index: 2000; align-items: center; justify-content: center; padding: 20px;
-        }
-
-        .scroll-content {
-            background: var(--cream); border: 12px double var(--dark-brown);
-            color: var(--dark-brown); padding: 45px; max-width: 550px; width: 100%;
-            position: relative; box-shadow: 0 0 60px rgba(0,0,0,0.7);
-            max-height: 85vh; overflow-y: auto;
-        }
-
-        .close-modal {
-            position: absolute; top: 10px; right: 15px; font-size: 35px; 
-            cursor: pointer; color: var(--dark-brown); font-weight: bold;
-        }
-
-        .scroll-content h3 { 
-            font-size: 3rem; border-bottom: 3px double var(--dark-brown); 
-            margin-top: 0; text-align: center; color: #b71c1c; /* Rouge pirate */
-        }
-        
-        .prog-item { 
-            margin: 20px 0; font-size: 1.5rem; 
-            border-bottom: 1px dashed rgba(62, 39, 35, 0.4); 
-            padding-bottom: 8px; 
-            display: flex; align-items: baseline;
-        }
-        
-        .prog-time { 
-            font-weight: bold; color: var(--dark-brown); 
-            margin-right: 15px; min-width: 80px;
-        }
-
-        @media (max-width: 768px) { 
-            h1 { font-size: 2.8rem; } 
-            .card { width: 100%; max-width: 320px; } 
-        }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 2000; align-items: center; justify-content: center; padding: 20px; }
+        .scroll-content { background: var(--cream); border: 12px double var(--dark-brown); color: var(--dark-brown); padding: 45px; max-width: 550px; width: 100%; position: relative; box-shadow: 0 0 60px rgba(0,0,0,0.7); max-height: 85vh; overflow-y: auto; }
+        .close-modal { position: absolute; top: 10px; right: 15px; font-size: 35px; cursor: pointer; font-weight: bold; }
+        .scroll-content h3 { font-size: 3rem; border-bottom: 3px double var(--dark-brown); margin-top: 0; text-align: center; color: #b71c1c; }
+        .prog-item { margin: 20px 0; font-size: 1.5rem; border-bottom: 1px dashed rgba(62,39,35,0.4); padding-bottom: 8px; display: flex; }
+        .prog-time { font-weight: bold; margin-right: 15px; min-width: 80px; }
+        @media (max-width: 768px) { h1 { font-size: 2.8rem; } .card { width: 100%; } }
     </style>
 </head>
 <body>
 
     <a href="../index.html" class="home-btn">🏠</a>
-
     <h1>L'AGENDA DU PIRATE</h1>
 
-    <div class="container">
-        <div class="card" onclick="openDay('mardi')">
-            <h2>Mardi</h2>
-            <p>Viens découvrir la soirée de fou qui t'attend !</p>
-            <span class="click-hint">📜 Ouvrir le Grimoire</span>
+    <div class="container" id="cards-container">
         </div>
-
-        <div class="card" onclick="openDay('mercredi')">
-            <h2>Mercredi</h2>
-            <p>Aujourd'hui, place à des activités de folie sur l'île.</p>
-            <span class="click-hint">📜 Ouvrir le Grimoire</span>
-        </div>
-
-        <div class="card" onclick="openDay('jeudi')">
-            <h2>Jeudi</h2>
-            <p>Venez fêter le départ des pirates pour l'ultime voyage.</p>
-            <span class="click-hint">📜 Ouvrir le Grimoire</span>
-        </div>
-
-        <div class="card" onclick="openDay('vendredi')">
-            <h2>Vendredi</h2>
-            <p>L'heure du verdict final a sonné pour l'équipage.</p>
-            <span class="click-hint">📜 Ouvrir le Grimoire</span>
-        </div>
-    </div>
 
     <div id="dayModal" class="modal">
         <div class="scroll-content">
             <span class="close-modal" onclick="closeDay()">&times;</span>
-            <h3 id="modalTitle">JOUR</h3>
-            <div id="modalBody">
-                </div>
+            <h3 id="modalTitle">TITRE</h3>
+            <div id="modalBody"></div>
         </div>
     </div>
 
     <script>
-        const programs = {
-            mardi: {
-                title: "Mardi : Soirée Pirate",
-                content: `
-                    <div class="prog-item"><span class="prog-time">18:00</span> Ouverture des Portes</div>
-                    <div class="prog-item"><span class="prog-time">20:30</span> Banquet des Flibustiers</div>
-                    <div class="prog-item"><span class="prog-time">22:00</span> Bal des Naufragés</div>
-                `
-            },
-            mercredi: {
-                title: "Mercredi : Les Épreuves",
-                content: `
-                    <div class="prog-item"><span class="prog-time">10:00</span> Grande Chasse aux Perles</div>
-                    <div class="prog-item"><span class="prog-time">14:00</span> Tournoi de la Tortue</div>
-                    <div class="prog-item"><span class="prog-time">16:30</span> Duel de Rhum (sans alcool !)</div>
-                `
-            },
-            jeudi: {
-                title: "Jeudi : L'Adieu",
-                content: `
-                    <div class="prog-item"><span class="prog-time">15:00</span> Levée de l'Ancre</div>
-                    <div class="prog-item"><span class="prog-time">19:00</span> Chants de Marins au Port</div>
-                    <div class="prog-item"><span class="prog-time">21:00</span> Illumination de la Baie</div>
-                `
-            },
-            vendredi: {
-                title: "Vendredi : Le Verdict",
-                content: `
-                    <div class="prog-item"><span class="prog-time">11:00</span> Dépouillement Secret</div>
-                    <div class="prog-item"><span class="prog-time">14:00</span> Proclamation des Vainqueurs</div>
-                    <div class="prog-item"><span class="prog-time">15:30</span> Partage du Trésor ICAM</div>
-                `
-            }
-        };
+        // Génération automatique des cartes
+        const container = document.getElementById('cards-container');
+        for (const [key, jour] of Object.entries(MON_PROGRAMME)) {
+            container.innerHTML += `
+                <div class="card" onclick="openDay('${key}')">
+                    <h2>${key}</h2>
+                    <p>${jour.description}</p>
+                    <span class="click-hint">📜 Ouvrir le Grimoire</span>
+                </div>
+            `;
+        }
 
-        function openDay(day) {
-            document.getElementById('modalTitle').innerText = programs[day].title;
-            document.getElementById('modalBody').innerHTML = programs[day].content;
+        function openDay(id) {
+            const jour = MON_PROGRAMME[id];
+            document.getElementById('modalTitle').innerText = jour.titre;
+            let html = "";
+            jour.activites.forEach(act => {
+                html += `<div class="prog-item"><span class="prog-time">${act[0]}</span> ${act[1]}</div>`;
+            });
+            document.getElementById('modalBody').innerHTML = html;
             document.getElementById('dayModal').style.display = 'flex';
         }
 
-        function closeDay() {
-            document.getElementById('dayModal').style.display = 'none';
-        }
-
-        window.onclick = function(event) {
-            if (event.target == document.getElementById('dayModal')) {
-                closeDay();
-            }
-        }
+        function closeDay() { document.getElementById('dayModal').style.display = 'none'; }
+        window.onclick = function(e) { if (e.target.id == 'dayModal') closeDay(); }
     </script>
 </body>
 </html>
