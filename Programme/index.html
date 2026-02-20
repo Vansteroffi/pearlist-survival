@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pearlist - Programme de la Semaine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Almendra+SC&family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #ffb700;
+            --dark-brown: #3e2723;
+            --cream: #fff1e0;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #0a0a0a;
+            color: var(--dark-brown);
+            font-family: "Pixelify Sans", sans-serif;
+            padding: 20px;
+        }
+
+        /* Texture bois sombre en fond pour rester dans le thème */
+        body::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: url('https://www.transparenttextures.com/patterns/dark-wood.png');
+            opacity: 0.4;
+            z-index: -1;
+        }
+
+        /* Bouton Retour (Maison) */
+        .back-btn {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            background: var(--cream);
+            border: 3px solid var(--dark-brown);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-decoration: none;
+            font-size: 24px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #000;
+            z-index: 100;
+            transition: transform 0.2s;
+        }
+
+        .back-btn:hover {
+            transform: scale(1.1);
+            background: var(--gold);
+        }
+
+        /* Parchemin / Carte du programme */
+        .scroll-container {
+            background-color: var(--cream);
+            border: 5px solid var(--dark-brown);
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 15px 0 #000;
+            position: relative;
+        }
+
+        h1 {
+            font-family: "Almendra SC", serif;
+            text-align: center;
+            color: var(--dark-brown);
+            font-size: 2.5rem;
+            margin-top: 0;
+            border-bottom: 3px double var(--dark-brown);
+            padding-bottom: 10px;
+        }
+
+        .day-section {
+            margin-bottom: 20px;
+            border-bottom: 1px dashed rgba(62, 39, 35, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .day-section:last-child {
+            border-bottom: none;
+        }
+
+        .day-title {
+            font-weight: bold;
+            color: #d32f2f; /* Rouge pirate */
+            font-size: 1.4rem;
+            display: block;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .activity {
+            display: flex;
+            justify-content: flex-start;
+            gap: 15px;
+            font-size: 1.1rem;
+            margin-bottom: 5px;
+        }
+
+        .time {
+            font-weight: bold;
+            color: var(--dark-brown);
+            min-width: 65px;
+        }
+
+        .description {
+            color: #5d4037;
+        }
+
+    </style>
+</head>
+<body>
+
+    <a href="../index.html" class="back-btn" title="Retour au menu">🏠</a>
+
+    <div class="scroll-container">
+        <h1>📜 Programme</h1>
+
+        <div class="day-section">
+            <span class="day-title">Lundi</span>
+            <div class="activity">
+                <span class="time">14:00</span>
+                <span class="description">Arrivée au port et accueil des pirates</span>
+            </div>
+        </div>
+
+        <div class="day-section">
+            <span class="day-title">Mardi</span>
+            <div class="activity">
+                <span class="time">10:30</span>
+                <span class="description">Entraînement au Grand Jeu (Runner)</span>
+            </div>
+            <div class="activity">
+                <span class="time">16:00</span>
+                <span class="description">Duel d'énigmes à la Taverne</span>
+            </div>
+        </div>
+
+        <div class="day-section">
+            <span class="day-title">Mercredi</span>
+            <div class="activity">
+                <span class="time">09:00</span>
+                <span class="description">Lancement de la Chasse au Trésor</span>
+            </div>
+        </div>
+
+        <div class="day-section">
+            <span class="day-title">Jeudi</span>
+            <div class="activity">
+                <span class="time">15:00</span>
+                <span class="description">Abordage et épreuves de rapidité</span>
+            </div>
+        </div>
+
+        <div class="day-section">
+            <span class="day-title">Vendredi</span>
+            <div class="activity">
+                <span class="time">20:30</span>
+                <span class="description">Partage du butin et grande fête</span>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
