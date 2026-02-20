@@ -140,38 +140,33 @@ class MainScene extends Phaser.Scene {
             if(this.coinEffect) this.coinEffect.play();
         }, null, this);
 
-        document.getElementById("score-display").onclick = () => {
-            const s = Math.floor(GameState.score);
-            if(s >= 50 && s <= 100 && GameState.playing) {
-                this.physics.pause(); GameState.playing = false;
-                if(this.music) this.music.pause();
-                document.getElementById("secret-modal").classList.remove("hidden");
-            }
-        };
-
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        // --- NOUVEAU SYSTÈME DE SWIPE (GLISSER) ---
+        // --- SYSTÈME HYBRIDE : SWIPE RÉACTIF + CLIC ---
         let dragStartX = 0;
+        let hasMoved = false;
+
         this.input.on("pointerdown", (p) => { 
             dragStartX = p.x; 
+            hasMoved = false; 
+        });
+
+        this.input.on("pointermove", (p) => {
+            if(!GameState.playing || !p.isDown || hasMoved) return;
+            const dragDistance = p.x - dragStartX;
+            const threshold = 25; // Sensibilité réglée (plus bas = plus réactif)
+            if (Math.abs(dragDistance) > threshold) {
+                this.changeLane(dragDistance > 0 ? 1 : -1);
+                hasMoved = true; 
+            }
         });
 
         this.input.on("pointerup", (p) => { 
             if(!GameState.playing) return;
-            const dragEndX = p.x;
-            const dragDistance = dragEndX - dragStartX;
-            const threshold = 30; // Sensibilité du glissement
-
-            if (Math.abs(dragDistance) > threshold) {
-                if (dragDistance > 0) {
-                    this.changeLane(1); // Swipe Droite
-                } else {
-                    this.changeLane(-1); // Swipe Gauche
-                }
+            if (!hasMoved) { // Si pas de mouvement, c'est un clic
+                this.changeLane((p.x < 240) ? -1 : 1);
             }
         });
-        // ------------------------------------------
 
         Bus.removeAllListeners();
         Bus.on("start", () => {
