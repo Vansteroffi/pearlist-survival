@@ -140,7 +140,6 @@ class MainScene extends Phaser.Scene {
             if(this.coinEffect) this.coinEffect.play();
         }, null, this);
 
-        // EASTER EGG CLIC SCORE (Mode Test 50-100)
         document.getElementById("score-display").onclick = () => {
             const s = Math.floor(GameState.score);
             if(s >= 50 && s <= 100 && GameState.playing) {
@@ -151,7 +150,28 @@ class MainScene extends Phaser.Scene {
         };
 
         this.cursors = this.input.keyboard.createCursorKeys();
-        this.input.on("pointerdown", (p) => { if(GameState.playing) this.changeLane((p.x < 240) ? -1 : 1); });
+
+        // --- NOUVEAU SYSTÈME DE SWIPE (GLISSER) ---
+        let dragStartX = 0;
+        this.input.on("pointerdown", (p) => { 
+            dragStartX = p.x; 
+        });
+
+        this.input.on("pointerup", (p) => { 
+            if(!GameState.playing) return;
+            const dragEndX = p.x;
+            const dragDistance = dragEndX - dragStartX;
+            const threshold = 30; // Sensibilité du glissement
+
+            if (Math.abs(dragDistance) > threshold) {
+                if (dragDistance > 0) {
+                    this.changeLane(1); // Swipe Droite
+                } else {
+                    this.changeLane(-1); // Swipe Gauche
+                }
+            }
+        });
+        // ------------------------------------------
 
         Bus.removeAllListeners();
         Bus.on("start", () => {
