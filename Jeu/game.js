@@ -59,13 +59,11 @@ async function loadLeaderboard() {
     const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
     const snap = await getDocs(q);
     let html = ""; let rank = 1;
-    
     snap.forEach((d) => {
         const data = d.data();
         html += `<li><span>#${rank} ${data.name}</span> <b>${Math.floor(data.score || 0)}</b></li>`;
         rank++;
     });
-
     document.getElementById("live-highscore-list").innerHTML = html;
     document.getElementById("modal-highscore-list").innerHTML = html;
 }
@@ -74,26 +72,16 @@ async function saveScoreIfBest(newScore) {
     if (!currentUser) return;
     const userRef = doc(db, "leaderboard", currentUser.uid);
     const snap = await getDoc(userRef);
-    
     const roundedScore = Math.floor(newScore);
     const timeSpent = Math.floor((Date.now() - gameStartTime) / 1000); 
-    
     let bestScore = roundedScore;
     let totalTime = timeSpent;
-
     if (snap.exists()) {
         const data = snap.data();
         bestScore = Math.max(data.score || 0, roundedScore);
         totalTime = (data.totalTime || 0) + timeSpent; 
     }
-
-    await setDoc(userRef, { 
-        name: currentUser.displayName, 
-        score: bestScore, 
-        totalTime: totalTime,
-        date: Date.now() 
-    }, { merge: true });
-    
+    await setDoc(userRef, { name: currentUser.displayName, score: bestScore, totalTime: totalTime, date: Date.now() }, { merge: true });
     loadLeaderboard();
 }
 
@@ -154,29 +142,13 @@ class MainScene extends Phaser.Scene {
         } catch(e) {}
 
         this.physics.add.overlap(this.player, this.obstacles, () => this.gameOver(), null, this);
-        
-        // --- GESTION DES PERLES ET DU SECRET ---
         this.physics.add.overlap(this.player, this.pearls, (pl, p) => {
             this.pearlEmitter.emitParticleAt(p.x, p.y, 15);
             p.destroy(); GameState.pearls++; GameState.score += 25;
             if(this.coinEffect) this.coinEffect.play();
-            
-            // Déclenchement du secret (paliers 50 et 100)
-            if(GameState.pearls === 50 || GameState.pearls === 100) {
-                this.physics.pause();
-                GameState.playing = false;
-                if(this.music) this.music.pause();
-                
-                // On change le texte du secret selon le palier
-                const keyEl = document.getElementById("decryption-key");
-                keyEl.innerText = GameState.pearls === 50 ? "SECRET_CAP_50" : "SECRET_MASTER_100";
-                
-                document.getElementById("secret-modal").classList.remove("hidden");
-            }
         }, null, this);
 
         this.cursors = this.input.keyboard.createCursorKeys();
-
         let dragStartX = 0; let hasMoved = false;
         this.input.on("pointerdown", (p) => { dragStartX = p.x; hasMoved = false; });
         this.input.on("pointermove", (p) => {
@@ -224,6 +196,15 @@ class MainScene extends Phaser.Scene {
         GameState.score += (move * 0.01); 
         document.getElementById("score-display").innerText = Math.floor(GameState.score);
         document.getElementById("pearls-display").innerText = GameState.pearls;
+
+        // --- GESTION DE L'APPARITION DU BOUTON SECRET ---
+        const btnSecret = document.getElementById("btn-secret-trigger");
+        if (GameState.pearls >= 50 && GameState.pearls <= 100) {
+            btnSecret.classList.remove("hidden");
+        } else {
+            btnSecret.classList.add("hidden");
+        }
+
         this.obstacles.getChildren().forEach(o => { if(o.y > 800) o.destroy(); });
     }
 
@@ -269,23 +250,34 @@ function setupDomHandlers() {
     document.getElementById("btn-play").onclick = () => Bus.emit("start");
     document.getElementById("btn-restart").onclick = () => Bus.emit("restart");
     
+    // ACTION DU BOUTON SECRET
+    document.getElementById("btn-secret-trigger").onclick = () => {
+        if (window.gameInstance) {
+            const scene = window.gameInstance.scene.getScene("MainScene");
+            scene.physics.pause(); // On fige le jeu pour lire
+            GameState.playing = false;
+            if(scene.music) scene.music.pause();
+            
+            document.getElementById("decryption-key").innerText = "CAPITAINE_ICAM_2026";
+            document.getElementById("secret-modal").classList.remove("hidden");
+        }
+    };
+
+    // BOUTON REPRENDRE DU SECRET
+    document.getElementById("btn-close-secret").onclick = () => {
+        document.getElementById("secret-modal").classList.add("hidden");
+        GameState.playing = true;
+        if (window.gameInstance) {
+            const scene = window.gameInstance.scene.getScene("MainScene");
+            scene.physics.resume();
+            if(scene.music && !isMuted) scene.music.resume();
+        }
+    };
+
     document.getElementById("btn-settings").onclick = () => {
         isMuted = !isMuted;
         if(window.gameInstance) window.gameInstance.sound.mute = isMuted;
         document.getElementById("btn-settings").innerText = isMuted ? "🔇" : "🔊";
-    };
-
-    // --- FIX BOUTON REPRENDRE (SECRET) ---
-    document.getElementById("btn-close-secret").onclick = () => {
-        document.getElementById("secret-modal").classList.add("hidden");
-        GameState.playing = true;
-        
-        // Relancer la physique de la scène active
-        if (window.gameInstance) {
-            const mainScene = window.gameInstance.scene.getScene("MainScene");
-            mainScene.physics.resume();
-            if(mainScene.music && !isMuted) mainScene.music.resume();
-        }
     };
 
     document.getElementById("btn-show-leaderboard").onclick = () => {
