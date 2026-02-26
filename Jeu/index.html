@@ -4,18 +4,23 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Pearlist - L'Odyssée ICAM</title>
-  <link rel="icon" type="image/png" href="/favicon.png" />
+  
   <link href="https://fonts.googleapis.com/css2?family=Almendra+SC&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
+  
   <style>
+    /* Global & Police */
     body, h1, h2, h3, button, .brand__title, .hud__label, .hud__value { 
       font-family: 'Almendra SC', serif !important; 
     }
-    
+
     body {
-      background: #0a0a0a;
-      position: relative;
+      background: #1a1510;
+      margin: 0;
+      overflow: hidden;
     }
+
+    /* Texture bois éclaircie en fond pour tout le site */
     body::before {
       content: "";
       position: fixed;
@@ -25,6 +30,23 @@
       z-index: -1;
     }
 
+    .hidden { display: none !important; }
+    
+    /* Overlays (Menus) */
+    .overlay {
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%;
+      background: rgba(0,0,0,0.85); 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    /* Bouton Retour Accueil */
     .home-btn { 
       position: fixed; top: 15px; left: 15px; width: 45px; height: 45px; 
       background: #fff1e0; border-radius: 50%; border: 3px solid #3e2723; 
@@ -32,90 +54,101 @@
       text-decoration: none; font-size: 22px; z-index: 5000; box-shadow: 0 4px 0 #000;
     }
 
-    .hidden { display: none !important; }
-    
-    .overlay {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center;
-      z-index: 1000;
-    }
-
-    /* Style du HUD et du bouton invisible */
-    .hud {
-      position: absolute;
-      top: 20px;
-      left: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 100;
-    }
-
-    /* Le bouton Easter Egg : invisible mais cliquable */
-    #btn-secret-trigger {
-      background: transparent;
-      border: none;
-      width: 100%;
-      height: 40px;
-      cursor: default; /* On ne change même pas le curseur pour que ce soit indétectable */
-      outline: none;
-      -webkit-tap-highlight-color: transparent; /* Pas de flash bleu sur mobile */
-    }
-
-    #leaderboard-modal .panel--paper {
-      max-height: 92vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      padding: 20px;
-      width: 90%;
-      max-width: 400px;
-    }
-
-    .highscore-list {
-      overflow-y: auto;
-      max-height: 250px;
-      margin: 10px 0;
-      padding-right: 5px;
-      list-style: none;
-    }
-
+    /* Bouton Son */
     .settings-btn { 
       position: absolute; top: 15px; right: 15px; z-index: 1001; 
       cursor: pointer; font-size: 22px; background: rgba(0,0,0,0.6); 
       border-radius: 50%; width: 45px; height: 45px; 
       display: flex; align-items: center; justify-content: center; 
       border: 2px solid #ffb700; color: #ffb700; 
+      transition: all 0.2s;
+    }
+    .settings-btn:hover { transform: scale(1.1); background: #ffb700; color: #3e2723; }
+
+    /* HUD : Correction du bug d'alignement */
+    .hud {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 500;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none; /* Laisse passer le clic vers le jeu sauf sur les enfants */
+    }
+
+    .hud__pill {
+      pointer-events: auto;
+    }
+
+    /* Easter Egg : Le score est cliquable mais on ne voit pas de bouton */
+    #score-display { 
+      cursor: default; 
+      transition: color 0.3s;
+      -webkit-tap-highlight-color: transparent; 
+    }
+
+    /* Cadre Doré Trésors */
+    .prize-image-gold { 
+      width: 100%; 
+      margin: 15px 0; 
+      border: 5px solid #ffb700;
+      border-radius: 20px;
+      box-shadow: 0 0 20px rgba(255, 183, 0, 0.6);
+      display: block;
+    }
+
+    /* Style Parchemin pour le Secret (Le modal que tu ouvres entre 50-100) */
+    .secret-panel { 
+      background: #e3d5b8 !important; /* Couleur papier vieilli */
+      color: #2c1e1a !important; 
+      border: 8px double #8b5a2b !important; 
+      padding: 40px 25px;
+      text-align: center;
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+      max-width: 320px;
+      position: relative;
+    }
+
+    #decryption-key { 
+      font-family: 'Almendra SC', serif;
+      font-size: 2.2rem; 
+      color: #d32f2f !important; /* Rouge sang pour le code */
+      letter-spacing: 3px; 
+      text-shadow: 1px 1px 0px rgba(0,0,0,0.2);
+      margin: 20px 0;
+    }
+
+    .btn-gold { 
+      background: #ffb700 !important; 
+      color: #3e2723 !important; 
+      font-weight: bold; 
+      border: 2px solid #5d4037; 
+      cursor: pointer;
     }
     
-    .btn-gold { background: #ffb700 !important; color: #3e2723 !important; font-weight: bold; }
-
-    #btn-logout {
-      display: block;
-      margin: 15px auto 0 auto;
-      font-size: 1rem !important;
-      font-weight: 900 !important;
-      color: #ffb700 !important;
-      background: rgba(0,0,0,0.5);
-      border: 2px solid #ffb700;
-      padding: 8px 15px;
-      text-transform: uppercase;
+    .panel--paper { text-align: center; }
+    #error-msg { color: #ff5252; background: rgba(0,0,0,0.6); padding: 10px; border-radius: 5px; margin: 10px 0; font-size: 0.9rem; border: 1px solid #ff5252; }
+    
+    .highscore-list {
+      list-style: none;
+      padding: 0;
+      margin: 15px 0;
+      max-height: 200px;
+      overflow-y: auto;
     }
-
-    /* Style Parchemin pour le Secret */
-    #secret-modal .panel--paper {
-      background: #e3d5b8 !important;
-      color: #2c1e1a !important;
-      border: 8px double #8b5a2b !important;
-      padding: 40px 20px;
-      box-shadow: 0 0 50px rgba(0,0,0,0.5);
+    .highscore-list li {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 10px;
+      border-bottom: 1px dashed rgba(62, 39, 35, 0.3);
     }
-    #decryption-key { color: #d32f2f !important; font-size: 2.5rem; }
   </style>
 </head>
+
 <body>
   <a href="../index.html" class="home-btn">🏠</a>
-  
+
   <div class="app">
     <header class="topbar">
       <div class="brand">
@@ -124,14 +157,25 @@
     </header>
 
     <main class="layout">
+      <aside class="aside-left">
+        <div class="logo-container"></div>
+      </aside>
+
       <section class="game-wrap">
         <div id="game-container" class="game-container">
+
           <div id="btn-settings" class="settings-btn">🔊</div>
-          
+
           <div id="hud" class="hud hidden">
-            <div class="hud__pill"><div class="hud__label">Milles</div><div class="hud__value" id="score-display">0</div></div>
-            <div class="hud__pill"><div class="hud__label">Perles</div><div class="hud__value" id="pearls-display">0</div></div>
-            <button id="btn-secret-trigger" class="hidden"></button>
+            <div class="hud__pill">
+              <div class="hud__label">Milles</div>
+              <div class="hud__value" id="score-display">0</div>
+            </div>
+            <div class="hud__pill">
+              <div class="hud__label">Perles</div>
+              <div class="hud__value" id="pearls-display">0</div>
+            </div>
+            <button id="btn-secret-trigger" class="hidden" style="position:absolute; top:0; left:0; width:100%; height:100%; background:transparent; border:none; cursor:default; outline:none; -webkit-tap-highlight-color:transparent;"></button>
           </div>
 
           <div id="main-menu" class="overlay">
@@ -140,8 +184,8 @@
               <p id="auth-status">Embarque avec ton mail ICAM.</p>
               <div id="auth-section">
                  <button id="btn-login" class="btn btn-primary btn-lg">🔑 CONNEXION GOOGLE</button>
-                 <div id="error-msg" class="hidden" style="color:red; margin-top:10px;"></div>
-                 <button id="btn-logout" class="btn hidden">CHANGER DE COMPTE</button>
+                 <div id="error-msg" class="hidden"></div>
+                 <button id="btn-logout" class="btn hidden" style="margin-top: 15px; font-weight: bold; color: #ffb700;">CHANGER DE COMPTE</button>
               </div>
               <div id="game-controls" class="hidden">
                 <button id="btn-play" class="btn btn-primary btn-lg">PRENDRE LA MER</button>
@@ -150,46 +194,58 @@
             </div>
           </div>
 
-          <div id="leaderboard-modal" class="overlay hidden">
-            <div class="panel panel--paper">
-              <h2>🏆 CLASSEMENT</h2>
-              <ul id="modal-highscore-list" class="highscore-list"></ul>
-              <button id="btn-close-modal" class="btn btn-primary" style="width: 100%;">RETOUR</button>
+          <div id="secret-modal" class="overlay hidden" style="z-index: 3000;">
+            <div class="panel secret-panel">
+              <h2 style="margin:0;">📜 MESSAGE CODÉ</h2>
+              <p style="margin: 15px 0; font-style: italic;">Félicitations Capitaine. Tu as déniché le secret de la Voile Rouge :</p>
+              <h1 id="decryption-key">VOILE_ROUGE_2026</h1>
+              <button id="btn-close-secret" class="btn btn-gold" style="width: 100%; margin-top:10px;">REPRENDRE LA BARRE</button>
+            </div>
+          </div>
+
+          <div id="leaderboard-modal" class="overlay hidden" style="z-index: 2000;">
+            <div class="panel panel--paper" style="width: 350px; position: relative;">
+              <button id="close-modal-x" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 32px; cursor: pointer;">&times;</button>
+              
+              <div id="view-rankings">
+                <h2>🏆 TOP MARINS</h2>
+                <ul id="modal-highscore-list" class="highscore-list"></ul>
+                <button id="btn-show-prizes" class="btn btn-gold" style="width: 100%; margin-bottom: 10px;">🎁 VOIR LES TRÉSORS</button>
+                <button id="btn-close-modal" class="btn btn-primary" style="width: 100%;">RETOUR</button>
+              </div>
+
+              <div id="view-prizes" class="hidden">
+                <h2>🎁 BUTIN À GAGNER</h2>
+                <img src="lots.png" class="prize-image-gold" alt="Lots">
+                <button id="btn-back-to-rank" class="btn btn-primary" style="width: 100%;">RETOUR</button>
+              </div>
             </div>
           </div>
 
           <div id="game-over" class="overlay hidden">
             <div class="panel panel--paper">
               <h2 style="color: #d32f2f;">NAUFRAGE !</h2>
+              <p>Distance parcourue :</p>
               <h1 id="final-score" style="font-size: 3.5rem;">0</h1>
               <button id="btn-restart" class="btn btn-primary btn-lg" style="width:100%">REESSAYER</button>
               <button id="btn-show-leaderboard" class="btn" style="margin-top:10px; width:100%">CLASSEMENT</button>
             </div>
           </div>
 
-          <div id="secret-modal" class="overlay hidden" style="z-index: 9999;">
-             <div class="panel panel--paper">
-                <h2>📜 PARCHEMIN SECRET</h2>
-                <p>Tu as découvert l'entrée cachée...</p>
-                <h1 id="decryption-key">VOILE_ROUGE</h1>
-                <button id="btn-close-secret" class="btn btn-gold" style="width:100%">REPRENDRE LA NAVIGATION</button>
-             </div>
-          </div>
-
           <div id="howto" class="overlay hidden">
             <div class="panel panel--paper">
-              <h2>Manœuvres</h2>
-              <p>Swipe ou clique pour changer de file !</p>
-              <button id="btn-back-menu" class="btn btn-primary">RETOUR</button>
+              <h2>MANŒUVRES</h2>
+              <p>Swipe ou utilise les flèches pour changer de file et éviter les récifs !</p>
+              <button id="btn-back-menu" class="btn btn-primary">COMPRIS !</button>
             </div>
           </div>
 
         </div>
       </section>
-      
+
       <aside class="sidebar">
         <div class="card card--paper">
-          <h3>🏆 Top Marins</h3>
+          <h3>⚓ LIVE TOP</h3>
           <ul id="live-highscore-list" class="highscore-list"></ul>
         </div>
       </aside>
