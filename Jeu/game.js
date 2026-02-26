@@ -209,6 +209,16 @@ class MainScene extends Phaser.Scene {
         });
         Bus.on("restart", () => { if(this.music) this.music.stop(); this.scene.restart(); });
         
+        // ACTION DU BOUTON SECRET (Pause le jeu et affiche le modal)
+        document.getElementById("btn-secret-trigger").onclick = () => {
+            this.physics.pause();
+            GameState.playing = false;
+            if(this.music) this.music.pause();
+            
+            document.getElementById("secret-modal").classList.remove("hidden");
+        };
+
+        // BOUTON REPRENDRE DU SECRET (Relance le jeu)
         document.getElementById("btn-close-secret").onclick = () => {
             document.getElementById("secret-modal").classList.add("hidden");
             this.physics.resume(); GameState.playing = true;
@@ -239,6 +249,16 @@ class MainScene extends Phaser.Scene {
         GameState.score += (move * 0.01); 
         document.getElementById("score-display").innerText = Math.floor(GameState.score);
         document.getElementById("pearls-display").innerText = GameState.pearls;
+        
+        // GESTION APPARITION/DISPARITION DU BOUTON SECRET (Milles entre 50 et 100)
+        const currentMilles = Math.floor(GameState.score);
+        const btnSecret = document.getElementById("btn-secret-trigger");
+        if (currentMilles >= 50 && currentMilles <= 100) {
+            btnSecret.classList.remove("hidden");
+        } else {
+            btnSecret.classList.add("hidden");
+        }
+
         this.obstacles.getChildren().forEach(o => { if(o.y > 800) o.destroy(); });
     }
 
