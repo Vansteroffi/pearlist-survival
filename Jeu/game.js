@@ -21,6 +21,7 @@ provider.setCustomParameters({ prompt: 'select_account' });
 const ALLOWED_DOMAINS = ["2026.icam.fr", "2027.icam.fr", "2028.icam.fr", "2029.icam.fr", "2030.icam.fr", "2031.icam.fr", "icam.fr"];
 let currentUser = null;
 let isMuted = false;
+let gameStartTime = 0;
 const Bus = new Phaser.Events.EventEmitter();
 const GameState = { playing: false, score: 0, pearls: 0 };
 
@@ -37,7 +38,7 @@ onAuthStateChanged(auth, (user) => {
             authStatus.innerHTML = `⚓ Bienvenue Capitaine <b>${user.displayName.split(' ')[0]}</b> !`;
             document.getElementById("auth-section").classList.add("hidden");
             document.getElementById("game-controls").classList.remove("hidden");
-            loadLeaderboard();
+            loadLeaderboard("score");
         } else {
             authStatus.innerHTML = "🚫 Accès Refusé";
             errorEl.innerHTML = `Utilise ton mail ICAM (actuel: ${user.email})`;
@@ -54,15 +55,31 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-async function loadLeaderboard() {
-    const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
+async function loadLeaderboard(criterion = "score") {
+    const q = query(collection(db, "leaderboard"), orderBy(criterion, "desc"), limit(10));
     const snap = await getDocs(q);
     let html = ""; let rank = 1;
+    
     snap.forEach((d) => {
-        html += `<li><span>#${rank} ${d.data().name}</span> <b>${Math.floor(d.data().score)}</b></li>`;
+        const data = d.data();
+        let displayVal = "";
+        if (criterion === "score") {
+            displayVal = Math.floor(data.score || 0);
+        } else {
+            const mins = Math.floor((data.totalTime || 0) / 60);
+            const secs = (data.totalTime || 0) % 60;
+            displayVal = `${mins}m ${secs}s`;
+        }
+        html += `<li><span>#${rank} ${data.name}</span> <b>${displayVal}</b></li>`;
         rank++;
     });
-    document.getElementById("live-highscore-list").innerHTML = html;
+
+    if (criterion === "score") {
+        document.getElementById("live-highscore-list").innerHTML = html;
+        document.getElementById("lb-title").innerText = "🏆 TOP MILLES";
+    } else {
+        document.getElementById("lb-title").innerText = "⏳ TEMPS EN MER";
+    }
     document.getElementById("modal-highscore-list").innerHTML = html;
 }
 
@@ -70,11 +87,27 @@ async function saveScoreIfBest(newScore) {
     if (!currentUser) return;
     const userRef = doc(db, "leaderboard", currentUser.uid);
     const snap = await getDoc(userRef);
+    
     const roundedScore = Math.floor(newScore);
-    if (!snap.exists() || roundedScore > (snap.data().score || 0)) {
-        await setDoc(userRef, { name: currentUser.displayName, score: roundedScore, date: Date.now() }, { merge: true });
-        loadLeaderboard();
+    const timeSpent = Math.floor((Date.now() - gameStartTime) / 1000); // Temps en secondes
+    
+    let bestScore = roundedScore;
+    let totalTime = timeSpent;
+
+    if (snap.exists()) {
+        const data = snap.data();
+        bestScore = Math.max(data.score || 0, roundedScore);
+        totalTime = (data.totalTime || 0) + timeSpent; // On cumule le temps
     }
+
+    await setDoc(userRef, { 
+        name: currentUser.displayName, 
+        score: bestScore, 
+        totalTime: totalTime,
+        date: Date.now() 
+    }, { merge: true });
+    
+    loadLeaderboard("score");
 }
 
 class BootScene extends Phaser.Scene {
@@ -154,7 +187,7 @@ class MainScene extends Phaser.Scene {
         this.input.on("pointermove", (p) => {
             if(!GameState.playing || !p.isDown || hasMoved) return;
             const dragDistance = p.x - dragStartX;
-            const threshold = 25; // Sensibilité réglée (plus bas = plus réactif)
+            const threshold = 25; 
             if (Math.abs(dragDistance) > threshold) {
                 this.changeLane(dragDistance > 0 ? 1 : -1);
                 hasMoved = true; 
@@ -163,13 +196,14 @@ class MainScene extends Phaser.Scene {
 
         this.input.on("pointerup", (p) => { 
             if(!GameState.playing) return;
-            if (!hasMoved) { // Si pas de mouvement, c'est un clic
+            if (!hasMoved) {
                 this.changeLane((p.x < 240) ? -1 : 1);
             }
         });
 
         Bus.removeAllListeners();
         Bus.on("start", () => {
+            gameStartTime = Date.now();
             GameState.playing = true; this.physics.resume(); showMenuState("play");
             if(this.sea) this.sea.stop(); if(this.music) this.music.play();
         });
@@ -256,11 +290,23 @@ function setupDomHandlers() {
         document.getElementById("btn-settings").innerText = isMuted ? "🔇" : "🔊";
     };
 
+    // Gestion des onglets du classement
+    document.getElementById("tab-score").onclick = () => {
+        document.getElementById("tab-score").classList.add("active");
+        document.getElementById("tab-time").classList.remove("active");
+        loadLeaderboard("score");
+    };
+    document.getElementById("tab-time").onclick = () => {
+        document.getElementById("tab-time").classList.add("active");
+        document.getElementById("tab-score").classList.remove("active");
+        loadLeaderboard("totalTime");
+    };
+
     document.getElementById("btn-show-leaderboard").onclick = () => {
         document.getElementById("leaderboard-modal").classList.remove("hidden");
         document.getElementById("view-rankings").classList.remove("hidden");
         document.getElementById("view-prizes").classList.add("hidden");
-        loadLeaderboard();
+        loadLeaderboard("score"); // Par défaut on affiche le score
     };
     document.getElementById("btn-show-prizes").onclick = () => {
         document.getElementById("view-rankings").classList.add("hidden");

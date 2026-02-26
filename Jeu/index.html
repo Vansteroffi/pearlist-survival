@@ -1,11 +1,10 @@
 <!doctype html>
 <html lang="fr">
 <head>
-  <link rel="icon" type="image/png" href="/favicon.png" />
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Pearlist - L'Odyssée ICAM</title>
-  <link rel="icon" type="image/png" href="favicon.png" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
   <link href="https://fonts.googleapis.com/css2?family=Almendra+SC&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <style>
@@ -42,7 +41,7 @@
 
     /* FIX MOBILE : Empêcher le classement de déborder */
     #leaderboard-modal .panel--paper {
-      max-height: 90vh;
+      max-height: 92vh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
@@ -51,10 +50,34 @@
       max-width: 400px;
     }
 
+    /* Style pour les onglets de tri */
+    .tab-container {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 15px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 8px;
+      font-size: 0.75rem;
+      background: #5d4037;
+      color: white;
+      border: 2px solid #3e2723;
+      cursor: pointer;
+      font-family: 'Almendra SC', serif;
+    }
+
+    .tab-btn.active {
+      background: #ffb700;
+      color: #3e2723;
+      font-weight: bold;
+    }
+
     .highscore-list {
       overflow-y: auto;
-      max-height: 300px;
-      margin: 15px 0;
+      max-height: 250px;
+      margin: 10px 0;
       padding-right: 5px;
       list-style: none;
     }
@@ -125,7 +148,13 @@
             <div class="panel panel--paper" style="position: relative;">
               <button id="close-modal-x" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 32px; cursor: pointer;">&times;</button>
               <div id="view-rankings">
-                <h2>🏆 LES MEILLEURS MARINS</h2>
+                <h2 id="lb-title">🏆 LES MEILLEURS MARINS</h2>
+                
+                <div class="tab-container">
+                  <button id="tab-score" class="tab-btn active">🚩 MILLES</button>
+                  <button id="tab-time" class="tab-btn">⏳ TEMPS</button>
+                </div>
+
                 <ul id="modal-highscore-list" class="highscore-list"></ul>
                 <button id="btn-show-prizes" class="btn btn-gold" style="width: 100%; margin-bottom: 10px;">🎁 VOIR LES TRÉSORS</button>
                 <button id="btn-close-modal" class="btn btn-primary" style="width: 100%;">RETOUR</button>
