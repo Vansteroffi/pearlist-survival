@@ -38,7 +38,7 @@ onAuthStateChanged(auth, (user) => {
             authStatus.innerHTML = `⚓ Bienvenue Capitaine <b>${user.displayName.split(' ')[0]}</b> !`;
             document.getElementById("auth-section").classList.add("hidden");
             document.getElementById("game-controls").classList.remove("hidden");
-            loadLeaderboard();
+            loadLeaderboard("score");
         } else {
             authStatus.innerHTML = "🚫 Accès Refusé";
             errorEl.innerHTML = `Utilise ton mail ICAM (actuel: ${user.email})`;
@@ -55,16 +55,31 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-async function loadLeaderboard() {
-    const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
+async function loadLeaderboard(criterion = "score") {
+    const q = query(collection(db, "leaderboard"), orderBy(criterion, "desc"), limit(10));
     const snap = await getDocs(q);
     let html = ""; let rank = 1;
+    
     snap.forEach((d) => {
         const data = d.data();
-        html += `<li><span>#${rank} ${data.name}</span> <b>${Math.floor(data.score || 0)}</b></li>`;
+        let displayVal = "";
+        if (criterion === "score") {
+            displayVal = Math.floor(data.score || 0);
+        } else {
+            const mins = Math.floor((data.totalTime || 0) / 60);
+            const secs = (data.totalTime || 0) % 60;
+            displayVal = `${mins}m ${secs}s`;
+        }
+        html += `<li><span>#${rank} ${data.name}</span> <b>${displayVal}</b></li>`;
         rank++;
     });
-    document.getElementById("live-highscore-list").innerHTML = html;
+
+    if (criterion === "score") {
+        document.getElementById("live-highscore-list").innerHTML = html;
+        document.getElementById("lb-title").innerText = "🏆 TOP MILLES";
+    } else {
+        document.getElementById("lb-title").innerText = "⏳ TEMPS EN MER";
+    }
     document.getElementById("modal-highscore-list").innerHTML = html;
 }
 
@@ -72,17 +87,27 @@ async function saveScoreIfBest(newScore) {
     if (!currentUser) return;
     const userRef = doc(db, "leaderboard", currentUser.uid);
     const snap = await getDoc(userRef);
+    
     const roundedScore = Math.floor(newScore);
-    const timeSpent = Math.floor((Date.now() - gameStartTime) / 1000); 
+    const timeSpent = Math.floor((Date.now() - gameStartTime) / 1000); // Temps en secondes
+    
     let bestScore = roundedScore;
     let totalTime = timeSpent;
+
     if (snap.exists()) {
         const data = snap.data();
         bestScore = Math.max(data.score || 0, roundedScore);
-        totalTime = (data.totalTime || 0) + timeSpent; 
+        totalTime = (data.totalTime || 0) + timeSpent; // On cumule le temps
     }
-    await setDoc(userRef, { name: currentUser.displayName, score: bestScore, totalTime: totalTime, date: Date.now() }, { merge: true });
-    loadLeaderboard();
+
+    await setDoc(userRef, { 
+        name: currentUser.displayName, 
+        score: bestScore, 
+        totalTime: totalTime,
+        date: Date.now() 
+    }, { merge: true });
+    
+    loadLeaderboard("score");
 }
 
 class BootScene extends Phaser.Scene {
@@ -149,19 +174,31 @@ class MainScene extends Phaser.Scene {
         }, null, this);
 
         this.cursors = this.input.keyboard.createCursorKeys();
-        let dragStartX = 0; let hasMoved = false;
-        this.input.on("pointerdown", (p) => { dragStartX = p.x; hasMoved = false; });
+
+        // --- SYSTÈME HYBRIDE : SWIPE RÉACTIF + CLIC ---
+        let dragStartX = 0;
+        let hasMoved = false;
+
+        this.input.on("pointerdown", (p) => { 
+            dragStartX = p.x; 
+            hasMoved = false; 
+        });
+
         this.input.on("pointermove", (p) => {
             if(!GameState.playing || !p.isDown || hasMoved) return;
             const dragDistance = p.x - dragStartX;
-            if (Math.abs(dragDistance) > 25) {
+            const threshold = 25; 
+            if (Math.abs(dragDistance) > threshold) {
                 this.changeLane(dragDistance > 0 ? 1 : -1);
                 hasMoved = true; 
             }
         });
+
         this.input.on("pointerup", (p) => { 
             if(!GameState.playing) return;
-            if (!hasMoved) this.changeLane((p.x < 240) ? -1 : 1);
+            if (!hasMoved) {
+                this.changeLane((p.x < 240) ? -1 : 1);
+            }
         });
 
         Bus.removeAllListeners();
@@ -172,6 +209,12 @@ class MainScene extends Phaser.Scene {
         });
         Bus.on("restart", () => { if(this.music) this.music.stop(); this.scene.restart(); });
         
+        document.getElementById("btn-close-secret").onclick = () => {
+            document.getElementById("secret-modal").classList.add("hidden");
+            this.physics.resume(); GameState.playing = true;
+            if(this.music && !isMuted) this.music.resume();
+        };
+
         this.physics.pause(); showMenuState("menu");
     }
 
@@ -196,15 +239,6 @@ class MainScene extends Phaser.Scene {
         GameState.score += (move * 0.01); 
         document.getElementById("score-display").innerText = Math.floor(GameState.score);
         document.getElementById("pearls-display").innerText = GameState.pearls;
-
-        // --- GESTION DE L'APPARITION DU BOUTON SECRET ---
-        const btnSecret = document.getElementById("btn-secret-trigger");
-        if (GameState.pearls >= 50 && GameState.pearls <= 100) {
-            btnSecret.classList.remove("hidden");
-        } else {
-            btnSecret.classList.add("hidden");
-        }
-
         this.obstacles.getChildren().forEach(o => { if(o.y > 800) o.destroy(); });
     }
 
@@ -250,41 +284,29 @@ function setupDomHandlers() {
     document.getElementById("btn-play").onclick = () => Bus.emit("start");
     document.getElementById("btn-restart").onclick = () => Bus.emit("restart");
     
-    // ACTION DU BOUTON SECRET
-    document.getElementById("btn-secret-trigger").onclick = () => {
-        if (window.gameInstance) {
-            const scene = window.gameInstance.scene.getScene("MainScene");
-            scene.physics.pause(); // On fige le jeu pour lire
-            GameState.playing = false;
-            if(scene.music) scene.music.pause();
-            
-            document.getElementById("decryption-key").innerText = "CAPITAINE_ICAM_2026";
-            document.getElementById("secret-modal").classList.remove("hidden");
-        }
-    };
-
-    // BOUTON REPRENDRE DU SECRET
-    document.getElementById("btn-close-secret").onclick = () => {
-        document.getElementById("secret-modal").classList.add("hidden");
-        GameState.playing = true;
-        if (window.gameInstance) {
-            const scene = window.gameInstance.scene.getScene("MainScene");
-            scene.physics.resume();
-            if(scene.music && !isMuted) scene.music.resume();
-        }
-    };
-
     document.getElementById("btn-settings").onclick = () => {
         isMuted = !isMuted;
         if(window.gameInstance) window.gameInstance.sound.mute = isMuted;
         document.getElementById("btn-settings").innerText = isMuted ? "🔇" : "🔊";
     };
 
+    // Gestion des onglets du classement
+    document.getElementById("tab-score").onclick = () => {
+        document.getElementById("tab-score").classList.add("active");
+        document.getElementById("tab-time").classList.remove("active");
+        loadLeaderboard("score");
+    };
+    document.getElementById("tab-time").onclick = () => {
+        document.getElementById("tab-time").classList.add("active");
+        document.getElementById("tab-score").classList.remove("active");
+        loadLeaderboard("totalTime");
+    };
+
     document.getElementById("btn-show-leaderboard").onclick = () => {
         document.getElementById("leaderboard-modal").classList.remove("hidden");
         document.getElementById("view-rankings").classList.remove("hidden");
         document.getElementById("view-prizes").classList.add("hidden");
-        loadLeaderboard(); 
+        loadLeaderboard("score"); // Par défaut on affiche le score
     };
     document.getElementById("btn-show-prizes").onclick = () => {
         document.getElementById("view-rankings").classList.add("hidden");
