@@ -3,24 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>La Grande Régate - ICAM</title>
-  <link rel="icon" type="image/png" href="favicon.png" />
+  <title>Pearlist - L'Odyssée ICAM</title>
+  <link rel="icon" type="image/png" href="/favicon.png" />
   <link href="https://fonts.googleapis.com/css2?family=Almendra+SC&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <style>
-    /* FOND EN BOIS */
     body, h1, h2, h3, button, .brand__title, .hud__label, .hud__value { 
       font-family: 'Almendra SC', serif !important; 
     }
     
     body {
-      margin: 0;
-      height: 100vh;
       background: #0a0a0a;
       position: relative;
-      overflow: hidden;
     }
-
     body::before {
       content: "";
       position: fixed;
@@ -30,7 +25,6 @@
       z-index: -1;
     }
 
-    /* Bouton Home */
     .home-btn { 
       position: fixed; top: 15px; left: 15px; width: 45px; height: 45px; 
       background: #fff1e0; border-radius: 50%; border: 3px solid #3e2723; 
@@ -39,51 +33,53 @@
     }
 
     .hidden { display: none !important; }
-
-    /* Layout 3 colonnes */
-    .layout {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      padding: 20px;
-      gap: 20px;
-    }
-
-    .aside-left { flex: 0 0 150px; }
-    .game-wrap { flex: 1; display: flex; justify-content: center; }
-    .sidebar { flex: 0 0 300px; }
-
-    /* HUD Fix : Doit être par-dessus le jeu sans décaler le reste */
-    .hud {
-      position: absolute; top: 20px; left: 20px; z-index: 500;
-      display: flex; flex-direction: column; gap: 8px;
-    }
-    .hud__pill { 
-      position: relative; 
-      background: rgba(0,0,0,0.6); 
-      padding: 5px 15px; 
-      border: 2px solid #ffb700; 
-      border-radius: 10px; 
-    }
-
-    /* ZONE INVISIBLE DE L'EASTER EGG (Sur le score) */
-    #btn-secret-trigger {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      background: transparent;
-      border: none;
-      cursor: default;
-      outline: none;
-      z-index: 10;
-      -webkit-tap-highlight-color: transparent;
-    }
-
     .overlay {
-      position: absolute; inset: 0;
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center;
       z-index: 1000;
+    }
+
+    /* FIX MOBILE : Empêcher le classement de déborder */
+    #leaderboard-modal .panel--paper {
+      max-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 20px;
+      width: 90%;
+      max-width: 400px;
+    }
+
+    /* Style pour les onglets de tri */
+    .tab-container {
+      display: flex;
+      gap: 5px;
+      margin-bottom: 15px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 8px;
+      font-size: 0.75rem;
+      background: #5d4037;
+      color: white;
+      border: 2px solid #3e2723;
+      cursor: pointer;
+      font-family: 'Almendra SC', serif;
+    }
+
+    .tab-btn.active {
+      background: #ffb700;
+      color: #3e2723;
+      font-weight: bold;
+    }
+
+    .highscore-list {
+      overflow-y: auto;
+      max-height: 250px;
+      margin: 10px 0;
+      padding-right: 5px;
+      list-style: none;
     }
 
     .settings-btn { 
@@ -92,47 +88,39 @@
       border-radius: 50%; width: 45px; height: 45px; 
       display: flex; align-items: center; justify-content: center; 
       border: 2px solid #ffb700; color: #ffb700; 
+      transition: all 0.2s;
     }
-
-    .secret-panel { 
-      background: #1a1400 !important; color: #ffb700 !important; 
-      border: 3px solid #ffb700 !important; padding: 30px; text-align: center;
-      box-shadow: 0 0 30px rgba(255, 183, 0, 0.4);
-    }
-
-    .btn-gold { background: #ffb700 !important; color: #3e2723 !important; font-weight: bold; border: 2px solid #5d4037; cursor: pointer; }
-    .prize-image-gold { width: 100%; margin: 15px 0; border: 5px solid #ffb700; border-radius: 20px; box-shadow: 0 0 20px rgba(255, 183, 0, 0.6); display: block; }
+    
+    .btn-gold { background: #ffb700 !important; color: #3e2723 !important; font-weight: bold; border: 2px solid #5d4037; }
+    .panel--paper { text-align: center; }
+    #error-msg { color: #ff5252; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 5px; margin: 10px 0; font-size: 0.9rem; }
   </style>
 </head>
 <body>
-
   <a href="../index.html" class="home-btn">🏠</a>
 
   <div class="app">
     <header class="topbar">
       <div class="brand">
-        <span class="brand__title">LA GRANDE RÉGATE</span>
+        <span class="brand__title">PEARLIST</span>
         <span class="brand__subtitle">L'Odyssée des Marins ICAM</span>
       </div>
     </header>
 
     <main class="layout">
       <aside class="aside-left">
-        <div class="logo-container">
-          <img src="logo.png" alt="Logo" style="max-width: 120px;">
-        </div>
+        <div class="logo-container"></div>
       </aside>
 
       <section class="game-wrap">
-        <div id="game-container" class="game-container" style="position: relative;">
+        <div id="game-container" class="game-container">
           
           <div id="btn-settings" class="settings-btn">🔊</div>
 
-          <div id="hud" class="hud hidden">
+          <div id="hud" class="hud hidden" style="left: 20px; transform: none; flex-direction: column; align-items: flex-start; gap: 8px;">
             <div class="hud__pill">
               <div class="hud__label">Milles</div>
               <div class="hud__value" id="score-display">0</div>
-              <button id="btn-secret-trigger"></button>
             </div>
             <div class="hud__pill">
               <div class="hud__label">Perles</div>
@@ -142,12 +130,12 @@
 
           <div id="main-menu" class="overlay">
             <div class="panel panel--paper">
-              <h1>LA GRANDE RÉGATE</h1>
+              <h1>PEARLIST</h1>
               <p id="auth-status">Embarque avec ton mail ICAM.</p>
               <div id="auth-section">
                  <button id="btn-login" class="btn btn-primary btn-lg">🔑 CONNEXION GOOGLE</button>
                  <div id="error-msg" class="hidden"></div>
-                 <button id="btn-logout" class="btn hidden" style="margin-top: 10px; font-size: 0.8rem;">CHANGER DE COMPTE</button>
+                 <button id="btn-logout" class="btn hidden" style="margin-top: 10px; font-size: 0.8rem; border: 1px solid #999;">CHANGER DE COMPTE</button>
               </div>
               <div id="game-controls" class="hidden">
                 <button id="btn-play" class="btn btn-primary btn-lg">PRENDRE LA MER</button>
@@ -156,37 +144,26 @@
             </div>
           </div>
 
-          <div id="secret-modal" class="overlay hidden" style="z-index: 3000;">
-            <div class="panel secret-panel">
-              <h2>📜 MESSAGE CODÉ DÉCOUVERT</h2>
-              <p style="margin: 20px 0; color: #eee;">Félicitations Capitaine. Voici la clé de déchiffrement :</p>
-              <h1 id="decryption-key" style="font-size: 2.5rem; letter-spacing: 5px; text-shadow: 2px 2px 0 #000;">SECRET_KEY_2026</h1>
-              <button id="btn-close-secret" class="btn btn-gold" style="margin-top:30px; width: 100%;">REPRENDRE LA BARRE</button>
-            </div>
-          </div>
-
           <div id="leaderboard-modal" class="overlay hidden" style="z-index: 2000;">
-            <div class="panel panel--paper" style="max-width: 90%; width: 400px; position: relative;">
+            <div class="panel panel--paper" style="position: relative;">
               <button id="close-modal-x" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 32px; cursor: pointer;">&times;</button>
               <div id="view-rankings">
-                <h2>🏆 LES MEILLEURS MARINS</h2>
+                <h2 id="lb-title">🏆 LES MEILLEURS MARINS</h2>
+                
+                <div class="tab-container">
+                  <button id="tab-score" class="tab-btn active">🚩 MILLES</button>
+                  <button id="tab-time" class="tab-btn">⏳ TEMPS</button>
+                </div>
+
                 <ul id="modal-highscore-list" class="highscore-list"></ul>
-                <button id="btn-show-prizes" class="btn btn-gold" style="width: 100%; margin: 10px 0;">🎁 VOIR LES TRÉSORS</button>
+                <button id="btn-show-prizes" class="btn btn-gold" style="width: 100%; margin-bottom: 10px;">🎁 VOIR LES TRÉSORS</button>
                 <button id="btn-close-modal" class="btn btn-primary" style="width: 100%;">RETOUR</button>
               </div>
               <div id="view-prizes" class="hidden">
                 <h2>🎁 BUTIN À GAGNER</h2>
-                <img src="lots.png" alt="Lots" class="prize-image-gold">
+                <img src="lots.png" alt="Lots" style="width:100%; border:3px solid #ffb700; border-radius:10px; margin: 10px 0;">
                 <button id="btn-back-to-rank" class="btn btn-primary" style="width: 100%;">RETOUR</button>
               </div>
-            </div>
-          </div>
-
-          <div id="howto" class="overlay hidden">
-            <div class="panel panel--paper">
-              <h2>Manœuvres</h2>
-              <p>Évite les rochers, ramasse les perles et va le plus loin possible !</p>
-              <button id="btn-back-menu" class="btn btn-primary">RETOUR</button>
             </div>
           </div>
 
@@ -199,18 +176,33 @@
               <button id="btn-show-leaderboard" class="btn" style="margin-top:10px; width:100%">CLASSEMENT</button>
             </div>
           </div>
+
+          <div id="secret-modal" class="overlay hidden" style="z-index: 3000;">
+             <div class="panel panel--paper">
+                <h2>📜 MESSAGE CODÉ</h2>
+                <h1 id="decryption-key">SECRET_2026</h1>
+                <button id="btn-close-secret" class="btn btn-gold" style="width:100%">REPRENDRE</button>
+             </div>
+          </div>
+          <div id="howto" class="overlay hidden">
+            <div class="panel panel--paper">
+              <h2>Manœuvres</h2>
+              <p>Swipe ou clique pour changer de file !</p>
+              <button id="btn-back-menu" class="btn btn-primary">RETOUR</button>
+            </div>
+          </div>
+
         </div>
       </section>
 
       <aside class="sidebar">
         <div class="card card--paper">
-          <h3>🏆 Top Marins</h3>
+          <h3>🏆 Les Meilleurs Marins</h3>
           <ul id="live-highscore-list" class="highscore-list"></ul>
         </div>
       </aside>
     </main>
   </div>
-  
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
   <script type="module" src="game.js"></script>
 </body>
