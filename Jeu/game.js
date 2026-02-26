@@ -154,17 +154,23 @@ class MainScene extends Phaser.Scene {
         } catch(e) {}
 
         this.physics.add.overlap(this.player, this.obstacles, () => this.gameOver(), null, this);
+        
+        // --- GESTION DES PERLES ET DU SECRET ---
         this.physics.add.overlap(this.player, this.pearls, (pl, p) => {
             this.pearlEmitter.emitParticleAt(p.x, p.y, 15);
             p.destroy(); GameState.pearls++; GameState.score += 25;
             if(this.coinEffect) this.coinEffect.play();
             
-            // Déclenchement du secret (50 et 100 perles)
+            // Déclenchement du secret (paliers 50 et 100)
             if(GameState.pearls === 50 || GameState.pearls === 100) {
                 this.physics.pause();
                 GameState.playing = false;
                 if(this.music) this.music.pause();
-                document.getElementById("decryption-key").innerText = GameState.pearls === 50 ? "SECRET_CAP_50" : "SECRET_MASTER_100";
+                
+                // On change le texte du secret selon le palier
+                const keyEl = document.getElementById("decryption-key");
+                keyEl.innerText = GameState.pearls === 50 ? "SECRET_CAP_50" : "SECRET_MASTER_100";
+                
                 document.getElementById("secret-modal").classList.remove("hidden");
             }
         }, null, this);
@@ -194,12 +200,6 @@ class MainScene extends Phaser.Scene {
         });
         Bus.on("restart", () => { if(this.music) this.music.stop(); this.scene.restart(); });
         
-        document.getElementById("btn-close-secret").onclick = () => {
-            document.getElementById("secret-modal").classList.add("hidden");
-            this.physics.resume(); GameState.playing = true;
-            if(this.music && !isMuted) this.music.resume();
-        };
-
         this.physics.pause(); showMenuState("menu");
     }
 
@@ -268,11 +268,26 @@ function setupDomHandlers() {
     document.getElementById("btn-logout").onclick = () => signOut(auth).then(() => window.location.reload());
     document.getElementById("btn-play").onclick = () => Bus.emit("start");
     document.getElementById("btn-restart").onclick = () => Bus.emit("restart");
+    
     document.getElementById("btn-settings").onclick = () => {
         isMuted = !isMuted;
         if(window.gameInstance) window.gameInstance.sound.mute = isMuted;
         document.getElementById("btn-settings").innerText = isMuted ? "🔇" : "🔊";
     };
+
+    // --- FIX BOUTON REPRENDRE (SECRET) ---
+    document.getElementById("btn-close-secret").onclick = () => {
+        document.getElementById("secret-modal").classList.add("hidden");
+        GameState.playing = true;
+        
+        // Relancer la physique de la scène active
+        if (window.gameInstance) {
+            const mainScene = window.gameInstance.scene.getScene("MainScene");
+            mainScene.physics.resume();
+            if(mainScene.music && !isMuted) mainScene.music.resume();
+        }
+    };
+
     document.getElementById("btn-show-leaderboard").onclick = () => {
         document.getElementById("leaderboard-modal").classList.remove("hidden");
         document.getElementById("view-rankings").classList.remove("hidden");
