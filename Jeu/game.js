@@ -38,7 +38,7 @@ onAuthStateChanged(auth, (user) => {
             authStatus.innerHTML = `⚓ Bienvenue Capitaine <b>${user.displayName.split(' ')[0]}</b> !`;
             document.getElementById("auth-section").classList.add("hidden");
             document.getElementById("game-controls").classList.remove("hidden");
-            loadLeaderboard("score");
+            loadLeaderboard();
         } else {
             authStatus.innerHTML = "🚫 Accès Refusé";
             errorEl.innerHTML = `Utilise ton mail ICAM (actuel: ${user.email})`;
@@ -55,31 +55,18 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-async function loadLeaderboard(criterion = "score") {
-    const q = query(collection(db, "leaderboard"), orderBy(criterion, "desc"), limit(10));
+async function loadLeaderboard() {
+    const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
     const snap = await getDocs(q);
     let html = ""; let rank = 1;
     
     snap.forEach((d) => {
         const data = d.data();
-        let displayVal = "";
-        if (criterion === "score") {
-            displayVal = Math.floor(data.score || 0);
-        } else {
-            const mins = Math.floor((data.totalTime || 0) / 60);
-            const secs = (data.totalTime || 0) % 60;
-            displayVal = `${mins}m ${secs}s`;
-        }
-        html += `<li><span>#${rank} ${data.name}</span> <b>${displayVal}</b></li>`;
+        html += `<li><span>#${rank} ${data.name}</span> <b>${Math.floor(data.score || 0)}</b></li>`;
         rank++;
     });
 
-    if (criterion === "score") {
-        document.getElementById("live-highscore-list").innerHTML = html;
-        document.getElementById("lb-title").innerText = "🏆 TOP MILLES";
-    } else {
-        document.getElementById("lb-title").innerText = "⏳ TEMPS EN MER";
-    }
+    document.getElementById("live-highscore-list").innerHTML = html;
     document.getElementById("modal-highscore-list").innerHTML = html;
 }
 
@@ -89,7 +76,7 @@ async function saveScoreIfBest(newScore) {
     const snap = await getDoc(userRef);
     
     const roundedScore = Math.floor(newScore);
-    const timeSpent = Math.floor((Date.now() - gameStartTime) / 1000); // Temps en secondes
+    const timeSpent = Math.floor((Date.now() - gameStartTime) / 1000); 
     
     let bestScore = roundedScore;
     let totalTime = timeSpent;
@@ -97,7 +84,7 @@ async function saveScoreIfBest(newScore) {
     if (snap.exists()) {
         const data = snap.data();
         bestScore = Math.max(data.score || 0, roundedScore);
-        totalTime = (data.totalTime || 0) + timeSpent; // On cumule le temps
+        totalTime = (data.totalTime || 0) + timeSpent; 
     }
 
     await setDoc(userRef, { 
@@ -107,7 +94,7 @@ async function saveScoreIfBest(newScore) {
         date: Date.now() 
     }, { merge: true });
     
-    loadLeaderboard("score");
+    loadLeaderboard();
 }
 
 class BootScene extends Phaser.Scene {
@@ -171,34 +158,32 @@ class MainScene extends Phaser.Scene {
             this.pearlEmitter.emitParticleAt(p.x, p.y, 15);
             p.destroy(); GameState.pearls++; GameState.score += 25;
             if(this.coinEffect) this.coinEffect.play();
+            
+            // Déclenchement du secret (50 et 100 perles)
+            if(GameState.pearls === 50 || GameState.pearls === 100) {
+                this.physics.pause();
+                GameState.playing = false;
+                if(this.music) this.music.pause();
+                document.getElementById("decryption-key").innerText = GameState.pearls === 50 ? "SECRET_CAP_50" : "SECRET_MASTER_100";
+                document.getElementById("secret-modal").classList.remove("hidden");
+            }
         }, null, this);
 
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        // --- SYSTÈME HYBRIDE : SWIPE RÉACTIF + CLIC ---
-        let dragStartX = 0;
-        let hasMoved = false;
-
-        this.input.on("pointerdown", (p) => { 
-            dragStartX = p.x; 
-            hasMoved = false; 
-        });
-
+        let dragStartX = 0; let hasMoved = false;
+        this.input.on("pointerdown", (p) => { dragStartX = p.x; hasMoved = false; });
         this.input.on("pointermove", (p) => {
             if(!GameState.playing || !p.isDown || hasMoved) return;
             const dragDistance = p.x - dragStartX;
-            const threshold = 25; 
-            if (Math.abs(dragDistance) > threshold) {
+            if (Math.abs(dragDistance) > 25) {
                 this.changeLane(dragDistance > 0 ? 1 : -1);
                 hasMoved = true; 
             }
         });
-
         this.input.on("pointerup", (p) => { 
             if(!GameState.playing) return;
-            if (!hasMoved) {
-                this.changeLane((p.x < 240) ? -1 : 1);
-            }
+            if (!hasMoved) this.changeLane((p.x < 240) ? -1 : 1);
         });
 
         Bus.removeAllListeners();
@@ -283,30 +268,16 @@ function setupDomHandlers() {
     document.getElementById("btn-logout").onclick = () => signOut(auth).then(() => window.location.reload());
     document.getElementById("btn-play").onclick = () => Bus.emit("start");
     document.getElementById("btn-restart").onclick = () => Bus.emit("restart");
-    
     document.getElementById("btn-settings").onclick = () => {
         isMuted = !isMuted;
         if(window.gameInstance) window.gameInstance.sound.mute = isMuted;
         document.getElementById("btn-settings").innerText = isMuted ? "🔇" : "🔊";
     };
-
-    // Gestion des onglets du classement
-    document.getElementById("tab-score").onclick = () => {
-        document.getElementById("tab-score").classList.add("active");
-        document.getElementById("tab-time").classList.remove("active");
-        loadLeaderboard("score");
-    };
-    document.getElementById("tab-time").onclick = () => {
-        document.getElementById("tab-time").classList.add("active");
-        document.getElementById("tab-score").classList.remove("active");
-        loadLeaderboard("totalTime");
-    };
-
     document.getElementById("btn-show-leaderboard").onclick = () => {
         document.getElementById("leaderboard-modal").classList.remove("hidden");
         document.getElementById("view-rankings").classList.remove("hidden");
         document.getElementById("view-prizes").classList.add("hidden");
-        loadLeaderboard("score"); // Par défaut on affiche le score
+        loadLeaderboard(); 
     };
     document.getElementById("btn-show-prizes").onclick = () => {
         document.getElementById("view-rankings").classList.add("hidden");

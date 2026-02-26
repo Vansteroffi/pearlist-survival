@@ -21,7 +21,7 @@
       position: fixed;
       inset: 0;
       background-image: url('https://www.transparenttextures.com/patterns/dark-wood.png');
-      opacity: 0.4;
+      opacity: 0.7;
       z-index: -1;
     }
 
@@ -39,7 +39,6 @@
       z-index: 1000;
     }
 
-    /* FIX MOBILE : Empêcher le classement de déborder */
     #leaderboard-modal .panel--paper {
       max-height: 92vh;
       display: flex;
@@ -48,30 +47,6 @@
       padding: 20px;
       width: 90%;
       max-width: 400px;
-    }
-
-    /* Style pour les onglets de tri */
-    .tab-container {
-      display: flex;
-      gap: 5px;
-      margin-bottom: 15px;
-    }
-
-    .tab-btn {
-      flex: 1;
-      padding: 8px;
-      font-size: 0.75rem;
-      background: #5d4037;
-      color: white;
-      border: 2px solid #3e2723;
-      cursor: pointer;
-      font-family: 'Almendra SC', serif;
-    }
-
-    .tab-btn.active {
-      background: #ffb700;
-      color: #3e2723;
-      font-weight: bold;
     }
 
     .highscore-list {
@@ -93,12 +68,33 @@
     
     .btn-gold { background: #ffb700 !important; color: #3e2723 !important; font-weight: bold; border: 2px solid #5d4037; }
     .panel--paper { text-align: center; }
-    #error-msg { color: #ff5252; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 5px; margin: 10px 0; font-size: 0.9rem; }
+
+    #btn-logout {
+      display: block;
+      margin: 15px auto 0 auto;
+      font-size: 1rem !important;
+      font-weight: 900 !important;
+      color: #ffb700 !important;
+      background: rgba(0,0,0,0.5);
+      border: 2px solid #ffb700;
+      padding: 8px 15px;
+      cursor: pointer;
+      text-transform: uppercase;
+    }
+
+    #error-msg { color: #ffffff; background: #d32f2f; padding: 10px; border-radius: 5px; margin: 10px 0; font-size: 0.9rem; font-weight: bold; }
+    
+    /* Style Vieux Parchemin pour le Secret */
+    #secret-modal .panel--paper {
+      background: #e3d5b8 !important;
+      color: #2c1e1a !important;
+      border: 8px double #8b5a2b !important;
+    }
+    #decryption-key { color: #d32f2f !important; text-shadow: none !important; }
   </style>
 </head>
 <body>
   <a href="../index.html" class="home-btn">🏠</a>
-
   <div class="app">
     <header class="topbar">
       <div class="brand">
@@ -106,28 +102,15 @@
         <span class="brand__subtitle">L'Odyssée des Marins ICAM</span>
       </div>
     </header>
-
     <main class="layout">
-      <aside class="aside-left">
-        <div class="logo-container"></div>
-      </aside>
-
+      <aside class="aside-left"><div class="logo-container"></div></aside>
       <section class="game-wrap">
         <div id="game-container" class="game-container">
-          
           <div id="btn-settings" class="settings-btn">🔊</div>
-
           <div id="hud" class="hud hidden" style="left: 20px; transform: none; flex-direction: column; align-items: flex-start; gap: 8px;">
-            <div class="hud__pill">
-              <div class="hud__label">Milles</div>
-              <div class="hud__value" id="score-display">0</div>
-            </div>
-            <div class="hud__pill">
-              <div class="hud__label">Perles</div>
-              <div class="hud__value" id="pearls-display">0</div>
-            </div>
+            <div class="hud__pill"><div class="hud__label">Milles</div><div class="hud__value" id="score-display">0</div></div>
+            <div class="hud__pill"><div class="hud__label">Perles</div><div class="hud__value" id="pearls-display">0</div></div>
           </div>
-
           <div id="main-menu" class="overlay">
             <div class="panel panel--paper">
               <h1>PEARLIST</h1>
@@ -135,7 +118,7 @@
               <div id="auth-section">
                  <button id="btn-login" class="btn btn-primary btn-lg">🔑 CONNEXION GOOGLE</button>
                  <div id="error-msg" class="hidden"></div>
-                 <button id="btn-logout" class="btn hidden" style="margin-top: 10px; font-size: 0.8rem; border: 1px solid #999;">CHANGER DE COMPTE</button>
+                 <button id="btn-logout" class="btn hidden">CHANGER DE COMPTE</button>
               </div>
               <div id="game-controls" class="hidden">
                 <button id="btn-play" class="btn btn-primary btn-lg">PRENDRE LA MER</button>
@@ -143,18 +126,11 @@
               </div>
             </div>
           </div>
-
           <div id="leaderboard-modal" class="overlay hidden" style="z-index: 2000;">
             <div class="panel panel--paper" style="position: relative;">
               <button id="close-modal-x" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 32px; cursor: pointer;">&times;</button>
               <div id="view-rankings">
                 <h2 id="lb-title">🏆 LES MEILLEURS MARINS</h2>
-                
-                <div class="tab-container">
-                  <button id="tab-score" class="tab-btn active">🚩 MILLES</button>
-                  <button id="tab-time" class="tab-btn">⏳ TEMPS</button>
-                </div>
-
                 <ul id="modal-highscore-list" class="highscore-list"></ul>
                 <button id="btn-show-prizes" class="btn btn-gold" style="width: 100%; margin-bottom: 10px;">🎁 VOIR LES TRÉSORS</button>
                 <button id="btn-close-modal" class="btn btn-primary" style="width: 100%;">RETOUR</button>
@@ -166,7 +142,6 @@
               </div>
             </div>
           </div>
-
           <div id="game-over" class="overlay hidden">
             <div class="panel panel--paper">
               <h2 style="color: #d32f2f;">NAUFRAGE !</h2>
@@ -176,7 +151,6 @@
               <button id="btn-show-leaderboard" class="btn" style="margin-top:10px; width:100%">CLASSEMENT</button>
             </div>
           </div>
-
           <div id="secret-modal" class="overlay hidden" style="z-index: 3000;">
              <div class="panel panel--paper">
                 <h2>📜 MESSAGE CODÉ</h2>
@@ -191,10 +165,8 @@
               <button id="btn-back-menu" class="btn btn-primary">RETOUR</button>
             </div>
           </div>
-
         </div>
       </section>
-
       <aside class="sidebar">
         <div class="card card--paper">
           <h3>🏆 Les Meilleurs Marins</h3>
