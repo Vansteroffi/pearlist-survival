@@ -12,16 +12,16 @@ function checkPassword() {
       clickSfx.play().catch(() => {});
 
       switch(input) {
-        case "Taverne":
+        case "taverne":
           window.location.href = "step1gezhivbepacfea.html";
           break;
-        case "Initiales":
+        case "initiales":
           window.location.href = "step2ebmthenrzpnvrz.html";
           break;
-        case "Plage":
+        case "plage":
           window.location.href= "step3uytrevnbhjipkan.html";
           break;
-        case "Le Roux":
+        case "le roux":
           window.location.href="step4kijihngeoipnvbntyzen.html";
           break;
         default:
@@ -36,3 +36,4 @@ function checkPassword() {
     document.getElementById("passwordInput").addEventListener("keypress", (e) => {
       if (e.key === "Enter") checkPassword();
     });
+
