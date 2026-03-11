@@ -89,7 +89,7 @@ async function saveScoreIfBest(newScore) {
     const snap = await getDoc(userRef);
     
     const roundedScore = Math.floor(newScore);
-    const timeSpent = Math.floor((Date.now() - gameStartTime) / 1000); // Temps en secondes
+    const timeSpent = Math.floor((Date.now() - gameStartTime) / 1000); 
     
     let bestScore = roundedScore;
     let totalTime = timeSpent;
@@ -97,7 +97,7 @@ async function saveScoreIfBest(newScore) {
     if (snap.exists()) {
         const data = snap.data();
         bestScore = Math.max(data.score || 0, roundedScore);
-        totalTime = (data.totalTime || 0) + timeSpent; // On cumule le temps
+        totalTime = (data.totalTime || 0) + timeSpent;
     }
 
     await setDoc(userRef, { 
@@ -175,7 +175,6 @@ class MainScene extends Phaser.Scene {
 
         this.cursors = this.input.keyboard.createCursorKeys();
 
-        // --- SYSTÈME HYBRIDE : SWIPE RÉACTIF + CLIC ---
         let dragStartX = 0;
         let hasMoved = false;
 
@@ -209,16 +208,13 @@ class MainScene extends Phaser.Scene {
         });
         Bus.on("restart", () => { if(this.music) this.music.stop(); this.scene.restart(); });
         
-        // ACTION DU BOUTON SECRET (Pause le jeu et affiche le modal)
         document.getElementById("btn-secret-trigger").onclick = () => {
             this.physics.pause();
             GameState.playing = false;
             if(this.music) this.music.pause();
-            
             document.getElementById("secret-modal").classList.remove("hidden");
         };
 
-        // BOUTON REPRENDRE DU SECRET (Relance le jeu)
         document.getElementById("btn-close-secret").onclick = () => {
             document.getElementById("secret-modal").classList.add("hidden");
             this.physics.resume(); GameState.playing = true;
@@ -250,7 +246,6 @@ class MainScene extends Phaser.Scene {
         document.getElementById("score-display").innerText = Math.floor(GameState.score);
         document.getElementById("pearls-display").innerText = GameState.pearls;
         
-        // GESTION APPARITION/DISPARITION DU BOUTON SECRET (Milles entre 50 et 100)
         const currentMilles = Math.floor(GameState.score);
         const btnSecret = document.getElementById("btn-secret-trigger");
         if (currentMilles >= 50 && currentMilles <= 100) {
@@ -271,10 +266,23 @@ class MainScene extends Phaser.Scene {
 
     spawnWave() {
         const lanes = [130, 240, 350];
+        // On mélange les files au hasard
         const shuffled = lanes.sort(() => 0.5 - Math.random());
-        this.obstacles.create(shuffled[0], -100, "obstacle").setScale(0.85).body.setCircle(30, 15, 15);
-        if(Math.random() < 0.45) {
-            this.pearls.create(shuffled[1], -150, "pearl").setScale(0.6).body.setCircle(20);
+        
+        // --- LOGIQUE DIFFICULTÉ : 1 OU 2 ROCHERS ---
+        // 45% de chance d'avoir deux rochers sur la ligne
+        const numObstacles = Math.random() < 0.45 ? 2 : 1;
+
+        for (let i = 0; i < numObstacles; i++) {
+            this.obstacles.create(shuffled[i], -100, "obstacle").setScale(0.85).body.setCircle(30, 15, 15);
+        }
+
+        // On place une perle sur une file vide s'il y en a une, avec 45% de chance
+        if (numObstacles < 3) {
+            const emptyLaneIndex = numObstacles; // La première file libre après les obstacles
+            if(Math.random() < 0.45) {
+                this.pearls.create(shuffled[emptyLaneIndex], -150, "pearl").setScale(0.6).body.setCircle(20);
+            }
         }
     }
 
@@ -310,7 +318,6 @@ function setupDomHandlers() {
         document.getElementById("btn-settings").innerText = isMuted ? "🔇" : "🔊";
     };
 
-    // Gestion des onglets du classement
     document.getElementById("tab-score").onclick = () => {
         document.getElementById("tab-score").classList.add("active");
         document.getElementById("tab-time").classList.remove("active");
@@ -326,7 +333,7 @@ function setupDomHandlers() {
         document.getElementById("leaderboard-modal").classList.remove("hidden");
         document.getElementById("view-rankings").classList.remove("hidden");
         document.getElementById("view-prizes").classList.add("hidden");
-        loadLeaderboard("score"); // Par défaut on affiche le score
+        loadLeaderboard("score"); 
     };
     document.getElementById("btn-show-prizes").onclick = () => {
         document.getElementById("view-rankings").classList.add("hidden");
