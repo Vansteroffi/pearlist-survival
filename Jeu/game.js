@@ -38,7 +38,7 @@ onAuthStateChanged(auth, (user) => {
             authStatus.innerHTML = `⚓ Bienvenue Capitaine <b>${user.displayName.split(' ')[0]}</b> !`;
             document.getElementById("auth-section").classList.add("hidden");
             document.getElementById("game-controls").classList.remove("hidden");
-            loadLeaderboard("score");
+            loadLeaderboard();
         } else {
             authStatus.innerHTML = "🚫 Accès Refusé";
             errorEl.innerHTML = `Utilise ton mail ICAM (actuel: ${user.email})`;
@@ -55,31 +55,21 @@ onAuthStateChanged(auth, (user) => {
     }
 });
 
-async function loadLeaderboard(criterion = "score") {
-    const q = query(collection(db, "leaderboard"), orderBy(criterion, "desc"), limit(10));
+async function loadLeaderboard() {
+    // On ne charge plus que par score
+    const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
     const snap = await getDocs(q);
     let html = ""; let rank = 1;
     
     snap.forEach((d) => {
         const data = d.data();
-        let displayVal = "";
-        if (criterion === "score") {
-            displayVal = Math.floor(data.score || 0);
-        } else {
-            const mins = Math.floor((data.totalTime || 0) / 60);
-            const secs = (data.totalTime || 0) % 60;
-            displayVal = `${mins}m ${secs}s`;
-        }
+        const displayVal = Math.floor(data.score || 0);
         html += `<li><span>#${rank} ${data.name}</span> <b>${displayVal}</b></li>`;
         rank++;
     });
 
-    if (criterion === "score") {
-        document.getElementById("live-highscore-list").innerHTML = html;
-        document.getElementById("lb-title").innerText = "🏆 TOP MILLES";
-    } else {
-        document.getElementById("lb-title").innerText = "⏳ TEMPS EN MER";
-    }
+    document.getElementById("live-highscore-list").innerHTML = html;
+    document.getElementById("lb-title").innerText = "🏆 TOP MILLES";
     document.getElementById("modal-highscore-list").innerHTML = html;
 }
 
@@ -103,11 +93,11 @@ async function saveScoreIfBest(newScore) {
     await setDoc(userRef, { 
         name: currentUser.displayName, 
         score: bestScore, 
-        totalTime: totalTime,
+        totalTime: totalTime, // Sauvegarde toujours le temps pour tes stats privées
         date: Date.now() 
     }, { merge: true });
     
-    loadLeaderboard("score");
+    loadLeaderboard();
 }
 
 class BootScene extends Phaser.Scene {
@@ -266,20 +256,18 @@ class MainScene extends Phaser.Scene {
 
     spawnWave() {
         const lanes = [130, 240, 350];
-        // On mélange les files au hasard
         const shuffled = lanes.sort(() => 0.5 - Math.random());
         
         // --- LOGIQUE DIFFICULTÉ : 1 OU 2 ROCHERS ---
-        // 45% de chance d'avoir deux rochers sur la ligne
         const numObstacles = Math.random() < 0.45 ? 2 : 1;
 
         for (let i = 0; i < numObstacles; i++) {
             this.obstacles.create(shuffled[i], -100, "obstacle").setScale(0.85).body.setCircle(30, 15, 15);
         }
 
-        // On place une perle sur une file vide s'il y en a une, avec 45% de chance
+        // On place une perle sur une file vide s'il y en a une
         if (numObstacles < 3) {
-            const emptyLaneIndex = numObstacles; // La première file libre après les obstacles
+            const emptyLaneIndex = numObstacles; 
             if(Math.random() < 0.45) {
                 this.pearls.create(shuffled[emptyLaneIndex], -150, "pearl").setScale(0.6).body.setCircle(20);
             }
@@ -318,22 +306,11 @@ function setupDomHandlers() {
         document.getElementById("btn-settings").innerText = isMuted ? "🔇" : "🔊";
     };
 
-    document.getElementById("tab-score").onclick = () => {
-        document.getElementById("tab-score").classList.add("active");
-        document.getElementById("tab-time").classList.remove("active");
-        loadLeaderboard("score");
-    };
-    document.getElementById("tab-time").onclick = () => {
-        document.getElementById("tab-time").classList.add("active");
-        document.getElementById("tab-score").classList.remove("active");
-        loadLeaderboard("totalTime");
-    };
-
     document.getElementById("btn-show-leaderboard").onclick = () => {
         document.getElementById("leaderboard-modal").classList.remove("hidden");
         document.getElementById("view-rankings").classList.remove("hidden");
         document.getElementById("view-prizes").classList.add("hidden");
-        loadLeaderboard("score"); 
+        loadLeaderboard(); 
     };
     document.getElementById("btn-show-prizes").onclick = () => {
         document.getElementById("view-rankings").classList.add("hidden");
