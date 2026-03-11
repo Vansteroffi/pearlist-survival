@@ -93,7 +93,8 @@
 
     const music = document.getElementById("bgMusic"); const clickSfx = document.getElementById("clickSound"); const muteBtn = document.getElementById("muteBtn"); const muteIcon = document.getElementById("muteIcon"); const homeBtn = document.getElementById("homeBtn"); const dialogueBox = document.getElementById("dialogueBox"); const textEl = document.getElementById("text"); const choicesEl = document.getElementById("choices"); const arrowEl = document.getElementById("arrow"); const edwardImg = document.getElementById("edwardImg");
 
-    let currentRoute = "intro"; let dialogues = routes[currentRoute]; let index = 0; let charIndex = 0; let isTyping = false; let musicStarted = false;
+    /* Ajout de la variable typingInterval pour pouvoir l'arrêter à tout moment */
+    let currentRoute = "intro"; let dialogues = routes[currentRoute]; let index = 0; let charIndex = 0; let isTyping = false; let musicStarted = false; let typingInterval = null; 
 
     function playClick() { clickSfx.currentTime = 0; clickSfx.play().catch(() => {}); }
     function startMusic() { if (!musicStarted) { music.volume = 0.4; music.play().catch(() => {}); musicStarted = true; } }
@@ -107,9 +108,16 @@
 
       if (currentText === "__CHOICES__") { isTyping = false; showChoices(); return; }
 
-      const intervalId = setInterval(() => {
+      /* On s'assure de nettoyer l'intervalle précédent s'il y en a un */
+      clearInterval(typingInterval); 
+      
+      typingInterval = setInterval(() => {
         textEl.textContent += currentText[charIndex]; charIndex++;
-        if (charIndex >= currentText.length) { clearInterval(intervalId); isTyping = false; if (index < dialogues.length - 1) arrowEl.style.display = "block"; }
+        if (charIndex >= currentText.length) { 
+            clearInterval(typingInterval); 
+            isTyping = false; 
+            arrowEl.style.display = "block"; /* Toujours afficher la flèche quand le texte est fini */
+        }
       }, 40);
     }
 
@@ -123,7 +131,30 @@
       });
     }
 
-    function nextDialogue() { if (isTyping) return; index++; if (index < dialogues.length) { typeText(); } }
+    function nextDialogue() { 
+        /* Si c'est en train de taper, on skip et on affiche tout le texte */
+        if (isTyping) {
+            clearInterval(typingInterval);
+            textEl.textContent = dialogues[index];
+            isTyping = false;
+            arrowEl.style.display = "block";
+            return;
+        }
+
+        index++; 
+        
+        /* Si on a encore des dialogues dans la route, on continue */
+        if (index < dialogues.length) { 
+            typeText(); 
+        } 
+        /* Sinon, on recommence la scène du début */
+        else {
+            currentRoute = "intro";
+            dialogues = routes[currentRoute];
+            index = 0;
+            typeText();
+        }
+    }
 
     homeBtn.onclick = (e) => { e.stopPropagation(); playClick(); setTimeout(() => { location.href = 'accueil.html'; }, 100); };
     muteBtn.onclick = (e) => { e.stopPropagation(); playClick(); music.muted = !music.muted; muteIcon.src = music.muted ? "Images/mute.png" : "Images/unmute.png"; };
