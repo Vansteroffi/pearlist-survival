@@ -26,8 +26,24 @@
     .scene { flex: 1; position: relative; overflow: hidden; background-color: #333; image-rendering: pixelated; transition: opacity 0.3s ease-in-out; }
     .scene.fade-out { opacity: 0.5; }
 
-    .hint-bulb { position: absolute; top: 15px; left: 15px; width: 40px; height: 40px; background-color: #fff1e0; border: 3px solid #3e2723; border-radius: 8px; display: none; justify-content: center; align-items: center; cursor: pointer; z-index: 60; font-size: 24px; animation: pulse 1.5s infinite; box-shadow: 0 4px 0 rgba(0,0,0,0.2); }
-    @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); background-color: #ffd54f; } }
+   .hint-bulb { 
+      position: absolute; 
+      top: 15px; 
+      left: 15px; 
+      width: 40px; 
+      height: 40px; 
+      background-color: #fff1e0; 
+      border: 3px solid #3e2723; 
+      border-radius: 8px; 
+      display: none; 
+      justify-content: center; 
+      align-items: center; 
+      cursor: pointer; 
+      z-index: 200; /* <-- Modifié ici : passé de 60 à 200 */
+      font-size: 24px; 
+      animation: pulse 1.5s infinite; 
+      box-shadow: 0 4px 0 rgba(0,0,0,0.2); 
+    }
 
     .dialogue-box { width: 100%; background-color: #fff1e0; border-top: 4px solid #3e2723; padding: 20px; position: relative; cursor: pointer; z-index: 10; animation: slideUp 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28); }
     @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -182,4 +198,5 @@
 </script>
 </body>
 </html>
+
 
