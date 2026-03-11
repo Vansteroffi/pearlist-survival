@@ -171,7 +171,7 @@
   }
 
   muteBtn.onclick = (e) => { e.stopPropagation(); playClick(); music.muted = !music.muted; muteIcon.src = music.muted ? "Images/mute.png" : "Images/unmute.png"; };
-
+    hintBulb.onclick = (e) => { e.stopPropagation(); alert("Va voir notre teaser."); };
   homeBtn.onclick = (e) => { e.stopPropagation(); playClick(); setTimeout(() => { location.href = 'accueil.html'; }, 150); };
 
 
@@ -182,3 +182,4 @@
 </script>
 </body>
 </html>
+
