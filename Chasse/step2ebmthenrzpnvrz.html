@@ -79,7 +79,7 @@
     cale: ["Là non plus il n'y a pas grand chose.", "C'est une porte au fond ?"],
     porte: ["Qu'est ce qu'il y a derrière ?"],
     piece: ["On dirait la loge du capitaine.", "Peut-être que ces parchemins pourront m'aiguiller..."],
-    indice: ["Qu'est ce que ça veut dire ?", "Voici la première partie du mot de passe pour la suite: 2187"]
+    indice: ["Qu'est ce que ça veut dire ?"]
   };
 
   const backgrounds = {
@@ -174,7 +174,6 @@
 
   homeBtn.onclick = (e) => { e.stopPropagation(); playClick(); setTimeout(() => { location.href = 'accueil.html'; }, 150); };
 
-  hintBulb.onclick = (e) => { e.stopPropagation(); alert("Prends la mer pour en savoir plus"); };
 
   dialogueBox.addEventListener("click", () => { startMusic(); if (!choicesEl.children.length) { playClick(); nextDialogue(); } });
 

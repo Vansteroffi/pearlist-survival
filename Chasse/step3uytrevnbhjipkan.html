@@ -24,7 +24,8 @@
     .hint-bulb { position: absolute; top: 15px; left: 15px; width: 40px; height: 40px; background-color: #fff1e0; border: 3px solid #3e2723; border-radius: 8px; display: none; justify-content: center; align-items: center; cursor: pointer; z-index: 60; font-size: 24px; animation: pulse 1.5s infinite; box-shadow: 0 4px 0 rgba(0,0,0,0.2); }
     @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); background-color: #ffd54f; } 100% { transform: scale(1); } }
 
-    .indice-image { position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%); max-width: 80%; image-rendering: pixelated; z-index: 5; display: none; }
+    .indice-image { position: absolute; bottom: 15%; left: 50%; transform: translateX(-50%); max-width: 80%; image-rendering: pixelated; z-index: 5; display: none; cursor: pointer; transition: transform 0.2s; }
+    .indice-image:hover { transform: translateX(-50%) scale(1.05); }
 
     .dialogue-box { width: 100%; background-color: #fff1e0; border-top: 4px solid #3e2723; padding: 20px; position: relative; cursor: pointer; z-index: 10; }
     .text { font-size: 1.4rem; line-height: 1.4; min-height: 4.2em; }
@@ -38,6 +39,33 @@
 
     .arrow { position: absolute; bottom: 10px; right: 15px; font-size: 24px; color: #d32f2f; display: none; animation: bounce 1s infinite; }
     @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(3px); } }
+
+    /* --- NOUVEAUX STYLES POUR LE PARCHEMIN --- */
+    .parchemin-overlay {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: url('Images/parchemin.png');
+      background-size: cover;
+      background-position: center;
+      background-color: rgba(0, 0, 0, 0.9); /* Fallback si l'image ne charge pas */
+      z-index: 200; /* Passe au-dessus de tout le reste */
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 30px;
+      cursor: pointer;
+    }
+    .parchemin-text {
+      font-family: monospace; /* Police monospace idéale pour le code morse */
+      font-size: 1.2rem;
+      color: #3e2723; /* Marron foncé pour coller au style parchemin */
+      text-align: center;
+      line-height: 1.6;
+      word-break: break-all; /* Force le passage à la ligne du morse */
+      max-height: 90%;
+      overflow-y: auto;
+    }
   </style>
 </head>
 <body>
@@ -59,13 +87,19 @@
 
     <div class="scene" id="scene">
       <div id="hintBulb" class="hint-bulb">💡</div>
-      <img id="indiceImage" class="indice-image">
+      <img id="indiceImage" class="indice-image" alt="Journal">
     </div>
 
     <div class="dialogue-box" id="dialogueBox">
       <div class="text" id="text"></div>
       <div class="choices" id="choices"></div>
       <div class="arrow" id="arrow">▼</div>
+    </div>
+
+    <div id="parcheminOverlay" class="parchemin-overlay">
+      <div class="parchemin-text">
+        ·−−− −−·− −·−· ·−− −−·· ·−− −···· −−−−− −−·· ·· ·−−− −−·− ···− −·−· ·−−· −−·· −·−− ·−−− −−·· ·· ··· −−−−· · −−·· ··· ··− ·−−−− ···−− ·−−− −− ·−− −−··· ·· ·−− −··− ····· −−−·· ·−−− −−−−− ···· ·−− ··−· −−· ·−− ·−· ·− ··− ·−−−− −·− ·· −−··· −·· ···−− −−·· ·−−· ··· −··− −−·· ··− ·−· ··· −·· −−··· ·−− ·−· −−−·· · ···−− ···− ··· −·−· −·−· −·−· ·−− −·−− ·− −·−· −·· ··− −−·− ·−− −·−· −−··· ··− − −···· −·−· ···−− −− ·−· −···· · ···· ···− ·· −··− ··− −−··· −−−−− ··· ····· −·−· · ·· ·−− ··− −·−− ·− ·· − −···· · −−· ···− ··· −·−· −·−· −−· −− − ·−− −−··· ·· −−·− ···− ····· −−−·· ·−−− −−−−− ·−− −···· −···· −··· −− ·−− ·−−−− · ···· ·−−−− ·· ··· ····· ·− −− ·−− −··· −··· −·· −··− ·−−· −···· ··−−− −·−· −··− ··· −·−· −··· ····− ·· −− −−−−· −·−− ··−−− −− −−·− −−−−− −·· −·· ··−−− ···− ··· ··−· −·· −−·− ···− ·−− ···· · − ··· −−−−· −·−− ···−− ·−−−− −−· ··· −··· ·· ·−− −·− −−−−· ··− · ·−−· −− ·−− ····· ···−− −−−−− ·−− ·−− −−−−· ·· ··− ·· −−−−· −·−· −·−· ·−− −·−− ·− ··− ·−−− −−·· · −··· ··− −·−· ·−−−− ·−−− ··· ··−−− ·· ·−·· ·· ··− −−−·· ·−−− ···−− ···− −−−−− −··· ··−· ··−−− ·· ·− −−−·· ·−−− −· ·−−− −−−−· ··−−− −−· ··− · ···−− −−−−− −−· −− ·−−· −−−−− −···· −··· −− ·−· ·− ··−−− ·· −− ···· ·−− −·−· −−· <br><br> −−·− −−· −−·· −·−− ···· −−−−− ·· ·− −··− −·· ···− −··− ····· −−−·· ·−−− −−−−− −· −···· · −−··· −−−−− ·−− −···· −−··· ···· ·· −·−− ·−−−− −−−·· ·−−− −−·· ···· −−·· · −−··· −··− ·· −·−· −·· ···−− ·−−−− ···− ·−− ·− ·−−− −− ·−· −···· −·· −−· −− ·−− −···· −··· ·· ·· −·−− −−−−· ··− −−··· ·−−−− − −·−· −·−− ·· −−·· ·· ···− ··−−− ····− −· ·· −−−−· −·−− −·−· ·−−−− ·−− −−−−− −·−· ···−− ··−−− ·−−· ·−− −···· ···−− ···− −··− ·−−−− ··− −·− ·· −− ·− −−−−· ·−−− −·− ··· ····· ··−· −−·· −−·− ·−· ··− −··· ···−− − ·· −−−−· −−−·· ·−−− ····· −− ···−− −·−− ···· ·−−−− −−· ·−− ····· ·−−− −−·− ·· ····· ·− ·−−− −−·− −· ··· ··−· −−·· −−·− ·−− ···−− −·−− · − −·−− ·− ·−− −·· ···− ·−−− −−−−− ··− −·−· −·− ·· ···−− −·−− ·· −− −−·− −−··· −·−· −··· −− −−· −−·· ··− · −··− ·· ·−−−− −·−− ·−−−− −−·· −− ·− ····· −−·· ··− ·· ·− −··− ···−− −−·· ·−· −−−−− −·−− −−· −−−−− −−·− −···· −·· ···· −··− −·−− −−−−− −·−· ···· −− ·−· −··· −−··· −·· −−−−− · ····− −·−− ···· −−·· ·· −−··· −−−·· ···· −− ···− ·−− −−··· · ·· −− ··−· −··− −−·· ···− ·−− ···−− −·−− ·· −−·· ·· −··− −−−·· −·−· ·−·· ·−− ···− −·−− ·− −− ·−· −··− −·−− −−·
+      </div>
     </div>
   </div>
 
@@ -105,6 +139,9 @@
 
   const textEl = document.getElementById("text"); const arrowEl = document.getElementById("arrow"); const dialogueBox = document.getElementById("dialogueBox"); const choicesEl = document.getElementById("choices"); const sceneEl = document.getElementById("scene"); const indiceEl = document.getElementById("indiceImage"); const hintBulb = document.getElementById("hintBulb");
   const music = document.getElementById("bgMusic"); const clickSfx = document.getElementById("clickSound"); const muteBtn = document.getElementById("muteBtn"); const muteIcon = document.getElementById("muteIcon"); const homeBtn = document.getElementById("homeBtn");
+  
+  /* Nouveau: sélection de l'overlay parchemin */
+  const parcheminOverlay = document.getElementById("parcheminOverlay");
 
   function playClick() { clickSfx.currentTime = 0; clickSfx.play().catch(() => {}); }
   function startMusic() { if (!musicStarted) { music.volume = 0.3; music.play().catch(() => {}); musicStarted = true; } }
@@ -141,8 +178,22 @@
 
   muteBtn.onclick = (e) => { e.stopPropagation(); playClick(); music.muted = !music.muted; muteIcon.src = music.muted ? "Images/mute.png" : "Images/unmute.png"; };
   homeBtn.onclick = (e) => { e.stopPropagation(); playClick(); setTimeout(() => { location.href = 'accueil.html'; }, 150); };
-  hintBulb.onclick = (e) => { e.stopPropagation(); alert("Prends la mer pour en savoir plus"); };
+  hintBulb.onclick = (e) => { e.stopPropagation(); alert("Un indice se trouve entre 1500 et 1600 miles d'ici."); };
   dialogueBox.addEventListener("click", () => { startMusic(); if (!choicesEl.children.length) { playClick(); nextDialogue(); } });
+
+  /* Nouveau: Gère le clic sur l'image de l'indice (le journal) */
+  indiceEl.addEventListener("click", (e) => {
+    e.stopPropagation();
+    playClick();
+    parcheminOverlay.style.display = "flex"; // Affiche l'overlay
+  });
+
+  /* Nouveau: Gère le clic sur l'overlay pour le fermer */
+  parcheminOverlay.addEventListener("click", (e) => {
+    e.stopPropagation();
+    playClick();
+    parcheminOverlay.style.display = "none"; // Cache l'overlay
+  });
 
   updateBackground();
   typeText();
