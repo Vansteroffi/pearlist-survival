@@ -12,16 +12,16 @@ function checkPassword() {
       clickSfx.play().catch(() => {});
 
       switch(input) {
-        case "tafarn":
+        case "Taverne":
           window.location.href = "step1gezhivbepacfea.html";
           break;
-        case "1611elyaato":
+        case "Initiales":
           window.location.href = "step2ebmthenrzpnvrz.html";
           break;
-        case "2187erekusu":
+        case "Plage":
           window.location.href= "step3uytrevnbhjipkan.html";
           break;
-        case "6394lager":
+        case "Le Roux":
           window.location.href="step4kijihngeoipnvbntyzen.html";
           break;
         default:
