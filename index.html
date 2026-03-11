@@ -26,7 +26,6 @@
             overflow-x: hidden;
         }
 
-        /* Texture bois éclaircie */
         body::before {
             content: "";
             position: fixed;
@@ -60,16 +59,16 @@
         }
 
         .container {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
             gap: 20px;
-            max-width: 1100px;
-            width: 90%;
+            max-width: 1200px;
+            width: 95%;
             z-index: 5;
             padding-bottom: 40px;
         }
 
         .card {
-            flex: 1;
             background: rgba(20, 15, 10, 0.9);
             border: 3px solid var(--dark-brown);
             padding: 30px 20px;
@@ -79,7 +78,6 @@
             box-shadow: 0 10px 0 #000;
             text-decoration: none;
             color: inherit;
-            position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -99,8 +97,7 @@
         }
 
         .card p {
-            font-family: "Almendra SC", serif;
-            font-size: 1rem;
+            font-size: 0.95rem;
             line-height: 1.3;
             color: #e0d0b0;
             margin: 0;
@@ -112,40 +109,44 @@
             filter: drop-shadow(0 0 8px rgba(255, 183, 0, 0.3));
         }
 
-        @media (max-width: 850px) {
-            body { overflow-y: auto; height: auto; padding: 20px 0; }
-            .container { 
-                flex-direction: column; 
-                align-items: center; 
-                width: 90%;
-                gap: 30px;
-            }
-            .card { 
-                width: 100%; 
-                max-width: 320px;
-                padding: 25px 15px;
-            }
+        /* Style spécifique pour la carte Liens (Optionnel) */
+        .card--links {
+            border-style: double; /* Petit détail visuel différent */
+        }
+
+        @media (max-width: 600px) {
+            body { overflow-y: auto; padding: 20px 0; }
+            .container { grid-template-columns: 1fr; width: 85%; }
         }
     </style>
 </head>
 <body>
     <img src="logo.png" alt="Pearlist Logo" class="main-logo">
     <h1>PEARLIST</h1>
+    
     <div class="container">
         <a href="/jeu/index.html" class="card">
             <span class="icon">⚓</span>
             <h2>La Grande Régate</h2>
             <p>Hissez les voiles, Capitaine ! L'aventure vous attend sur les mers déchaînées.</p>
         </a>
+
         <a href="/programme/index.html" class="card">
             <span class="icon">📅</span>
             <h2>L'Agenda</h2>
             <p>Découvrez les soirées de fou et les activités qui vous attendent cette semaine.</p>
         </a>
+
         <a href="/chasse/accueil.html" class="card">
             <span class="icon">📜</span>
             <h2>Chasse au Trésor</h2>
-            <p>Déchiffrez les secrets de Jérome Labarre et trouvez le butin légendaire.</p>
+            <p>Retrouver le trésor perdu de Barbe d'Or et prouvez votre valeur à l'équipage.</p>
+        </a>
+
+        <a href="/liens/index.html" class="card card--links">
+            <span class="icon">🔗</span>
+            <h2>Liens Utiles</h2>
+            <p>Insta, musiques et ressources essentielles pour votre survie durant la campagne.</p>
         </a>
     </div>
 </body>
