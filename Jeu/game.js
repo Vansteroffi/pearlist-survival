@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // --- CONFIGURATION FIREBASE ---
 const firebaseConfig = {
@@ -26,7 +26,6 @@ let isMuted = false;
 let gameStartTime = 0;
 const Bus = new Phaser.Events.EventEmitter();
 
-// --- ETAT DU JEU ---
 const GameState = {
     score: 0,
     pearls: 0,
@@ -34,9 +33,33 @@ const GameState = {
     reset() { this.score = 0; this.pearls = 0; this.playing = false; }
 };
 
+// --- LOGIQUE ANTI-TRICHE GRADUELLE ---
+async function logCheatAttempt(type) {
+    if (!currentUser) return;
+    const userRef = doc(db, "users", currentUser.uid);
+    const userSnap = await getDoc(userRef);
+    let count = (userSnap.exists() ? (userSnap.data().cheatCount || 0) : 0) + 1;
+
+    await setDoc(userRef, { cheatCount: count, lastCheatType: type }, { merge: true });
+
+    if (count === 1) {
+        alert("⚓ Ohé matelot ! Tu n'as rien à faire ici.");
+    } 
+    else if (count === 2) {
+        alert("⚠️ ATTENTION : Au prochain avertissement, tu seras banni ! Tes scores seront supprimés et tes résultats ne seront plus enregistrés.");
+    } 
+    else if (count >= 3) {
+        alert("🚫 BANNI : Tes accès sont révoqués et tes scores ont été effacés du classement.");
+        // Suppression du leaderboard
+        await deleteDoc(doc(db, "leaderboard", currentUser.uid));
+        // Marquage banni définitif
+        await setDoc(userRef, { banned: true, banReason: "Triche répétée" }, { merge: true });
+        signOut(auth).then(() => window.location.reload());
+    }
+}
+
 // --- AUTHENTIFICATION ---
 onAuthStateChanged(auth, async (user) => {
-    const errorEl = document.getElementById("error-msg");
     const logoutBtn = document.getElementById("btn-logout");
     const loginBtn = document.getElementById("btn-login");
     const authStatus = document.getElementById("auth-status");
@@ -46,12 +69,14 @@ onAuthStateChanged(auth, async (user) => {
         if (ALLOWED_DOMAINS.includes(domain)) {
             const userRef = doc(db, "users", user.uid);
             const userSnap = await getDoc(userRef);
+            
             if (userSnap.exists() && userSnap.data().banned) {
-                authStatus.innerHTML = "🚫 Compte bloqué.";
+                authStatus.innerHTML = "🚫 <b>COMPTE BANNI</b>";
                 logoutBtn.classList.remove("hidden");
                 loginBtn.classList.add("hidden");
                 return;
             }
+            
             currentUser = user;
             authStatus.innerHTML = `⚓ Bienvenue <b>${user.displayName.split(' ')[0]}</b> !`;
             document.getElementById("auth-section").classList.add("hidden");
@@ -76,8 +101,7 @@ async function loadLeaderboard() {
         let html = "";
         let rank = 1;
         snap.forEach((d) => {
-            const data = d.data();
-            html += `<li><span>#${rank} ${data.name}</span> <b>${Math.floor(data.score || 0)}</b></li>`;
+            html += `<li><span>#${rank} ${d.data().name}</span> <b>${Math.floor(d.data().score || 0)}</b></li>`;
             rank++;
         });
         document.getElementById("live-highscore-list").innerHTML = html;
@@ -87,6 +111,11 @@ async function loadLeaderboard() {
 
 async function saveScoreIfBest(newScore) {
     if (!currentUser || newScore > 35000) return;
+    
+    // Sécurité supplémentaire : On vérifie si le mec est banni avant d'écrire
+    const userSnap = await getDoc(doc(db, "users", currentUser.uid));
+    if (userSnap.exists() && userSnap.data().banned) return;
+
     const userRef = doc(db, "leaderboard", currentUser.uid);
     const snap = await getDoc(userRef);
     const roundedScore = Math.floor(newScore);
@@ -101,18 +130,6 @@ async function saveScoreIfBest(newScore) {
     loadLeaderboard();
 }
 
-async function logCheatAttempt(type) {
-    if (!currentUser) return;
-    const userRef = doc(db, "users", currentUser.uid);
-    const userSnap = await getDoc(userRef);
-    let count = (userSnap.exists() ? (userSnap.data().cheatCount || 0) : 0) + 1;
-    await setDoc(userRef, { cheatCount: count }, { merge: true });
-    if (count >= 3) {
-        await setDoc(userRef, { banned: true, banReason: "Triche répétée" }, { merge: true });
-        signOut(auth).then(() => window.location.reload());
-    }
-}
-
 // --- JEU PHASER ---
 class BootScene extends Phaser.Scene {
     constructor() { super("BootScene"); }
@@ -122,7 +139,6 @@ class BootScene extends Phaser.Scene {
         this.load.image("obstacle", "obstacle_harmonized.png");
         this.load.image("pearl", "pearl_harmonized.png");
         this.load.audio('music_action', 'music.mp3');
-        this.load.audio('sea_ambience', 'sea.mp3');
         this.load.audio('crash_sound', 'crash.mp3');
         this.load.audio('coin_sound', 'coin.mp3');
     }
@@ -138,7 +154,6 @@ class MainScene extends Phaser.Scene {
     constructor() { super("MainScene"); }
 
     create() {
-        // Cache des éléments DOM pour la performance
         this.domScore = document.getElementById("score-display");
         this.domPearls = document.getElementById("pearls-display");
         this.domSecret = document.getElementById("btn-secret-trigger");
@@ -152,7 +167,6 @@ class MainScene extends Phaser.Scene {
 
         this.bg = this.add.tileSprite(0, 0, 480, 720, "background").setOrigin(0);
 
-        // Optimisation particules : moins de fréquence
         this.trailEmitter = this.add.particles(0, 0, "p_white", {
             speedY: { min: 100, max: 200 }, scale: { start: 1.5, end: 0 },
             alpha: { start: 0.5, end: 0 }, lifespan: 600, frequency: 30, blendMode: 'ADD'
@@ -247,16 +261,12 @@ class MainScene extends Phaser.Scene {
 
         GameState.score += move * 0.01;
         
-        // Mise à jour DOM optimisée
-        const displayScore = Math.floor(GameState.score);
-        this.domScore.textContent = displayScore;
+        this.domScore.textContent = Math.floor(GameState.score);
         this.domPearls.textContent = GameState.pearls;
 
-        // Bouton Secret
-        if(displayScore >= 50 && displayScore <= 100) this.domSecret.classList.remove("hidden");
+        if(Math.floor(GameState.score) >= 50 && Math.floor(GameState.score) <= 100) this.domSecret.classList.remove("hidden");
         else this.domSecret.classList.add("hidden");
 
-        // Nettoyage hors écran
         this.obstacles.children.each(o => { if(o && o.y > 750) o.destroy(); });
         this.pearls.children.each(p => { if(p && p.y > 750) p.destroy(); });
     }
@@ -297,23 +307,25 @@ class MainScene extends Phaser.Scene {
     }
 }
 
-// --- INITIALISATION ---
+// --- INITIALISATION & SECURITÉ ---
 const phaserConfig = {
     type: Phaser.AUTO, 
     width: 480, height: 720, 
     parent: "game-container",
-    physics: { default: "arcade", arcade: { fps: 60, gravity: { y: 0 } } },
+    physics: { default: "arcade", arcade: { fps: 60 } },
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: [BootScene, MainScene],
-    powerPreference: 'high-performance' // Force le GPU si disponible
+    powerPreference: 'high-performance'
 };
 
 window.addEventListener('DOMContentLoaded', () => {
     const game = new Phaser.Game(phaserConfig);
     setupDomHandlers(game);
 
-    // ANTI-CONSOLE
-    Object.defineProperty(window, 'game', { get: () => { logCheatAttempt("console"); return undefined; } });
+    // PIÈGE VARIABLE 'game'
+    Object.defineProperty(window, 'game', { 
+        get: () => { logCheatAttempt("console_access"); return undefined; } 
+    });
 
     // ANTI-TRICHE STACK TRACE
     const _dest = Phaser.GameObjects.GameObject.prototype.destroy;
@@ -321,12 +333,21 @@ window.addEventListener('DOMContentLoaded', () => {
         if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle")) {
             const s = new Error().stack;
             if (!s || (!s.includes("MainScene") && !s.includes("phaser"))) {
-                logCheatAttempt("manualDestroy"); return this;
+                logCheatAttempt("manual_destroy"); return this;
             }
         }
         return _dest.call(this);
     };
 });
+
+// BLOCAGE F12 DIRECT DANS LE JS
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) || (e.ctrlKey && e.key === 'u')) {
+        e.preventDefault();
+        logCheatAttempt("f12_shortcut");
+    }
+});
+window.addEventListener('contextmenu', e => e.preventDefault());
 
 function setupDomHandlers(game) {
     document.getElementById("btn-login").onclick = () => signInWithPopup(auth, provider);
