@@ -70,57 +70,6 @@
     .panel--paper { text-align: center; }
     #error-msg { color: #ff5252; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 5px; margin: 10px 0; font-size: 0.9rem; }
   </style>
-
-  <!-- Ajout des bibliothèques pour le chiffrement et la détection de triche -->
-  <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.min.js"></script>
-  <script>
-    // Désactive les outils de développement et le clic droit
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J'))) {
-            e.preventDefault();
-            alert("L'accès aux outils de développement est désactivé pour ce jeu.");
-            // Détecte l'ouverture des outils de développement (honeypot)
-            if (window.logCheatAttempt) {
-                logCheatAttempt("devToolsAccess");
-            }
-        }
-    });
-
-    // Empêche le clic droit
-    document.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-    });
-
-    // Détecte les modifications du DOM (exemple : changement de score via la console)
-    function setupDomTamperingDetection() {
-        const scoreDisplay = document.getElementById("score-display");
-        const pearlsDisplay = document.getElementById("pearls-display");
-        let lastScore = 0;
-        let lastPearls = 0;
-
-        setInterval(() => {
-            if (window.GameState) {
-                const currentScore = parseInt(scoreDisplay.textContent);
-                const currentPearls = parseInt(pearlsDisplay.textContent);
-                if (currentScore !== window.GameState.getScore() || currentPearls !== window.GameState.getPearls()) {
-                    if (window.logCheatAttempt) {
-                        logCheatAttempt("domTampering", {
-                            expectedScore: window.GameState.getScore(),
-                            displayedScore: currentScore
-                        });
-                    }
-                }
-                lastScore = currentScore;
-                lastPearls = currentPearls;
-            }
-        }, 1000);
-    }
-
-    // Initialise la détection une fois le jeu chargé
-    window.addEventListener('DOMContentLoaded', () => {
-        setupDomTamperingDetection();
-    });
-  </script>
 </head>
 <body>
   <a href="../index.html" class="home-btn">🏠</a>
@@ -140,7 +89,6 @@
 
       <section class="game-wrap">
         <div id="game-container" class="game-container">
-
           <div id="btn-settings" class="settings-btn">🔊</div>
 
           <div id="hud" class="hud hidden" style="left: 20px; transform: none; flex-direction: column; align-items: flex-start; gap: 8px;">
@@ -176,7 +124,6 @@
               <button id="close-modal-x" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 32px; cursor: pointer;">&times;</button>
               <div id="view-rankings">
                 <h2 id="lb-title">🏆 TOP MILLES</h2>
-
                 <ul id="modal-highscore-list" class="highscore-list"></ul>
                 <button id="btn-show-prizes" class="btn btn-gold" style="width: 100%; margin-bottom: 10px;">🎁 VOIR LES TRÉSORS</button>
                 <button id="btn-close-modal" class="btn btn-primary" style="width: 100%;">RETOUR</button>
@@ -200,11 +147,11 @@
           </div>
 
           <div id="secret-modal" class="overlay hidden" style="z-index: 3000;">
-              <div class="panel panel--paper">
-                <h2>📜 CLEF DE DÉCHIFFRAGE</h2>
-                <h1 id="decryption-key">suzie</h1>
-                <button id="btn-close-secret" class="btn btn-gold" style="width:100%">REPRENDRE</button>
-              </div>
+            <div class="panel panel--paper">
+              <h2>📜 CLEF DE DÉCHIFFRAGE</h2>
+              <h1 id="decryption-key">suzie</h1>
+              <button id="btn-close-secret" class="btn btn-gold" style="width:100%">REPRENDRE</button>
+            </div>
           </div>
           <div id="howto" class="overlay hidden">
             <div class="panel panel--paper">
@@ -213,7 +160,6 @@
               <button id="btn-back-menu" class="btn btn-primary">RETOUR</button>
             </div>
           </div>
-
         </div>
       </section>
 
@@ -226,8 +172,59 @@
     </main>
   </div>
 
-  <!-- Chargement de Phaser et du jeu -->
+  <!-- Chargement des bibliothèques dans le bon ordre -->
+  <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
+
+  <!-- Scripts de protection (après Firebase) -->
+  <script>
+    // Désactive les outils de développement et le clic droit
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J'))) {
+        e.preventDefault();
+        alert("L'accès aux outils de développement est désactivé pour ce jeu.");
+      }
+    });
+
+    // Empêche le clic droit
+    document.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+    });
+
+    // Détecte les modifications du DOM (après le chargement du jeu)
+    function setupDomTamperingDetection() {
+      if (!window.GameState) return; // Attend que GameState soit disponible
+      const scoreDisplay = document.getElementById("score-display");
+      const pearlsDisplay = document.getElementById("pearls-display");
+      let lastScore = 0;
+      let lastPearls = 0;
+
+      setInterval(() => {
+        if (scoreDisplay && pearlsDisplay) {
+          const currentScore = parseInt(scoreDisplay.textContent);
+          const currentPearls = parseInt(pearlsDisplay.textContent);
+          if (currentScore !== window.GameState.getScore() || currentPearls !== window.GameState.getPearls()) {
+            if (window.logCheatAttempt) {
+              logCheatAttempt("domTampering", {
+                expectedScore: window.GameState.getScore(),
+                displayedScore: currentScore
+              });
+            }
+          }
+        }
+      }, 1000);
+    }
+
+    // Initialise les protections après le chargement du jeu
+    window.addEventListener('load', () => {
+      setTimeout(setupDomTamperingDetection, 2000); // Donne le temps au jeu de charger
+    });
+  </script>
+
+  <!-- Chargement du jeu (en dernier) -->
   <script type="module" src="game.js"></script>
 </body>
 </html>
