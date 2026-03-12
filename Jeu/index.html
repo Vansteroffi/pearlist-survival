@@ -42,6 +42,24 @@
     .btn-gold { background: #ffb700 !important; color: #3e2723 !important; font-weight: bold; }
     #error-msg { color: #ff5252; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 5px; margin: 5px 0; font-size: 0.8rem; }
   </style>
+  <script>
+  // Désactive F12, Ctrl+Maj+I/J/C et Ctrl+U (Afficher code source)
+  document.addEventListener('keydown', (e) => {
+      if (
+          e.key === 'F12' || 
+          (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) || 
+          (e.ctrlKey && e.key === 'u')
+      ) {
+          e.preventDefault();
+          alert("L'accès aux outils de développement est désactivé pour cette régate !");
+      }
+  });
+
+  // Empêche le clic droit (pour éviter l'inspection)
+  document.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+  });
+  </script>
 </head>
 <body>
   <a href="../index.html" class="home-btn">🏠</a>
