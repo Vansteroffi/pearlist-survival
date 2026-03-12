@@ -24,7 +24,6 @@ let isMuted = false;
 let gameStartTime = 0;
 const Bus = new Phaser.Events.EventEmitter();
 
-// Encapsulation de GameState
 const GameState = (() => {
     let score = 0;
     let pearls = 0;
@@ -49,7 +48,6 @@ onAuthStateChanged(auth, async (user) => {
     if (user) {
         const domain = user.email.split('@')[1];
         if (ALLOWED_DOMAINS.includes(domain)) {
-            // Vérifie si l'utilisateur est banni
             const userRef = doc(db, "users", user.uid);
             const userSnap = await getDoc(userRef);
             if (userSnap.exists() && userSnap.data().banned) {
@@ -124,7 +122,6 @@ async function saveScoreIfBest(newScore) {
     loadLeaderboard();
 }
 
-// Fonction pour logger les tentatives de triche et gérer les avertissements
 async function logCheatAttempt(type, details = {}) {
     if (!currentUser) return;
     const userRef = doc(db, "users", currentUser.uid);
@@ -133,7 +130,6 @@ async function logCheatAttempt(type, details = {}) {
     if (userSnap.exists()) {
         cheatCount = (userSnap.data().cheatCount || 0) + 1;
     }
-    // Enregistre la tentative de triche
     await setDoc(doc(db, "cheatLogs", `${currentUser.uid}_${Date.now()}`), {
         userId: currentUser.uid,
         userName: currentUser.displayName,
@@ -141,16 +137,14 @@ async function logCheatAttempt(type, details = {}) {
         details: details,
         timestamp: Date.now()
     });
-    // Met à jour le compteur de triche
     await setDoc(userRef, { cheatCount: cheatCount }, { merge: true });
 
-    // Affiche un avertissement progressif
     if (cheatCount === 1) {
-        alert("⚠️ Attention : Une tentative de triche a été détectée. Une deuxième tentative entraînera un avertissement supplémentaire.");
+        alert("⚠️ Attention : Une tentative de triche a été détectée.");
     } else if (cheatCount === 2) {
-        alert("⚠️ Dernier avertissement : Une nouvelle tentative de triche entraînera le blocage définitif de votre compte et l'impossibilité de soumettre des scores avec cette adresse mail.");
+        alert("⚠️ Dernier avertissement avant blocage définitif.");
     } else if (cheatCount >= 3) {
-        alert("🚫 Votre compte a été bloqué pour triche. Vous ne pourrez plus soumettre de résultats avec cette adresse mail. Contactez l'administrateur si vous pensez qu'il s'agit d'une erreur.");
+        alert("🚫 Votre compte a été bloqué pour triche.");
         await setDoc(userRef, {
             banned: true,
             banReason: "Triche répétée",
@@ -225,6 +219,8 @@ class MainScene extends Phaser.Scene {
             if(this.coinEffect) this.coinEffect.play();
         }, null, this);
         this.cursors = this.input.keyboard.createCursorKeys();
+        
+        // Handlers d'input (Drag & Click)
         let dragStartX = 0, hasMoved = false;
         this.input.on("pointerdown", (p) => { dragStartX = p.x; hasMoved = false; });
         this.input.on("pointermove", (p) => {
@@ -239,6 +235,7 @@ class MainScene extends Phaser.Scene {
             if(!GameState.getPlaying()) return;
             if (!hasMoved) this.changeLane((p.x < 240) ? -1 : 1);
         });
+
         Bus.removeAllListeners();
         Bus.on("start", () => {
             gameStartTime = Date.now();
@@ -252,6 +249,7 @@ class MainScene extends Phaser.Scene {
             if(this.music) this.music.stop();
             this.scene.restart();
         });
+
         document.getElementById("btn-secret-trigger").onclick = () => {
             this.physics.pause();
             GameState.setPlaying(false);
@@ -264,13 +262,16 @@ class MainScene extends Phaser.Scene {
             GameState.setPlaying(true);
             if(this.music && !isMuted) this.music.resume();
         };
+
         this.physics.pause();
         showMenuState("menu");
     }
+
     update(_, delta) {
         if (!GameState.getPlaying() || this.isGameOver) return;
         if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) this.changeLane(-1);
         if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) this.changeLane(1);
+        
         const dt = delta / 1000;
         this.currentSpeed += 4.5 * dt;
         const move = this.currentSpeed * dt;
@@ -278,14 +279,18 @@ class MainScene extends Phaser.Scene {
         this.obstacles.setVelocityY(this.currentSpeed);
         this.pearls.setVelocityY(this.currentSpeed);
         this.distanceTraveledSinceLastSpawn += move;
+
         if (this.distanceTraveledSinceLastSpawn >= this.spawnDistanceThreshold) {
             this.spawnWave();
             this.distanceTraveledSinceLastSpawn = 0;
             if(this.spawnDistanceThreshold > 280) this.spawnDistanceThreshold -= 0.6;
         }
+
         GameState.addScore(move * 0.01);
         document.getElementById("score-display").textContent = Math.floor(GameState.getScore());
         document.getElementById("pearls-display").textContent = GameState.getPearls();
+
+        // Gestion du bouton secret
         const currentMilles = Math.floor(GameState.getScore());
         const btnSecret = document.getElementById("btn-secret-trigger");
         if (currentMilles >= 50 && currentMilles <= 100) {
@@ -293,21 +298,20 @@ class MainScene extends Phaser.Scene {
         } else {
             btnSecret.classList.add("hidden");
         }
-        
-        // CORRECTION ICI : Ajout du drapeau "safeAction" avant de détruire l'obstacle
+
+        // Nettoyage automatique des obstacles sortis de l'écran
         this.obstacles.getChildren().forEach(obstacle => {
-            if (obstacle.y > 800) {
-                obstacle.setData("safeAction", true); // On autorise la destruction légitime
-                obstacle.destroy();
-            }
+            if (obstacle.y > 800) obstacle.destroy();
         });
     }
+
     changeLane(dir) {
         const next = this.laneIndex + dir;
         if (next < 0 || next > 2) return;
         this.laneIndex = next;
         this.tweens.add({ targets: this.player, x: [130, 240, 350][this.laneIndex], duration: 150, ease: "Power2" });
     }
+
     spawnWave() {
         const lanes = [130, 240, 350];
         const shuffled = lanes.sort(() => 0.5 - Math.random());
@@ -324,6 +328,7 @@ class MainScene extends Phaser.Scene {
             }
         }
     }
+
     gameOver() {
         if (this.isGameOver) return;
         this.isGameOver = true;
@@ -347,15 +352,14 @@ function showMenuState(s) {
     if (s === "gameover") document.getElementById("game-over").classList.remove("hidden");
 }
 
-// CORRECTION ICI : On passe l'instance du jeu en paramètre pour que le bouton mute fonctionne sans utiliser window.gameInstance
-function setupDomHandlers(actualGame) {
+function setupDomHandlers(actualGameInstance) {
     document.getElementById("btn-login").onclick = () => signInWithPopup(auth, provider);
     document.getElementById("btn-logout").onclick = () => signOut(auth).then(() => window.location.reload());
     document.getElementById("btn-play").onclick = () => Bus.emit("start");
     document.getElementById("btn-restart").onclick = () => Bus.emit("restart");
     document.getElementById("btn-settings").onclick = () => {
         isMuted = !isMuted;
-        if(actualGame) actualGame.sound.mute = isMuted;
+        if(actualGameInstance) actualGameInstance.sound.mute = isMuted;
         document.getElementById("btn-settings").innerText = isMuted ? "🔇" : "🔊";
     };
     document.getElementById("btn-show-leaderboard").onclick = () => {
@@ -391,77 +395,44 @@ const phaserConfig = {
     scene: [BootScene, MainScene]
 };
 
-// Protections contre les triches
+// INITIALISATION ET PROTECTIONS
 window.addEventListener('DOMContentLoaded', () => {
-    // Initialisation du jeu stockée localement
-    const actualGame = new Phaser.Game(phaserConfig);
-    setupDomHandlers(actualGame);
+    const internalGame = new Phaser.Game(phaserConfig);
+    setupDomHandlers(internalGame);
 
-    // Protection totale : on masque gameInstance pour tout le monde, et on renvoie un objet vide
+    // Blocage total de l'accès console à l'instance
     Object.defineProperty(window, 'gameInstance', {
-        get: () => {
-            console.warn("Accès interdit à l'instance du jeu depuis la console.");
-            return {};
-        },
-        set: (value) => {
-            console.warn("Modification interdite de l'instance du jeu depuis la console.");
-        },
+        get: () => { console.warn("Accès interdit."); return {}; },
+        set: () => { console.warn("Modification interdite."); },
         configurable: false
     });
 
-    // CORRECTION ICI : Ajout de la vérification !this.getData("safeAction") dans les prototypes
-    
-    // Protection contre clear()
-    const originalClear = Phaser.GameObjects.Group.prototype.clear;
-    Phaser.GameObjects.Group.prototype.clear = function() {
-        if (this.scene?.scene?.key === "MainScene" && this === this.scene.obstacles) {
-            console.warn("Triche détectée : tentative de suppression des obstacles via clear().");
-            logCheatAttempt("clearObstacles");
-            return this;
-        }
-        return originalClear.apply(this, arguments);
-    };
-
-    // Protection contre destroy()
+    // PROTECTION INTELLIGENTE (Vérification de la Stack Trace)
     const originalDestroy = Phaser.GameObjects.GameObject.prototype.destroy;
     Phaser.GameObjects.GameObject.prototype.destroy = function() {
-        if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle") && !this.getData("safeAction")) {
-            console.warn("Triche détectée : tentative de suppression d'un obstacle via destroy().");
-            logCheatAttempt("destroyObstacle");
-            return this;
+        const stack = new Error().stack;
+        // Si c'est un obstacle et que l'appel ne vient pas du code du jeu (MainScene ou Phaser interne)
+        if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle")) {
+            // Si l'appel vient de la console (anonyme/eval) et non du cycle de vie du jeu
+            if (stack && (stack.includes("eval") || stack.includes("anonymous") || !stack.includes("MainScene"))) {
+                console.warn("Triche bloquée : tentative de destruction externe.");
+                logCheatAttempt("manualDestroy");
+                return this;
+            }
         }
         return originalDestroy.call(this);
     };
 
-    // Protection contre setActive/setVisible
     const originalSetActive = Phaser.GameObjects.GameObject.prototype.setActive;
     Phaser.GameObjects.GameObject.prototype.setActive = function(value) {
-        if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle") && !value && !this.getData("safeAction")) {
-            console.warn("Triche détectée : tentative de désactivation d'un obstacle.");
-            logCheatAttempt("disableObstacle");
-            return this;
+        const stack = new Error().stack;
+        if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle") && !value) {
+            if (stack && (stack.includes("eval") || !stack.includes("MainScene"))) {
+                console.warn("Triche bloquée : tentative de désactivation externe.");
+                logCheatAttempt("manualDisable");
+                return this;
+            }
         }
         return originalSetActive.call(this, value);
-    };
-
-    const originalSetVisible = Phaser.GameObjects.GameObject.prototype.setVisible;
-    Phaser.GameObjects.GameObject.prototype.setVisible = function(value) {
-        if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle") && !value && !this.getData("safeAction")) {
-            console.warn("Triche détectée : tentative de masquage d'un obstacle.");
-            logCheatAttempt("hideObstacle");
-            return this;
-        }
-        return originalSetVisible.call(this, value);
-    };
-
-    // Protection contre remove()
-    const originalRemove = Phaser.GameObjects.Group.prototype.remove;
-    Phaser.GameObjects.Group.prototype.remove = function(child, destroy, silent) {
-        if (this.scene?.scene?.key === "MainScene" && this === this.scene.obstacles) {
-            console.warn("Triche détectée : tentative de suppression d'un obstacle via remove().");
-            logCheatAttempt("removeObstacle");
-            return this;
-        }
-        return originalRemove.call(this, child, destroy, silent);
     };
 });
