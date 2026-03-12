@@ -1,7 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { sha256 } from "https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.esm.min.js";
 
 // --- CONFIGURATION FIREBASE ---
 const firebaseConfig = {
@@ -33,12 +32,13 @@ const GameState = (() => {
     let score = 0;
     let pearls = 0;
     let playing = false;
-    let encryptedScore = 0;
-    let encryptedPearls = 0;
 
-    // Fonction de chiffrement simple (XOR)
+    // Fonction de chiffrement simple (XOR basique)
     const encrypt = (value, key = 0x55) => value ^ key;
     const decrypt = (value, key = 0x55) => value ^ key;
+
+    let encryptedScore = encrypt(0);
+    let encryptedPearls = encrypt(0);
 
     return {
         getScore: () => decrypt(encryptedScore),
@@ -166,7 +166,7 @@ async function verifyCodeIntegrity() {
     try {
         const response = await fetch('game.js');
         const code = await response.text();
-        const currentHash = sha256(code).toString();
+        const currentHash = CryptoJS.SHA256(code).toString();
         const expectedHash = "TON_HASH_ICI"; // Remplace par le hash du fichier original
 
         if (currentHash !== expectedHash) {
@@ -188,60 +188,36 @@ function setupDomTamperingDetection() {
         const currentScore = parseInt(scoreDisplay.textContent);
         const currentPearls = parseInt(pearlsDisplay.textContent);
 
-        if (currentScore !== lastScore || currentPearls !== lastPearls) {
-            if (currentScore !== GameState.getScore() || currentPearls !== GameState.getPearls()) {
-                logCheatAttempt("domTampering", {
-                    expectedScore: GameState.getScore(),
-                    displayedScore: currentScore,
-                    expectedPearls: GameState.getPearls(),
-                    displayedPearls: currentPearls
-                });
-            }
-            lastScore = currentScore;
-            lastPearls = currentPearls;
+        if (currentScore !== GameState.getScore() || currentPearls !== GameState.getPearls()) {
+            logCheatAttempt("domTampering", {
+                expectedScore: GameState.getScore(),
+                displayedScore: currentScore,
+                expectedPearls: GameState.getPearls(),
+                displayedPearls: currentPearls
+            });
         }
+        lastScore = currentScore;
+        lastPearls = currentPearls;
     }, 1000);
 }
 
 // --- PREUVE DE JEU (PROOF OF PLAY) ---
 function setupProofOfPlay() {
     gameSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    let lastSnapshotTime = Date.now();
 
     setInterval(async () => {
-        if (GameState.getPlaying()) {
+        if (GameState.getPlaying() && currentUser) {
             const snapshot = {
                 userId: currentUser.uid,
                 score: GameState.getScore(),
                 pearls: GameState.getPearls(),
-                obstacles: this.obstacles ? this.obstacles.getChildren().length : 0,
+                obstacles: window.game?.scene?.scenes.find(s => s.scene.key === "MainScene")?.obstacles?.getChildren().length || 0,
                 time: Date.now(),
                 sessionId: gameSessionId
             };
             await setDoc(doc(db, "gameSessions", `${gameSessionId}_${Date.now()}`), snapshot);
-            lastSnapshotTime = Date.now();
         }
     }, 5000);
-}
-
-// --- DÉTECTION DES COMMANDES CONSOLE ILLÉGALES (HONEYPOTS) ---
-function setupConsoleCheatDetection() {
-    // Honeypot 1 : Fausse fonction pour piéger les tricheurs
-    window.toggleInvincibility = () => logCheatAttempt("consoleCheat", { command: "toggleInvincibility" });
-    window.setScore = (score) => logCheatAttempt("consoleCheat", { command: "setScore", attemptedScore: score });
-    window.removeObstacles = () => logCheatAttempt("consoleCheat", { command: "removeObstacles" });
-
-    // Honeypot 2 : Détecter l'accès aux outils de développement
-    const devToolsOpen = () => {
-        const threshold = 100;
-        const start = Date.now();
-        debugger;
-        const end = Date.now();
-        if (end - start > threshold) {
-            logCheatAttempt("devToolsAccess");
-        }
-    };
-    setInterval(devToolsOpen, 500);
 }
 
 // --- JEU PHASER ---
@@ -316,7 +292,6 @@ class MainScene extends Phaser.Scene {
         this.cursors = this.input.keyboard.createCursorKeys();
         this.setupInputHandlers();
 
-        // GESTION DES ÉVÉNEMENTS BUS (Correction Crash)
         Bus.removeAllListeners();
         Bus.on("start", () => {
             if (this.isGameOver) return;
@@ -332,7 +307,6 @@ class MainScene extends Phaser.Scene {
             this.scene.restart();
         });
 
-        // BOUTON SECRET
         document.getElementById("btn-secret-trigger").onclick = () => {
             this.physics.pause();
             GameState.setPlaying(false);
@@ -390,7 +364,6 @@ class MainScene extends Phaser.Scene {
         document.getElementById("score-display").textContent = Math.floor(GameState.getScore());
         document.getElementById("pearls-display").textContent = GameState.getPearls();
 
-        // Affichage bouton secret (50-100 milles)
         const score = Math.floor(GameState.getScore());
         const btnS = document.getElementById("btn-secret-trigger");
         if(score >= 50 && score <= 100) btnS.classList.remove("hidden");
@@ -461,7 +434,6 @@ function setupDomHandlers(game) {
         e.target.innerText = isMuted ? "🔇" : "🔊";
     };
 
-    // Leaderboard & Prix
     document.getElementById("btn-show-leaderboard").onclick = () => {
         document.getElementById("leaderboard-modal").classList.remove("hidden");
         document.getElementById("view-rankings").classList.remove("hidden");
@@ -478,7 +450,6 @@ function setupDomHandlers(game) {
     };
     document.getElementById("btn-close-modal").onclick = () => document.getElementById("leaderboard-modal").classList.add("hidden");
     document.getElementById("close-modal-x").onclick = () => document.getElementById("leaderboard-modal").classList.add("hidden");
-
     document.getElementById("btn-howto").onclick = () => {
         document.getElementById("main-menu").classList.add("hidden");
         document.getElementById("howto").classList.remove("hidden");
@@ -501,13 +472,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const game = new Phaser.Game(phaserConfig);
     setupDomHandlers(game);
 
-    // ACTIVER LES PROTECTIONS
+    // Active les protections après le chargement
     verifyCodeIntegrity();
     setupDomTamperingDetection();
-    setupConsoleCheatDetection();
     setupProofOfPlay();
 
-    // ANTI-TRICHE (STACK TRACE)
+    // Anti-triche pour la suppression d'obstacles
     const originalDestroy = Phaser.GameObjects.GameObject.prototype.destroy;
     Phaser.GameObjects.GameObject.prototype.destroy = function() {
         const stack = new Error().stack;
