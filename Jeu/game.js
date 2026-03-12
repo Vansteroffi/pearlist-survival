@@ -24,6 +24,7 @@ let isMuted = false;
 let gameStartTime = 0;
 const Bus = new Phaser.Events.EventEmitter();
 
+// Encapsulation de GameState pour empêcher les modifications directes
 const GameState = (() => {
     let score = 0;
     let pearls = 0;
@@ -48,6 +49,7 @@ onAuthStateChanged(auth, async (user) => {
     if (user) {
         const domain = user.email.split('@')[1];
         if (ALLOWED_DOMAINS.includes(domain)) {
+            // Vérification si banni
             const userRef = doc(db, "users", user.uid);
             const userSnap = await getDoc(userRef);
             if (userSnap.exists() && userSnap.data().banned) {
@@ -84,12 +86,14 @@ async function loadLeaderboard() {
     const snap = await getDocs(q);
     let html = "";
     let rank = 1;
+
     snap.forEach((d) => {
         const data = d.data();
         const displayVal = Math.floor(data.score || 0);
         html += `<li><span>#${rank} ${data.name}</span> <b>${displayVal}</b></li>`;
         rank++;
     });
+
     document.getElementById("live-highscore-list").innerHTML = html;
     document.getElementById("lb-title").innerText = "🏆 TOP MILLES";
     document.getElementById("modal-highscore-list").innerHTML = html;
@@ -100,25 +104,30 @@ async function saveScoreIfBest(newScore) {
     const maxPossibleScore = 30000;
     if (newScore > maxPossibleScore) {
         alert("Score invalide détecté !");
-        await logCheatAttempt("highScore", { attemptedScore: newScore });
+        logCheatAttempt("highScore", { attemptedScore: newScore });
         return;
     }
+
     const userRef = doc(db, "leaderboard", currentUser.uid);
     const snap = await getDoc(userRef);
     const roundedScore = Math.floor(newScore);
+
     let bestScore = roundedScore;
     let totalTime = Math.floor((Date.now() - gameStartTime) / 1000);
+
     if (snap.exists()) {
         const data = snap.data();
         bestScore = Math.max(data.score || 0, roundedScore);
         totalTime = (data.totalTime || 0) + totalTime;
     }
+
     await setDoc(userRef, {
         name: currentUser.displayName,
         score: bestScore,
         totalTime: totalTime,
         date: Date.now()
     }, { merge: true });
+
     loadLeaderboard();
 }
 
@@ -130,6 +139,7 @@ async function logCheatAttempt(type, details = {}) {
     if (userSnap.exists()) {
         cheatCount = (userSnap.data().cheatCount || 0) + 1;
     }
+    
     await setDoc(doc(db, "cheatLogs", `${currentUser.uid}_${Date.now()}`), {
         userId: currentUser.uid,
         userName: currentUser.displayName,
@@ -137,19 +147,16 @@ async function logCheatAttempt(type, details = {}) {
         details: details,
         timestamp: Date.now()
     });
+
     await setDoc(userRef, { cheatCount: cheatCount }, { merge: true });
 
     if (cheatCount === 1) {
         alert("⚠️ Attention : Une tentative de triche a été détectée.");
     } else if (cheatCount === 2) {
-        alert("⚠️ Dernier avertissement avant blocage définitif.");
+        alert("⚠️ Dernier avertissement avant blocage.");
     } else if (cheatCount >= 3) {
-        alert("🚫 Votre compte a été bloqué pour triche.");
-        await setDoc(userRef, {
-            banned: true,
-            banReason: "Triche répétée",
-            cheatCount: cheatCount
-        }, { merge: true });
+        alert("🚫 Compte bloqué.");
+        await setDoc(userRef, { banned: true, banReason: "Triche répétée" }, { merge: true });
         signOut(auth).then(() => window.location.reload());
     }
 }
@@ -182,6 +189,7 @@ class MainScene extends Phaser.Scene {
         this.pearls = null;
         this.isGameOver = false;
     }
+
     create() {
         this.isGameOver = false;
         GameState.reset();
@@ -190,20 +198,25 @@ class MainScene extends Phaser.Scene {
         this.distanceTraveledSinceLastSpawn = 0;
         this.spawnDistanceThreshold = 450;
         this.bg = this.add.tileSprite(0, 0, 480, 720, "background").setOrigin(0);
+
         this.trailEmitter = this.add.particles(0, 0, "p_white", {
             speedY: { min: 120, max: 250 }, scale: { start: 2, end: 0 },
             alpha: { start: 0.7, end: 0 }, lifespan: 800, frequency: 15, blendMode: 'ADD'
         });
+
         this.player = this.physics.add.sprite(240, 600, "player").setScale(0.8);
         this.player.body.setCircle(this.player.width * 0.25, this.player.width * 0.25, this.player.height * 0.3);
         this.trailEmitter.startFollow(this.player);
         this.trailEmitter.followOffset.set(0, 40);
+
         this.pearlEmitter = this.add.particles(0, 0, "p_gold", {
             speed: { min: 100, max: 200 }, angle: { min: 0, max: 360 },
             scale: { start: 2.5, end: 0 }, lifespan: 500, gravityY: 200, emitting: false
         });
+
         this.obstacles = this.physics.add.group();
         this.pearls = this.physics.add.group();
+
         try {
             this.sea = this.sound.add('sea_ambience', { loop: true, volume: 0.3 });
             this.music = this.sound.add('music_action', { loop: true, volume: 0.4 });
@@ -212,29 +225,16 @@ class MainScene extends Phaser.Scene {
             this.sound.mute = isMuted;
             this.sea.play();
         } catch(e) {}
+
         this.physics.add.overlap(this.player, this.obstacles, () => this.gameOver(), null, this);
         this.physics.add.overlap(this.player, this.pearls, (pl, p) => {
             this.pearlEmitter.emitParticleAt(p.x, p.y, 15);
             p.destroy(); GameState.addPearl(); GameState.addScore(25);
             if(this.coinEffect) this.coinEffect.play();
         }, null, this);
+
         this.cursors = this.input.keyboard.createCursorKeys();
-        
-        // Handlers d'input (Drag & Click)
-        let dragStartX = 0, hasMoved = false;
-        this.input.on("pointerdown", (p) => { dragStartX = p.x; hasMoved = false; });
-        this.input.on("pointermove", (p) => {
-            if(!GameState.getPlaying() || !p.isDown || hasMoved) return;
-            const dragDistance = p.x - dragStartX;
-            if (Math.abs(dragDistance) > 25) {
-                this.changeLane(dragDistance > 0 ? 1 : -1);
-                hasMoved = true;
-            }
-        });
-        this.input.on("pointerup", (p) => {
-            if(!GameState.getPlaying()) return;
-            if (!hasMoved) this.changeLane((p.x < 240) ? -1 : 1);
-        });
+        this.setupInputHandlers();
 
         Bus.removeAllListeners();
         Bus.on("start", () => {
@@ -250,12 +250,14 @@ class MainScene extends Phaser.Scene {
             this.scene.restart();
         });
 
+        // Gestion du bouton secret
         document.getElementById("btn-secret-trigger").onclick = () => {
             this.physics.pause();
             GameState.setPlaying(false);
             if(this.music) this.music.pause();
             document.getElementById("secret-modal").classList.remove("hidden");
         };
+
         document.getElementById("btn-close-secret").onclick = () => {
             document.getElementById("secret-modal").classList.add("hidden");
             this.physics.resume();
@@ -267,19 +269,37 @@ class MainScene extends Phaser.Scene {
         showMenuState("menu");
     }
 
+    setupInputHandlers() {
+        let dragStartX = 0;
+        let hasMoved = false;
+        this.input.on("pointerdown", (p) => { dragStartX = p.x; hasMoved = false; });
+        this.input.on("pointermove", (p) => {
+            if(!GameState.getPlaying() || !p.isDown || hasMoved) return;
+            const dragDistance = p.x - dragStartX;
+            if (Math.abs(dragDistance) > 25) {
+                this.changeLane(dragDistance > 0 ? 1 : -1);
+                hasMoved = true;
+            }
+        });
+        this.input.on("pointerup", (p) => {
+            if(!GameState.getPlaying()) return;
+            if (!hasMoved) this.changeLane((p.x < 240) ? -1 : 1);
+        });
+    }
+
     update(_, delta) {
         if (!GameState.getPlaying() || this.isGameOver) return;
         if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) this.changeLane(-1);
         if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) this.changeLane(1);
-        
+
         const dt = delta / 1000;
         this.currentSpeed += 4.5 * dt;
         const move = this.currentSpeed * dt;
         this.bg.tilePositionY -= move;
         this.obstacles.setVelocityY(this.currentSpeed);
         this.pearls.setVelocityY(this.currentSpeed);
-        this.distanceTraveledSinceLastSpawn += move;
 
+        this.distanceTraveledSinceLastSpawn += move;
         if (this.distanceTraveledSinceLastSpawn >= this.spawnDistanceThreshold) {
             this.spawnWave();
             this.distanceTraveledSinceLastSpawn = 0;
@@ -290,7 +310,6 @@ class MainScene extends Phaser.Scene {
         document.getElementById("score-display").textContent = Math.floor(GameState.getScore());
         document.getElementById("pearls-display").textContent = GameState.getPearls();
 
-        // Gestion du bouton secret
         const currentMilles = Math.floor(GameState.getScore());
         const btnSecret = document.getElementById("btn-secret-trigger");
         if (currentMilles >= 50 && currentMilles <= 100) {
@@ -299,7 +318,7 @@ class MainScene extends Phaser.Scene {
             btnSecret.classList.add("hidden");
         }
 
-        // Nettoyage automatique des obstacles sortis de l'écran
+        // Nettoyage automatique des obstacles
         this.obstacles.getChildren().forEach(obstacle => {
             if (obstacle.y > 800) obstacle.destroy();
         });
@@ -316,11 +335,13 @@ class MainScene extends Phaser.Scene {
         const lanes = [130, 240, 350];
         const shuffled = lanes.sort(() => 0.5 - Math.random());
         const numObstacles = Math.random() < 0.45 ? 2 : 1;
+
         for (let i = 0; i < numObstacles; i++) {
             const obstacle = this.obstacles.create(shuffled[i], -100, "obstacle").setScale(0.85);
             obstacle.body.setCircle(30, 15, 15);
             obstacle.setData("isObstacle", true);
         }
+
         if (numObstacles < 3) {
             const emptyLaneIndex = numObstacles;
             if(Math.random() < 0.45) {
@@ -352,16 +373,18 @@ function showMenuState(s) {
     if (s === "gameover") document.getElementById("game-over").classList.remove("hidden");
 }
 
-function setupDomHandlers(actualGameInstance) {
+function setupDomHandlers(gameInstance) {
     document.getElementById("btn-login").onclick = () => signInWithPopup(auth, provider);
     document.getElementById("btn-logout").onclick = () => signOut(auth).then(() => window.location.reload());
     document.getElementById("btn-play").onclick = () => Bus.emit("start");
     document.getElementById("btn-restart").onclick = () => Bus.emit("restart");
+
     document.getElementById("btn-settings").onclick = () => {
         isMuted = !isMuted;
-        if(actualGameInstance) actualGameInstance.sound.mute = isMuted;
+        if(gameInstance) gameInstance.sound.mute = isMuted;
         document.getElementById("btn-settings").innerText = isMuted ? "🔇" : "🔊";
     };
+
     document.getElementById("btn-show-leaderboard").onclick = () => {
         document.getElementById("leaderboard-modal").classList.remove("hidden");
         document.getElementById("view-rankings").classList.remove("hidden");
@@ -397,25 +420,24 @@ const phaserConfig = {
 
 // INITIALISATION ET PROTECTIONS
 window.addEventListener('DOMContentLoaded', () => {
-    const internalGame = new Phaser.Game(phaserConfig);
-    setupDomHandlers(internalGame);
+    const game = new Phaser.Game(phaserConfig);
+    setupDomHandlers(game);
 
-    // Blocage total de l'accès console à l'instance
+    // Blocage console
     Object.defineProperty(window, 'gameInstance', {
         get: () => { console.warn("Accès interdit."); return {}; },
-        set: () => { console.warn("Modification interdite."); },
         configurable: false
     });
 
-    // PROTECTION INTELLIGENTE (Vérification de la Stack Trace)
+    // PROTECTION INTELLIGENTE (Stack Trace)
     const originalDestroy = Phaser.GameObjects.GameObject.prototype.destroy;
     Phaser.GameObjects.GameObject.prototype.destroy = function() {
         const stack = new Error().stack;
-        // Si c'est un obstacle et que l'appel ne vient pas du code du jeu (MainScene ou Phaser interne)
         if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle")) {
-            // Si l'appel vient de la console (anonyme/eval) et non du cycle de vie du jeu
-            if (stack && (stack.includes("eval") || stack.includes("anonymous") || !stack.includes("MainScene"))) {
-                console.warn("Triche bloquée : tentative de destruction externe.");
+            // On autorise si l'appel vient de MainScene ou de Phaser lui-même
+            const isInternal = stack && (stack.includes("MainScene") || stack.includes("phaser.min.js") || stack.includes("phaser.js"));
+            if (!isInternal) {
+                console.warn("Triche bloquée.");
                 logCheatAttempt("manualDestroy");
                 return this;
             }
@@ -427,8 +449,9 @@ window.addEventListener('DOMContentLoaded', () => {
     Phaser.GameObjects.GameObject.prototype.setActive = function(value) {
         const stack = new Error().stack;
         if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle") && !value) {
-            if (stack && (stack.includes("eval") || !stack.includes("MainScene"))) {
-                console.warn("Triche bloquée : tentative de désactivation externe.");
+            const isInternal = stack && (stack.includes("MainScene") || stack.includes("phaser.min.js"));
+            if (!isInternal) {
+                console.warn("Triche bloquée.");
                 logCheatAttempt("manualDisable");
                 return this;
             }
