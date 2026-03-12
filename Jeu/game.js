@@ -224,7 +224,9 @@ class MainScene extends Phaser.Scene {
             this.coinEffect = this.sound.add('coin_sound', { volume: 0.5 });
             this.sound.mute = isMuted;
             this.sea.play();
-        } catch(e) {}
+            } catch(e) {
+            console.error("Erreur audio:", e);
+        }
 
         this.physics.add.overlap(this.player, this.obstacles, () => this.gameOver(), null, this);
         this.physics.add.overlap(this.player, this.pearls, (pl, p) => {
@@ -236,17 +238,25 @@ class MainScene extends Phaser.Scene {
         this.cursors = this.input.keyboard.createCursorKeys();
         this.setupInputHandlers();
 
+        // NETTOYAGE ET GESTION DES EVENEMENTS (Correctif Crash)
         Bus.removeAllListeners();
+
         Bus.on("start", () => {
+            if (!this.scene.isActive("MainScene")) return;
             gameStartTime = Date.now();
             GameState.setPlaying(true);
             this.physics.resume();
             showMenuState("play");
             if(this.sea) this.sea.stop();
             if(this.music) this.music.play();
-        });
-        Bus.on("restart", () => {
-            if(this.music) this.music.stop();
+         });
+
+         Bus.on("restart", () => {
+            // On stoque tous les sons avant de quitter pour éviter le freeze
+            this.sound.stopAll();
+            // On détruit les émetteurs de particules pour libérer la mémoire
+            if(this.trailEmitter) this.trailEmitter.destroy();
+            if(this.pearlEmitter) this.pearlEmitter.destroy();
             this.scene.restart();
         });
 
