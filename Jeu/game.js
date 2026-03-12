@@ -4,13 +4,13 @@ import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, orderBy,
 
 // --- CONFIGURATION FIREBASE ---
 const firebaseConfig = {
-  apiKey: "AIzaSyDp-ngw6gIqgi7-vhlSvLepnAusaSw2vFE",
-  authDomain: "pearlist-survival.firebaseapp.com",
-  projectId: "pearlist-survival",
-  storageBucket: "pearlist-survival.firebasestorage.app",
-  messagingSenderId: "131875439710",
-  appId: "1:131875439710:web:7608311b0003555843a0cf",
-  measurementId: "G-NYKYVXJBR2"
+    apiKey: "AIzaSyDp-ngw6gIqgi7-vhlSvLepnAusaSw2vFE",
+    authDomain: "pearlist-survival.firebaseapp.com",
+    projectId: "pearlist-survival",
+    storageBucket: "pearlist-survival.firebasestorage.app",
+    messagingSenderId: "131875439710",
+    appId: "1:131875439710:web:7608311b0003555843a0cf",
+    measurementId: "G-NYKYVXJBR2"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -27,20 +27,12 @@ let gameStartTime = 0;
 const Bus = new Phaser.Events.EventEmitter();
 
 // --- ETAT DU JEU ---
-const GameState = (() => {
-    let score = 0;
-    let pearls = 0;
-    let playing = false;
-    return {
-        getScore: () => score,
-        getPearls: () => pearls,
-        getPlaying: () => playing,
-        addScore: (val) => { score += val; },
-        addPearl: () => { pearls += 1; },
-        setPlaying: (val) => { playing = val; },
-        reset: () => { score = 0; pearls = 0; playing = false; }
-    };
-})();
+const GameState = {
+    score: 0,
+    pearls: 0,
+    playing: false,
+    reset() { this.score = 0; this.pearls = 0; this.playing = false; }
+};
 
 // --- AUTHENTIFICATION ---
 onAuthStateChanged(auth, async (user) => {
@@ -54,33 +46,25 @@ onAuthStateChanged(auth, async (user) => {
         if (ALLOWED_DOMAINS.includes(domain)) {
             const userRef = doc(db, "users", user.uid);
             const userSnap = await getDoc(userRef);
-            
             if (userSnap.exists() && userSnap.data().banned) {
-                authStatus.innerHTML = "🚫 Compte bloqué pour triche.";
-                errorEl.innerHTML = `Raison : ${userSnap.data().banReason || "Triche détectée"}`;
-                errorEl.classList.remove("hidden");
+                authStatus.innerHTML = "🚫 Compte bloqué.";
                 logoutBtn.classList.remove("hidden");
                 loginBtn.classList.add("hidden");
                 return;
             }
             currentUser = user;
-            authStatus.innerHTML = `⚓ Bienvenue Capitaine <b>${user.displayName.split(' ')[0]}</b> !`;
+            authStatus.innerHTML = `⚓ Bienvenue <b>${user.displayName.split(' ')[0]}</b> !`;
             document.getElementById("auth-section").classList.add("hidden");
             document.getElementById("game-controls").classList.remove("hidden");
             loadLeaderboard();
         } else {
-            authStatus.innerHTML = "🚫 Accès Refusé";
-            errorEl.innerHTML = `Utilise ton mail ICAM (actuel: ${user.email})`;
-            errorEl.classList.remove("hidden");
+            authStatus.innerHTML = "🚫 Mail ICAM requis";
             logoutBtn.classList.remove("hidden");
             loginBtn.classList.add("hidden");
         }
     } else {
-        authStatus.innerHTML = "Embarque avec ton mail ICAM.";
         loginBtn.classList.remove("hidden");
         document.getElementById("game-controls").classList.add("hidden");
-        errorEl.classList.add("hidden");
-        logoutBtn.classList.add("hidden");
     }
 });
 
@@ -98,52 +82,32 @@ async function loadLeaderboard() {
         });
         document.getElementById("live-highscore-list").innerHTML = html;
         document.getElementById("modal-highscore-list").innerHTML = html;
-    } catch(e) { console.error("Erreur leaderboard:", e); }
+    } catch(e) { console.error(e); }
 }
 
 async function saveScoreIfBest(newScore) {
-    if (!currentUser) return;
-    if (newScore > 30000) {
-        logCheatAttempt("highScore", { attemptedScore: newScore });
-        return;
-    }
-
+    if (!currentUser || newScore > 35000) return;
     const userRef = doc(db, "leaderboard", currentUser.uid);
     const snap = await getDoc(userRef);
     const roundedScore = Math.floor(newScore);
     let bestScore = roundedScore;
-    let totalTime = Math.floor((Date.now() - gameStartTime) / 1000);
-
-    if (snap.exists()) {
-        const data = snap.data();
-        bestScore = Math.max(data.score || 0, roundedScore);
-        totalTime = (data.totalTime || 0) + totalTime;
-    }
+    if (snap.exists()) bestScore = Math.max(snap.data().score || 0, roundedScore);
 
     await setDoc(userRef, {
         name: currentUser.displayName,
         score: bestScore,
-        totalTime: totalTime,
         date: Date.now()
     }, { merge: true });
     loadLeaderboard();
 }
 
-async function logCheatAttempt(type, details = {}) {
+async function logCheatAttempt(type) {
     if (!currentUser) return;
     const userRef = doc(db, "users", currentUser.uid);
     const userSnap = await getDoc(userRef);
-    let cheatCount = (userSnap.exists() ? (userSnap.data().cheatCount || 0) : 0) + 1;
-
-    await setDoc(doc(db, "cheatLogs", `${currentUser.uid}_${Date.now()}`), {
-        userId: currentUser.uid, userName: currentUser.displayName, type, details, timestamp: Date.now()
-    });
-    await setDoc(userRef, { cheatCount: cheatCount }, { merge: true });
-
-    if (cheatCount === 1) alert("⚠️ Attention : Une tentative de triche a été détectée.");
-    else if (cheatCount === 2) alert("⚠️ Dernier avertissement avant blocage.");
-    else if (cheatCount >= 3) {
-        alert("🚫 Compte bloqué.");
+    let count = (userSnap.exists() ? (userSnap.data().cheatCount || 0) : 0) + 1;
+    await setDoc(userRef, { cheatCount: count }, { merge: true });
+    if (count >= 3) {
         await setDoc(userRef, { banned: true, banReason: "Triche répétée" }, { merge: true });
         signOut(auth).then(() => window.location.reload());
     }
@@ -174,6 +138,11 @@ class MainScene extends Phaser.Scene {
     constructor() { super("MainScene"); }
 
     create() {
+        // Cache des éléments DOM pour la performance
+        this.domScore = document.getElementById("score-display");
+        this.domPearls = document.getElementById("pearls-display");
+        this.domSecret = document.getElementById("btn-secret-trigger");
+
         this.isGameOver = false;
         GameState.reset();
         this.currentSpeed = 300;
@@ -183,37 +152,37 @@ class MainScene extends Phaser.Scene {
 
         this.bg = this.add.tileSprite(0, 0, 480, 720, "background").setOrigin(0);
 
+        // Optimisation particules : moins de fréquence
         this.trailEmitter = this.add.particles(0, 0, "p_white", {
-            speedY: { min: 120, max: 250 }, scale: { start: 2, end: 0 },
-            alpha: { start: 0.7, end: 0 }, lifespan: 800, frequency: 15, blendMode: 'ADD'
+            speedY: { min: 100, max: 200 }, scale: { start: 1.5, end: 0 },
+            alpha: { start: 0.5, end: 0 }, lifespan: 600, frequency: 30, blendMode: 'ADD'
         });
 
         this.player = this.physics.add.sprite(240, 600, "player").setScale(0.8);
-        this.player.body.setCircle(this.player.width * 0.25, this.player.width * 0.25, this.player.height * 0.3);
+        this.player.body.setCircle(this.player.width * 0.2, this.player.width * 0.3, this.player.height * 0.3);
         this.trailEmitter.startFollow(this.player);
-        this.trailEmitter.followOffset.set(0, 40);
+        this.trailEmitter.followOffset.set(0, 35);
 
         this.pearlEmitter = this.add.particles(0, 0, "p_gold", {
-            speed: { min: 100, max: 200 }, angle: { min: 0, max: 360 },
-            scale: { start: 2.5, end: 0 }, lifespan: 500, gravityY: 200, emitting: false
+            speed: { min: 80, max: 150 }, scale: { start: 2, end: 0 }, lifespan: 400, emitting: false
         });
 
         this.obstacles = this.physics.add.group();
         this.pearls = this.physics.add.group();
 
         try {
-            this.sea = this.sound.add('sea_ambience', { loop: true, volume: 0.3 });
             this.music = this.sound.add('music_action', { loop: true, volume: 0.4 });
             this.crash = this.sound.add('crash_sound', { volume: 0.7 });
             this.coinEffect = this.sound.add('coin_sound', { volume: 0.5 });
             this.sound.mute = isMuted;
-            this.sea.play();
-        } catch(e) { console.error("Audio error", e); }
+        } catch(e) {}
 
         this.physics.add.overlap(this.player, this.obstacles, () => this.gameOver(), null, this);
         this.physics.add.overlap(this.player, this.pearls, (pl, p) => {
-            this.pearlEmitter.emitParticleAt(p.x, p.y, 15);
-            p.destroy(); GameState.addPearl(); GameState.addScore(25);
+            this.pearlEmitter.emitParticleAt(p.x, p.y, 10);
+            p.destroy(); 
+            GameState.pearls += 1; 
+            GameState.score += 25;
             if(this.coinEffect) this.coinEffect.play();
         }, null, this);
 
@@ -222,12 +191,10 @@ class MainScene extends Phaser.Scene {
 
         Bus.removeAllListeners();
         Bus.on("start", () => {
-            if (this.isGameOver) return;
             gameStartTime = Date.now();
-            GameState.setPlaying(true);
+            GameState.playing = true;
             this.physics.resume();
             showMenuState("play");
-            if(this.sea) this.sea.stop();
             if(this.music) this.music.play();
         });
 
@@ -235,20 +202,6 @@ class MainScene extends Phaser.Scene {
             this.sound.stopAll();
             this.scene.restart();
         });
-
-        document.getElementById("btn-secret-trigger").onclick = () => {
-            this.physics.pause();
-            GameState.setPlaying(false);
-            if(this.music) this.music.pause();
-            document.getElementById("secret-modal").classList.remove("hidden");
-        };
-
-        document.getElementById("btn-close-secret").onclick = () => {
-            document.getElementById("secret-modal").classList.add("hidden");
-            this.physics.resume();
-            GameState.setPlaying(true);
-            if(this.music && !isMuted) this.music.resume();
-        };
 
         this.physics.pause();
         showMenuState("menu");
@@ -259,26 +212,28 @@ class MainScene extends Phaser.Scene {
         let hasMoved = false;
         this.input.on("pointerdown", (p) => { dragStartX = p.x; hasMoved = false; });
         this.input.on("pointermove", (p) => {
-            if(!GameState.getPlaying() || !p.isDown || hasMoved) return;
-            if (Math.abs(p.x - dragStartX) > 25) {
+            if(!GameState.playing || !p.isDown || hasMoved) return;
+            if (Math.abs(p.x - dragStartX) > 30) {
                 this.changeLane(p.x > dragStartX ? 1 : -1);
                 hasMoved = true;
             }
         });
         this.input.on("pointerup", (p) => {
-            if(!GameState.getPlaying() || hasMoved) return;
+            if(!GameState.playing || hasMoved) return;
             this.changeLane((p.x < 240) ? -1 : 1);
         });
     }
 
     update(_, delta) {
-        if (!GameState.getPlaying() || this.isGameOver) return;
+        if (!GameState.playing || this.isGameOver) return;
+        
         if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) this.changeLane(-1);
         if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) this.changeLane(1);
 
         const dt = delta / 1000;
-        this.currentSpeed += 4.5 * dt;
+        this.currentSpeed += 4 * dt;
         const move = this.currentSpeed * dt;
+        
         this.bg.tilePositionY -= move;
         this.obstacles.setVelocityY(this.currentSpeed);
         this.pearls.setVelocityY(this.currentSpeed);
@@ -287,97 +242,107 @@ class MainScene extends Phaser.Scene {
         if (this.distanceTraveledSinceLastSpawn >= this.spawnDistanceThreshold) {
             this.spawnWave();
             this.distanceTraveledSinceLastSpawn = 0;
-            if(this.spawnDistanceThreshold > 280) this.spawnDistanceThreshold -= 0.6;
+            if(this.spawnDistanceThreshold > 290) this.spawnDistanceThreshold -= 0.5;
         }
 
-        GameState.addScore(move * 0.01);
-        document.getElementById("score-display").textContent = Math.floor(GameState.getScore());
-        document.getElementById("pearls-display").textContent = GameState.getPearls();
+        GameState.score += move * 0.01;
+        
+        // Mise à jour DOM optimisée
+        const displayScore = Math.floor(GameState.score);
+        this.domScore.textContent = displayScore;
+        this.domPearls.textContent = GameState.pearls;
 
-        const score = Math.floor(GameState.getScore());
-        const btnS = document.getElementById("btn-secret-trigger");
-        if(score >= 50 && score <= 100) btnS.classList.remove("hidden");
-        else btnS.classList.add("hidden");
+        // Bouton Secret
+        if(displayScore >= 50 && displayScore <= 100) this.domSecret.classList.remove("hidden");
+        else this.domSecret.classList.add("hidden");
 
-        this.obstacles.getChildren().forEach(o => { if(o.y > 800) o.destroy(); });
-        this.pearls.getChildren().forEach(p => { if(p.y > 800) p.destroy(); });
+        // Nettoyage hors écran
+        this.obstacles.children.each(o => { if(o && o.y > 750) o.destroy(); });
+        this.pearls.children.each(p => { if(p && p.y > 750) p.destroy(); });
     }
 
     changeLane(dir) {
         const next = this.laneIndex + dir;
         if (next >= 0 && next <= 2) {
             this.laneIndex = next;
-            this.tweens.add({ targets: this.player, x: [130, 240, 350][this.laneIndex], duration: 150, ease: "Power2" });
+            this.tweens.add({ targets: this.player, x: [130, 240, 350][this.laneIndex], duration: 120, ease: "Quad.easeOut" });
         }
     }
 
     spawnWave() {
         const lanes = [130, 240, 350].sort(() => 0.5 - Math.random());
-        const numObs = Math.random() < 0.45 ? 2 : 1;
+        const numObs = Math.random() < 0.4 ? 2 : 1;
         for (let i = 0; i < numObs; i++) {
-            const obs = this.obstacles.create(lanes[i], -100, "obstacle").setScale(0.85);
-            obs.body.setCircle(30, 15, 15);
+            const obs = this.obstacles.create(lanes[i], -50, "obstacle").setScale(0.8);
+            obs.body.setCircle(25, 15, 15);
             obs.setData("isObstacle", true);
         }
-        if (numObs < 3 && Math.random() < 0.45) {
-            this.pearls.create(lanes[numObs], -150, "pearl").setScale(0.6).body.setCircle(20);
+        if (numObs < 3 && Math.random() < 0.5) {
+            this.pearls.create(lanes[numObs], -100, "pearl").setScale(0.6).body.setCircle(20);
         }
     }
 
     gameOver() {
         if (this.isGameOver) return;
         this.isGameOver = true;
-        GameState.setPlaying(false);
+        GameState.playing = false;
         this.trailEmitter.stop();
         this.physics.pause();
-        this.cameras.main.shake(250, 0.02);
+        this.cameras.main.shake(200, 0.01);
         if(this.music) this.music.stop();
         if(this.crash) this.crash.play();
-        document.getElementById("final-score").textContent = Math.floor(GameState.getScore());
-        document.getElementById("player-name-end").textContent = currentUser ? currentUser.displayName.split(' ')[0] : "Marin";
-        saveScoreIfBest(GameState.getScore());
+        document.getElementById("final-score").textContent = Math.floor(GameState.score);
+        saveScoreIfBest(GameState.score);
         showMenuState("gameover");
     }
 }
 
-// --- GESTION INTERFACE ---
-function showMenuState(s) {
-    const ids = ["main-menu", "howto", "game-over", "hud", "leaderboard-modal"];
-    ids.forEach(id => document.getElementById(id)?.classList.add("hidden"));
-    if (s === "menu") document.getElementById("main-menu").classList.remove("hidden");
-    if (s === "play") document.getElementById("hud").classList.remove("hidden");
-    if (s === "gameover") document.getElementById("game-over").classList.remove("hidden");
-}
+// --- INITIALISATION ---
+const phaserConfig = {
+    type: Phaser.AUTO, 
+    width: 480, height: 720, 
+    parent: "game-container",
+    physics: { default: "arcade", arcade: { fps: 60, gravity: { y: 0 } } },
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    scene: [BootScene, MainScene],
+    powerPreference: 'high-performance' // Force le GPU si disponible
+};
+
+window.addEventListener('DOMContentLoaded', () => {
+    const game = new Phaser.Game(phaserConfig);
+    setupDomHandlers(game);
+
+    // ANTI-CONSOLE
+    Object.defineProperty(window, 'game', { get: () => { logCheatAttempt("console"); return undefined; } });
+
+    // ANTI-TRICHE STACK TRACE
+    const _dest = Phaser.GameObjects.GameObject.prototype.destroy;
+    Phaser.GameObjects.GameObject.prototype.destroy = function() {
+        if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle")) {
+            const s = new Error().stack;
+            if (!s || (!s.includes("MainScene") && !s.includes("phaser"))) {
+                logCheatAttempt("manualDestroy"); return this;
+            }
+        }
+        return _dest.call(this);
+    };
+});
 
 function setupDomHandlers(game) {
     document.getElementById("btn-login").onclick = () => signInWithPopup(auth, provider);
     document.getElementById("btn-logout").onclick = () => signOut(auth).then(() => window.location.reload());
     document.getElementById("btn-play").onclick = () => Bus.emit("start");
     document.getElementById("btn-restart").onclick = () => Bus.emit("restart");
-
     document.getElementById("btn-settings").onclick = (e) => {
-        isMuted = !isMuted;
-        game.sound.mute = isMuted;
+        isMuted = !isMuted; game.sound.mute = isMuted;
         e.target.innerText = isMuted ? "🔇" : "🔊";
     };
-
     document.getElementById("btn-show-leaderboard").onclick = () => {
         document.getElementById("leaderboard-modal").classList.remove("hidden");
-        document.getElementById("view-rankings").classList.remove("hidden");
-        document.getElementById("view-prizes").classList.add("hidden");
         loadLeaderboard();
-    };
-    document.getElementById("btn-show-prizes").onclick = () => {
-        document.getElementById("view-rankings").classList.add("hidden");
-        document.getElementById("view-prizes").classList.remove("hidden");
-    };
-    document.getElementById("btn-back-to-rank").onclick = () => {
-        document.getElementById("view-prizes").classList.add("hidden");
-        document.getElementById("view-rankings").classList.remove("hidden");
     };
     document.getElementById("btn-close-modal").onclick = () => document.getElementById("leaderboard-modal").classList.add("hidden");
     document.getElementById("close-modal-x").onclick = () => document.getElementById("leaderboard-modal").classList.add("hidden");
-    
     document.getElementById("btn-howto").onclick = () => {
         document.getElementById("main-menu").classList.add("hidden");
         document.getElementById("howto").classList.remove("hidden");
@@ -388,26 +353,10 @@ function setupDomHandlers(game) {
     };
 }
 
-// --- INITIALISATION ---
-const phaserConfig = {
-    type: Phaser.AUTO, width: 480, height: 720, parent: "game-container",
-    physics: { default: "arcade", arcade: { fps: 60 } },
-    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
-    scene: [BootScene, MainScene]
-};
-
-window.addEventListener('DOMContentLoaded', () => {
-    const game = new Phaser.Game(phaserConfig);
-    setupDomHandlers(game);
-
-    // ANTI-TRICHE (STACK TRACE)
-    const originalDestroy = Phaser.GameObjects.GameObject.prototype.destroy;
-    Phaser.GameObjects.GameObject.prototype.destroy = function() {
-        const stack = new Error().stack;
-        if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle")) {
-            const ok = stack && (stack.includes("MainScene") || stack.includes("phaser"));
-            if (!ok) { logCheatAttempt("manualDestroy"); return this; }
-        }
-        return originalDestroy.call(this);
-    };
-});
+function showMenuState(s) {
+    const ids = ["main-menu", "howto", "game-over", "hud", "leaderboard-modal"];
+    ids.forEach(id => document.getElementById(id)?.classList.add("hidden"));
+    if (s === "menu") document.getElementById("main-menu").classList.remove("hidden");
+    if (s === "play") document.getElementById("hud").classList.remove("hidden");
+    if (s === "gameover") document.getElementById("game-over").classList.remove("hidden");
+}
