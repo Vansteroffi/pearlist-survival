@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { sha256 } from "https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.esm.min.js";
 
 // --- CONFIGURATION FIREBASE ---
 const firebaseConfig = {
@@ -24,21 +25,33 @@ const ALLOWED_DOMAINS = ["2026.icam.fr", "2027.icam.fr", "2028.icam.fr", "2029.i
 let currentUser = null;
 let isMuted = false;
 let gameStartTime = 0;
+let gameSessionId = null;
 const Bus = new Phaser.Events.EventEmitter();
 
-// --- ETAT DU JEU ---
+// --- ETAT DU JEU (CHIFFRÉ) ---
 const GameState = (() => {
     let score = 0;
     let pearls = 0;
     let playing = false;
+    let encryptedScore = 0;
+    let encryptedPearls = 0;
+
+    // Fonction de chiffrement simple (XOR)
+    const encrypt = (value, key = 0x55) => value ^ key;
+    const decrypt = (value, key = 0x55) => value ^ key;
+
     return {
-        getScore: () => score,
-        getPearls: () => pearls,
+        getScore: () => decrypt(encryptedScore),
+        getPearls: () => decrypt(encryptedPearls),
         getPlaying: () => playing,
-        addScore: (val) => { score += val; },
-        addPearl: () => { pearls += 1; },
+        addScore: (val) => { encryptedScore = encrypt(decrypt(encryptedScore) + val); },
+        addPearl: () => { encryptedPearls = encrypt(decrypt(encryptedPearls) + 1); },
         setPlaying: (val) => { playing = val; },
-        reset: () => { score = 0; pearls = 0; playing = false; }
+        reset: () => {
+            score = 0; pearls = 0; playing = false;
+            encryptedScore = encrypt(0);
+            encryptedPearls = encrypt(0);
+        }
     };
 })();
 
@@ -122,14 +135,20 @@ async function saveScoreIfBest(newScore) {
     loadLeaderboard();
 }
 
+// --- LOG DES TENTATIVES DE TRICHE ---
 async function logCheatAttempt(type, details = {}) {
     if (!currentUser) return;
     const userRef = doc(db, "users", currentUser.uid);
     const userSnap = await getDoc(userRef);
     let cheatCount = (userSnap.exists() ? (userSnap.data().cheatCount || 0) : 0) + 1;
-    
+
     await setDoc(doc(db, "cheatLogs", `${currentUser.uid}_${Date.now()}`), {
-        userId: currentUser.uid, userName: currentUser.displayName, type, details, timestamp: Date.now()
+        userId: currentUser.uid,
+        userName: currentUser.displayName,
+        type,
+        details,
+        timestamp: Date.now(),
+        gameSessionId
     });
     await setDoc(userRef, { cheatCount }, { merge: true });
 
@@ -140,6 +159,89 @@ async function logCheatAttempt(type, details = {}) {
         await setDoc(userRef, { banned: true, banReason: "Triche répétée" }, { merge: true });
         signOut(auth).then(() => window.location.reload());
     }
+}
+
+// --- VÉRIFICATION DE L'INTÉGRITÉ DU CODE (CHECKSUM) ---
+async function verifyCodeIntegrity() {
+    try {
+        const response = await fetch('game.js');
+        const code = await response.text();
+        const currentHash = sha256(code).toString();
+        const expectedHash = "TON_HASH_ICI"; // Remplace par le hash du fichier original
+
+        if (currentHash !== expectedHash) {
+            logCheatAttempt("codeTampering", { currentHash, expectedHash });
+        }
+    } catch (e) {
+        console.error("Erreur vérification checksum:", e);
+    }
+}
+
+// --- DÉTECTION DES MODIFICATIONS DU DOM ---
+function setupDomTamperingDetection() {
+    const scoreDisplay = document.getElementById("score-display");
+    const pearlsDisplay = document.getElementById("pearls-display");
+    let lastScore = 0;
+    let lastPearls = 0;
+
+    setInterval(() => {
+        const currentScore = parseInt(scoreDisplay.textContent);
+        const currentPearls = parseInt(pearlsDisplay.textContent);
+
+        if (currentScore !== lastScore || currentPearls !== lastPearls) {
+            if (currentScore !== GameState.getScore() || currentPearls !== GameState.getPearls()) {
+                logCheatAttempt("domTampering", {
+                    expectedScore: GameState.getScore(),
+                    displayedScore: currentScore,
+                    expectedPearls: GameState.getPearls(),
+                    displayedPearls: currentPearls
+                });
+            }
+            lastScore = currentScore;
+            lastPearls = currentPearls;
+        }
+    }, 1000);
+}
+
+// --- PREUVE DE JEU (PROOF OF PLAY) ---
+function setupProofOfPlay() {
+    gameSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    let lastSnapshotTime = Date.now();
+
+    setInterval(async () => {
+        if (GameState.getPlaying()) {
+            const snapshot = {
+                userId: currentUser.uid,
+                score: GameState.getScore(),
+                pearls: GameState.getPearls(),
+                obstacles: this.obstacles ? this.obstacles.getChildren().length : 0,
+                time: Date.now(),
+                sessionId: gameSessionId
+            };
+            await setDoc(doc(db, "gameSessions", `${gameSessionId}_${Date.now()}`), snapshot);
+            lastSnapshotTime = Date.now();
+        }
+    }, 5000);
+}
+
+// --- DÉTECTION DES COMMANDES CONSOLE ILLÉGALES (HONEYPOTS) ---
+function setupConsoleCheatDetection() {
+    // Honeypot 1 : Fausse fonction pour piéger les tricheurs
+    window.toggleInvincibility = () => logCheatAttempt("consoleCheat", { command: "toggleInvincibility" });
+    window.setScore = (score) => logCheatAttempt("consoleCheat", { command: "setScore", attemptedScore: score });
+    window.removeObstacles = () => logCheatAttempt("consoleCheat", { command: "removeObstacles" });
+
+    // Honeypot 2 : Détecter l'accès aux outils de développement
+    const devToolsOpen = () => {
+        const threshold = 100;
+        const start = Date.now();
+        debugger;
+        const end = Date.now();
+        if (end - start > threshold) {
+            logCheatAttempt("devToolsAccess");
+        }
+    };
+    setInterval(devToolsOpen, 500);
 }
 
 // --- JEU PHASER ---
@@ -214,7 +316,7 @@ class MainScene extends Phaser.Scene {
         this.cursors = this.input.keyboard.createCursorKeys();
         this.setupInputHandlers();
 
-        // GESTION DES EVENEMENTS BUS (Correction Crash)
+        // GESTION DES ÉVÉNEMENTS BUS (Correction Crash)
         Bus.removeAllListeners();
         Bus.on("start", () => {
             if (this.isGameOver) return;
@@ -347,9 +449,9 @@ function setupDomHandlers(game) {
     document.getElementById("btn-login").onclick = () => signInWithPopup(auth, provider);
     document.getElementById("btn-logout").onclick = () => signOut(auth).then(() => window.location.reload());
     document.getElementById("btn-play").onclick = () => Bus.emit("start");
-    
+
     document.getElementById("btn-restart").onclick = () => {
-        showMenuState("play"); // Feedback visuel immédiat
+        showMenuState("play");
         Bus.emit("restart");
     };
 
@@ -376,7 +478,7 @@ function setupDomHandlers(game) {
     };
     document.getElementById("btn-close-modal").onclick = () => document.getElementById("leaderboard-modal").classList.add("hidden");
     document.getElementById("close-modal-x").onclick = () => document.getElementById("leaderboard-modal").classList.add("hidden");
-    
+
     document.getElementById("btn-howto").onclick = () => {
         document.getElementById("main-menu").classList.add("hidden");
         document.getElementById("howto").classList.remove("hidden");
@@ -398,6 +500,12 @@ const phaserConfig = {
 window.addEventListener('DOMContentLoaded', () => {
     const game = new Phaser.Game(phaserConfig);
     setupDomHandlers(game);
+
+    // ACTIVER LES PROTECTIONS
+    verifyCodeIntegrity();
+    setupDomTamperingDetection();
+    setupConsoleCheatDetection();
+    setupProofOfPlay();
 
     // ANTI-TRICHE (STACK TRACE)
     const originalDestroy = Phaser.GameObjects.GameObject.prototype.destroy;
