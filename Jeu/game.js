@@ -27,40 +27,39 @@ let gameStartTime = 0;
 let gameSessionId = null;
 const Bus = new Phaser.Events.EventEmitter();
 
-// --- ETAT DU JEU (CHIFFRÉ) ---
+// --- ETAT DU JEU ---
 const GameState = (() => {
     let score = 0;
     let pearls = 0;
     let playing = false;
-
-    // Fonction de chiffrement simple (XOR basique)
-    const encrypt = (value, key = 0x55) => value ^ key;
-    const decrypt = (value, key = 0x55) => value ^ key;
-
-    let encryptedScore = encrypt(0);
-    let encryptedPearls = encrypt(0);
-
     return {
-        getScore: () => decrypt(encryptedScore),
-        getPearls: () => decrypt(encryptedPearls),
+        getScore: () => score,
+        getPearls: () => pearls,
         getPlaying: () => playing,
-        addScore: (val) => { encryptedScore = encrypt(decrypt(encryptedScore) + val); },
-        addPearl: () => { encryptedPearls = encrypt(decrypt(encryptedPearls) + 1); },
+        addScore: (val) => { score += val; },
+        addPearl: () => { pearls += 1; },
         setPlaying: (val) => { playing = val; },
-        reset: () => {
-            score = 0; pearls = 0; playing = false;
-            encryptedScore = encrypt(0);
-            encryptedPearls = encrypt(0);
-        }
+        reset: () => { score = 0; pearls = 0; playing = false; }
     };
 })();
 
 // --- AUTHENTIFICATION ---
 onAuthStateChanged(auth, async (user) => {
+    // Attend que le DOM soit chargé
+    if (!document.getElementById("error-msg")) {
+        setTimeout(() => onAuthStateChanged(auth, user), 500);
+        return;
+    }
+
     const errorEl = document.getElementById("error-msg");
     const logoutBtn = document.getElementById("btn-logout");
     const loginBtn = document.getElementById("btn-login");
     const authStatus = document.getElementById("auth-status");
+
+    if (!errorEl || !logoutBtn || !loginBtn || !authStatus) {
+        console.error("Éléments DOM manquants pour l'authentification.");
+        return;
+    }
 
     if (user) {
         const domain = user.email.split('@')[1];
@@ -77,8 +76,13 @@ onAuthStateChanged(auth, async (user) => {
             }
             currentUser = user;
             authStatus.innerHTML = `⚓ Bienvenue Capitaine <b>${user.displayName.split(' ')[0]}</b> !`;
-            document.getElementById("auth-section").classList.add("hidden");
-            document.getElementById("game-controls").classList.remove("hidden");
+
+            const gameControls = document.getElementById("game-controls");
+            if (gameControls) gameControls.classList.remove("hidden");
+
+            const authSection = document.getElementById("auth-section");
+            if (authSection) authSection.classList.add("hidden");
+
             loadLeaderboard();
         } else {
             authStatus.innerHTML = "🚫 Accès Refusé";
@@ -90,7 +94,10 @@ onAuthStateChanged(auth, async (user) => {
     } else {
         authStatus.innerHTML = "Embarque avec ton mail ICAM.";
         loginBtn.classList.remove("hidden");
-        document.getElementById("game-controls").classList.add("hidden");
+
+        const gameControls = document.getElementById("game-controls");
+        if (gameControls) gameControls.classList.add("hidden");
+
         errorEl.classList.add("hidden");
         logoutBtn.classList.add("hidden");
     }
@@ -99,6 +106,15 @@ onAuthStateChanged(auth, async (user) => {
 // --- CLASSEMENT ---
 async function loadLeaderboard() {
     try {
+        const liveList = document.getElementById("live-highscore-list");
+        const modalList = document.getElementById("modal-highscore-list");
+        const lbTitle = document.getElementById("lb-title");
+
+        if (!liveList || !modalList || !lbTitle) {
+            console.error("Éléments DOM manquants pour le leaderboard.");
+            return;
+        }
+
         const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
         const snap = await getDocs(q);
         let html = "";
@@ -108,16 +124,16 @@ async function loadLeaderboard() {
             html += `<li><span>#${rank} ${data.name}</span> <b>${Math.floor(data.score || 0)}</b></li>`;
             rank++;
         });
-        document.getElementById("live-highscore-list").innerHTML = html;
-        document.getElementById("modal-highscore-list").innerHTML = html;
-        document.getElementById("lb-title").innerText = "🏆 TOP MILLES";
+        liveList.innerHTML = html;
+        modalList.innerHTML = html;
+        lbTitle.innerText = "🏆 TOP MILLES";
     } catch(e) { console.error("Erreur leaderboard:", e); }
 }
 
 async function saveScoreIfBest(newScore) {
     if (!currentUser) return;
     if (newScore > 30000) {
-        logCheatAttempt("highScore", { attemptedScore: newScore });
+        if (window.logCheatAttempt) logCheatAttempt("highScore", { attemptedScore: newScore });
         return;
     }
     const userRef = doc(db, "leaderboard", currentUser.uid);
@@ -159,65 +175,6 @@ async function logCheatAttempt(type, details = {}) {
         await setDoc(userRef, { banned: true, banReason: "Triche répétée" }, { merge: true });
         signOut(auth).then(() => window.location.reload());
     }
-}
-
-// --- VÉRIFICATION DE L'INTÉGRITÉ DU CODE (CHECKSUM) ---
-async function verifyCodeIntegrity() {
-    try {
-        const response = await fetch('game.js');
-        const code = await response.text();
-        const currentHash = CryptoJS.SHA256(code).toString();
-        const expectedHash = "TON_HASH_ICI"; // Remplace par le hash du fichier original
-
-        if (currentHash !== expectedHash) {
-            logCheatAttempt("codeTampering", { currentHash, expectedHash });
-        }
-    } catch (e) {
-        console.error("Erreur vérification checksum:", e);
-    }
-}
-
-// --- DÉTECTION DES MODIFICATIONS DU DOM ---
-function setupDomTamperingDetection() {
-    const scoreDisplay = document.getElementById("score-display");
-    const pearlsDisplay = document.getElementById("pearls-display");
-    let lastScore = 0;
-    let lastPearls = 0;
-
-    setInterval(() => {
-        const currentScore = parseInt(scoreDisplay.textContent);
-        const currentPearls = parseInt(pearlsDisplay.textContent);
-
-        if (currentScore !== GameState.getScore() || currentPearls !== GameState.getPearls()) {
-            logCheatAttempt("domTampering", {
-                expectedScore: GameState.getScore(),
-                displayedScore: currentScore,
-                expectedPearls: GameState.getPearls(),
-                displayedPearls: currentPearls
-            });
-        }
-        lastScore = currentScore;
-        lastPearls = currentPearls;
-    }, 1000);
-}
-
-// --- PREUVE DE JEU (PROOF OF PLAY) ---
-function setupProofOfPlay() {
-    gameSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    setInterval(async () => {
-        if (GameState.getPlaying() && currentUser) {
-            const snapshot = {
-                userId: currentUser.uid,
-                score: GameState.getScore(),
-                pearls: GameState.getPearls(),
-                obstacles: window.game?.scene?.scenes.find(s => s.scene.key === "MainScene")?.obstacles?.getChildren().length || 0,
-                time: Date.now(),
-                sessionId: gameSessionId
-            };
-            await setDoc(doc(db, "gameSessions", `${gameSessionId}_${Date.now()}`), snapshot);
-        }
-    }, 5000);
 }
 
 // --- JEU PHASER ---
@@ -298,7 +255,7 @@ class MainScene extends Phaser.Scene {
             gameStartTime = Date.now();
             GameState.setPlaying(true);
             this.physics.resume();
-            showMenuState("play");
+            if (document.getElementById("hud")) showMenuState("play");
             if(this.sea) this.sea.stop();
             if(this.music) this.music.play();
         });
@@ -307,21 +264,30 @@ class MainScene extends Phaser.Scene {
             this.scene.restart();
         });
 
-        document.getElementById("btn-secret-trigger").onclick = () => {
-            this.physics.pause();
-            GameState.setPlaying(false);
-            if(this.music) this.music.pause();
-            document.getElementById("secret-modal").classList.remove("hidden");
-        };
-        document.getElementById("btn-close-secret").onclick = () => {
-            document.getElementById("secret-modal").classList.add("hidden");
-            this.physics.resume();
-            GameState.setPlaying(true);
-            if(this.music && !isMuted) this.music.resume();
-        };
+        // Vérifie que les éléments DOM existent avant de les utiliser
+        const btnSecretTrigger = document.getElementById("btn-secret-trigger");
+        const btnCloseSecret = document.getElementById("btn-close-secret");
+        if (btnSecretTrigger) {
+            btnSecretTrigger.onclick = () => {
+                this.physics.pause();
+                GameState.setPlaying(false);
+                if(this.music) this.music.pause();
+                const secretModal = document.getElementById("secret-modal");
+                if (secretModal) secretModal.classList.remove("hidden");
+            };
+        }
+        if (btnCloseSecret) {
+            btnCloseSecret.onclick = () => {
+                const secretModal = document.getElementById("secret-modal");
+                if (secretModal) secretModal.classList.add("hidden");
+                this.physics.resume();
+                GameState.setPlaying(true);
+                if(this.music && !isMuted) this.music.resume();
+            };
+        }
 
         this.physics.pause();
-        showMenuState("menu");
+        if (document.getElementById("main-menu")) showMenuState("menu");
     }
 
     setupInputHandlers() {
@@ -361,13 +327,17 @@ class MainScene extends Phaser.Scene {
         }
 
         GameState.addScore(move * 0.01);
-        document.getElementById("score-display").textContent = Math.floor(GameState.getScore());
-        document.getElementById("pearls-display").textContent = GameState.getPearls();
+        const scoreDisplay = document.getElementById("score-display");
+        const pearlsDisplay = document.getElementById("pearls-display");
+        if (scoreDisplay) scoreDisplay.textContent = Math.floor(GameState.getScore());
+        if (pearlsDisplay) pearlsDisplay.textContent = GameState.getPearls();
 
         const score = Math.floor(GameState.getScore());
         const btnS = document.getElementById("btn-secret-trigger");
-        if(score >= 50 && score <= 100) btnS.classList.remove("hidden");
-        else btnS.classList.add("hidden");
+        if(btnS) {
+            if(score >= 50 && score <= 100) btnS.classList.remove("hidden");
+            else btnS.classList.add("hidden");
+        }
 
         this.obstacles.getChildren().forEach(o => { if(o.y > 800) o.destroy(); });
     }
@@ -402,62 +372,124 @@ class MainScene extends Phaser.Scene {
         this.cameras.main.shake(250, 0.02);
         if(this.music) this.music.stop();
         if(this.crash) this.crash.play();
-        document.getElementById("final-score").textContent = Math.floor(GameState.getScore());
-        document.getElementById("player-name-end").textContent = currentUser ? currentUser.displayName.split(' ')[0] : "Marin";
+
+        const finalScoreEl = document.getElementById("final-score");
+        const playerNameEl = document.getElementById("player-name-end");
+        if (finalScoreEl) finalScoreEl.textContent = Math.floor(GameState.getScore());
+        if (playerNameEl) playerNameEl.textContent = currentUser ? currentUser.displayName.split(' ')[0] : "Marin";
+
         saveScoreIfBest(GameState.getScore());
-        showMenuState("gameover");
+        if (document.getElementById("game-over")) showMenuState("gameover");
     }
 }
 
 // --- GESTION INTERFACE (DOM) ---
 function showMenuState(s) {
     const ids = ["main-menu", "howto", "game-over", "hud", "leaderboard-modal"];
-    ids.forEach(id => document.getElementById(id)?.classList.add("hidden"));
-    if (s === "menu") document.getElementById("main-menu").classList.remove("hidden");
-    if (s === "play") document.getElementById("hud").classList.remove("hidden");
-    if (s === "gameover") document.getElementById("game-over").classList.remove("hidden");
+    ids.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add("hidden");
+    });
+    if (s === "menu" && document.getElementById("main-menu")) document.getElementById("main-menu").classList.remove("hidden");
+    if (s === "play" && document.getElementById("hud")) document.getElementById("hud").classList.remove("hidden");
+    if (s === "gameover" && document.getElementById("game-over")) document.getElementById("game-over").classList.remove("hidden");
 }
 
 function setupDomHandlers(game) {
-    document.getElementById("btn-login").onclick = () => signInWithPopup(auth, provider);
-    document.getElementById("btn-logout").onclick = () => signOut(auth).then(() => window.location.reload());
-    document.getElementById("btn-play").onclick = () => Bus.emit("start");
+    const btnLogin = document.getElementById("btn-login");
+    const btnLogout = document.getElementById("btn-logout");
+    const btnPlay = document.getElementById("btn-play");
 
-    document.getElementById("btn-restart").onclick = () => {
-        showMenuState("play");
-        Bus.emit("restart");
-    };
+    if (btnLogin) btnLogin.onclick = () => signInWithPopup(auth, provider);
+    if (btnLogout) btnLogout.onclick = () => signOut(auth).then(() => window.location.reload());
+    if (btnPlay) btnPlay.onclick = () => Bus.emit("start");
 
-    document.getElementById("btn-settings").onclick = (e) => {
-        isMuted = !isMuted;
-        game.sound.mute = isMuted;
-        e.target.innerText = isMuted ? "🔇" : "🔊";
-    };
+    const btnRestart = document.getElementById("btn-restart");
+    if (btnRestart) {
+        btnRestart.onclick = () => {
+            if (document.getElementById("game-over")) showMenuState("play");
+            Bus.emit("restart");
+        };
+    }
 
-    document.getElementById("btn-show-leaderboard").onclick = () => {
-        document.getElementById("leaderboard-modal").classList.remove("hidden");
-        document.getElementById("view-rankings").classList.remove("hidden");
-        document.getElementById("view-prizes").classList.add("hidden");
-        loadLeaderboard();
-    };
-    document.getElementById("btn-show-prizes").onclick = () => {
-        document.getElementById("view-rankings").classList.add("hidden");
-        document.getElementById("view-prizes").classList.remove("hidden");
-    };
-    document.getElementById("btn-back-to-rank").onclick = () => {
-        document.getElementById("view-prizes").classList.add("hidden");
-        document.getElementById("view-rankings").classList.remove("hidden");
-    };
-    document.getElementById("btn-close-modal").onclick = () => document.getElementById("leaderboard-modal").classList.add("hidden");
-    document.getElementById("close-modal-x").onclick = () => document.getElementById("leaderboard-modal").classList.add("hidden");
-    document.getElementById("btn-howto").onclick = () => {
-        document.getElementById("main-menu").classList.add("hidden");
-        document.getElementById("howto").classList.remove("hidden");
-    };
-    document.getElementById("btn-back-menu").onclick = () => {
-        document.getElementById("howto").classList.add("hidden");
-        document.getElementById("main-menu").classList.remove("hidden");
-    };
+    const btnSettings = document.getElementById("btn-settings");
+    if (btnSettings) {
+        btnSettings.onclick = (e) => {
+            isMuted = !isMuted;
+            game.sound.mute = isMuted;
+            e.target.innerText = isMuted ? "🔇" : "🔊";
+        };
+    }
+
+    const btnShowLeaderboard = document.getElementById("btn-show-leaderboard");
+    if (btnShowLeaderboard) {
+        btnShowLeaderboard.onclick = () => {
+            const leaderboardModal = document.getElementById("leaderboard-modal");
+            if (leaderboardModal) leaderboardModal.classList.remove("hidden");
+            const viewRankings = document.getElementById("view-rankings");
+            if (viewRankings) viewRankings.classList.remove("hidden");
+            const viewPrizes = document.getElementById("view-prizes");
+            if (viewPrizes) viewPrizes.classList.add("hidden");
+            loadLeaderboard();
+        };
+    }
+
+    const btnShowPrizes = document.getElementById("btn-show-prizes");
+    const btnBackToRank = document.getElementById("btn-back-to-rank");
+    if (btnShowPrizes && btnBackToRank) {
+        btnShowPrizes.onclick = () => {
+            const viewRankings = document.getElementById("view-rankings");
+            const viewPrizes = document.getElementById("view-prizes");
+            if (viewRankings && viewPrizes) {
+                viewRankings.classList.add("hidden");
+                viewPrizes.classList.remove("hidden");
+            }
+        };
+        btnBackToRank.onclick = () => {
+            const viewRankings = document.getElementById("view-rankings");
+            const viewPrizes = document.getElementById("view-prizes");
+            if (viewRankings && viewPrizes) {
+                viewPrizes.classList.add("hidden");
+                viewRankings.classList.remove("hidden");
+            }
+        };
+    }
+
+    const btnCloseModal = document.getElementById("btn-close-modal");
+    const closeModalX = document.getElementById("close-modal-x");
+    if (btnCloseModal) {
+        btnCloseModal.onclick = () => {
+            const leaderboardModal = document.getElementById("leaderboard-modal");
+            if (leaderboardModal) leaderboardModal.classList.add("hidden");
+        };
+    }
+    if (closeModalX) {
+        closeModalX.onclick = () => {
+            const leaderboardModal = document.getElementById("leaderboard-modal");
+            if (leaderboardModal) leaderboardModal.classList.add("hidden");
+        };
+    }
+
+    const btnHowto = document.getElementById("btn-howto");
+    const btnBackMenu = document.getElementById("btn-back-menu");
+    if (btnHowto && btnBackMenu) {
+        btnHowto.onclick = () => {
+            const mainMenu = document.getElementById("main-menu");
+            const howto = document.getElementById("howto");
+            if (mainMenu && howto) {
+                mainMenu.classList.add("hidden");
+                howto.classList.remove("hidden");
+            }
+        };
+        btnBackMenu.onclick = () => {
+            const mainMenu = document.getElementById("main-menu");
+            const howto = document.getElementById("howto");
+            if (mainMenu && howto) {
+                howto.classList.add("hidden");
+                mainMenu.classList.remove("hidden");
+            }
+        };
+    }
 }
 
 // --- INITIALISATION ---
@@ -468,14 +500,15 @@ const phaserConfig = {
     scene: [BootScene, MainScene]
 };
 
+// Attend que le DOM soit entièrement chargé
 window.addEventListener('DOMContentLoaded', () => {
     const game = new Phaser.Game(phaserConfig);
-    setupDomHandlers(game);
+    window.game = game; // Rend le jeu accessible globalement (pour le débogage)
 
-    // Active les protections après le chargement
-    verifyCodeIntegrity();
-    setupDomTamperingDetection();
-    setupProofOfPlay();
+    // Initialise les handlers DOM après que Phaser soit prêt
+    game.events.once('boot', () => {
+        setupDomHandlers(game);
+    });
 
     // Anti-triche pour la suppression d'obstacles
     const originalDestroy = Phaser.GameObjects.GameObject.prototype.destroy;
@@ -483,7 +516,10 @@ window.addEventListener('DOMContentLoaded', () => {
         const stack = new Error().stack;
         if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle")) {
             const ok = stack && (stack.includes("MainScene") || stack.includes("phaser"));
-            if (!ok) { logCheatAttempt("manualDestroy"); return this; }
+            if (!ok && window.logCheatAttempt) {
+                logCheatAttempt("manualDestroy");
+                return this;
+            }
         }
         return originalDestroy.call(this);
     };
