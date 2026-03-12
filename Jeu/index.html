@@ -8,10 +8,10 @@
   <link href="https://fonts.googleapis.com/css2?family=Almendra+SC&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css" />
   <style>
-    body, h1, h2, h3, button, .brand__title, .hud__label, .hud__value { 
-      font-family: 'Almendra SC', serif !important; 
+    body, h1, h2, h3, button, .brand__title, .hud__label, .hud__value {
+      font-family: 'Almendra SC', serif !important;
     }
-    
+
     body {
       background: #0a0a0a;
       position: relative;
@@ -25,10 +25,10 @@
       z-index: -1;
     }
 
-    .home-btn { 
-      position: fixed; top: 15px; left: 15px; width: 45px; height: 45px; 
-      background: #fff1e0; border-radius: 50%; border: 3px solid #3e2723; 
-      display: flex; justify-content: center; align-items: center; 
+    .home-btn {
+      position: fixed; top: 15px; left: 15px; width: 45px; height: 45px;
+      background: #fff1e0; border-radius: 50%; border: 3px solid #3e2723;
+      display: flex; justify-content: center; align-items: center;
       text-decoration: none; font-size: 22px; z-index: 5000; box-shadow: 0 4px 0 #000;
     }
 
@@ -57,34 +57,70 @@
       list-style: none;
     }
 
-    .settings-btn { 
-      position: absolute; top: 15px; right: 15px; z-index: 1001; 
-      cursor: pointer; font-size: 22px; background: rgba(0,0,0,0.6); 
-      border-radius: 50%; width: 45px; height: 45px; 
-      display: flex; align-items: center; justify-content: center; 
-      border: 2px solid #ffb700; color: #ffb700; 
+    .settings-btn {
+      position: absolute; top: 15px; right: 15px; z-index: 1001;
+      cursor: pointer; font-size: 22px; background: rgba(0,0,0,0.6);
+      border-radius: 50%; width: 45px; height: 45px;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid #ffb700; color: #ffb700;
       transition: all 0.2s;
     }
-    
+
     .btn-gold { background: #ffb700 !important; color: #3e2723 !important; font-weight: bold; border: 2px solid #5d4037; }
     .panel--paper { text-align: center; }
     #error-msg { color: #ff5252; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 5px; margin: 10px 0; font-size: 0.9rem; }
   </style>
+
+  <!-- Ajout des bibliothèques pour le chiffrement et la détection de triche -->
+  <script src="https://cdn.jsdelivr.net/npm/crypto-js@4.1.1/crypto-js.min.js"></script>
   <script>
-  // Désactive les outils de développement et le clic droit
-  document.addEventListener('keydown', (e) => {
-      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J'))) {
-          e.preventDefault();
-          alert("L'accès aux outils de développement est désactivé pour ce jeu.");
-      }
-  });
+    // Désactive les outils de développement et le clic droit
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J'))) {
+            e.preventDefault();
+            alert("L'accès aux outils de développement est désactivé pour ce jeu.");
+            // Détecte l'ouverture des outils de développement (honeypot)
+            if (window.logCheatAttempt) {
+                logCheatAttempt("devToolsAccess");
+            }
+        }
+    });
 
-  // Empêche le clic droit
-  document.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-  });
-</script>
+    // Empêche le clic droit
+    document.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+    });
 
+    // Détecte les modifications du DOM (exemple : changement de score via la console)
+    function setupDomTamperingDetection() {
+        const scoreDisplay = document.getElementById("score-display");
+        const pearlsDisplay = document.getElementById("pearls-display");
+        let lastScore = 0;
+        let lastPearls = 0;
+
+        setInterval(() => {
+            if (window.GameState) {
+                const currentScore = parseInt(scoreDisplay.textContent);
+                const currentPearls = parseInt(pearlsDisplay.textContent);
+                if (currentScore !== window.GameState.getScore() || currentPearls !== window.GameState.getPearls()) {
+                    if (window.logCheatAttempt) {
+                        logCheatAttempt("domTampering", {
+                            expectedScore: window.GameState.getScore(),
+                            displayedScore: currentScore
+                        });
+                    }
+                }
+                lastScore = currentScore;
+                lastPearls = currentPearls;
+            }
+        }, 1000);
+    }
+
+    // Initialise la détection une fois le jeu chargé
+    window.addEventListener('DOMContentLoaded', () => {
+        setupDomTamperingDetection();
+    });
+  </script>
 </head>
 <body>
   <a href="../index.html" class="home-btn">🏠</a>
@@ -104,7 +140,7 @@
 
       <section class="game-wrap">
         <div id="game-container" class="game-container">
-          
+
           <div id="btn-settings" class="settings-btn">🔊</div>
 
           <div id="hud" class="hud hidden" style="left: 20px; transform: none; flex-direction: column; align-items: flex-start; gap: 8px;">
@@ -140,7 +176,7 @@
               <button id="close-modal-x" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 32px; cursor: pointer;">&times;</button>
               <div id="view-rankings">
                 <h2 id="lb-title">🏆 TOP MILLES</h2>
-                
+
                 <ul id="modal-highscore-list" class="highscore-list"></ul>
                 <button id="btn-show-prizes" class="btn btn-gold" style="width: 100%; margin-bottom: 10px;">🎁 VOIR LES TRÉSORS</button>
                 <button id="btn-close-modal" class="btn btn-primary" style="width: 100%;">RETOUR</button>
@@ -189,6 +225,8 @@
       </aside>
     </main>
   </div>
+
+  <!-- Chargement de Phaser et du jeu -->
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
   <script type="module" src="game.js"></script>
 </body>
