@@ -293,8 +293,13 @@ class MainScene extends Phaser.Scene {
         } else {
             btnSecret.classList.add("hidden");
         }
+        
+        // CORRECTION ICI : Ajout du drapeau "safeAction" avant de détruire l'obstacle
         this.obstacles.getChildren().forEach(obstacle => {
-            if (obstacle.y > 800) obstacle.destroy();
+            if (obstacle.y > 800) {
+                obstacle.setData("safeAction", true); // On autorise la destruction légitime
+                obstacle.destroy();
+            }
         });
     }
     changeLane(dir) {
@@ -342,14 +347,15 @@ function showMenuState(s) {
     if (s === "gameover") document.getElementById("game-over").classList.remove("hidden");
 }
 
-function setupDomHandlers() {
+// CORRECTION ICI : On passe l'instance du jeu en paramètre pour que le bouton mute fonctionne sans utiliser window.gameInstance
+function setupDomHandlers(actualGame) {
     document.getElementById("btn-login").onclick = () => signInWithPopup(auth, provider);
     document.getElementById("btn-logout").onclick = () => signOut(auth).then(() => window.location.reload());
     document.getElementById("btn-play").onclick = () => Bus.emit("start");
     document.getElementById("btn-restart").onclick = () => Bus.emit("restart");
     document.getElementById("btn-settings").onclick = () => {
         isMuted = !isMuted;
-        if(window.gameInstance) window.gameInstance.sound.mute = isMuted;
+        if(actualGame) actualGame.sound.mute = isMuted;
         document.getElementById("btn-settings").innerText = isMuted ? "🔇" : "🔊";
     };
     document.getElementById("btn-show-leaderboard").onclick = () => {
@@ -387,21 +393,24 @@ const phaserConfig = {
 
 // Protections contre les triches
 window.addEventListener('DOMContentLoaded', () => {
-    setupDomHandlers();
-    window.gameInstance = new Phaser.Game(phaserConfig);
+    // Initialisation du jeu stockée localement
+    const actualGame = new Phaser.Game(phaserConfig);
+    setupDomHandlers(actualGame);
 
-    // Protection contre l'accès à gameInstance
+    // Protection totale : on masque gameInstance pour tout le monde, et on renvoie un objet vide
     Object.defineProperty(window, 'gameInstance', {
         get: () => {
-            console.warn("Accès interdit à gameInstance depuis la console.");
+            console.warn("Accès interdit à l'instance du jeu depuis la console.");
             return {};
         },
         set: (value) => {
-            console.warn("Modification interdite de gameInstance depuis la console.");
+            console.warn("Modification interdite de l'instance du jeu depuis la console.");
         },
         configurable: false
     });
 
+    // CORRECTION ICI : Ajout de la vérification !this.getData("safeAction") dans les prototypes
+    
     // Protection contre clear()
     const originalClear = Phaser.GameObjects.Group.prototype.clear;
     Phaser.GameObjects.Group.prototype.clear = function() {
@@ -410,13 +419,13 @@ window.addEventListener('DOMContentLoaded', () => {
             logCheatAttempt("clearObstacles");
             return this;
         }
-        return originalClear.call(this, ...arguments);
+        return originalClear.apply(this, arguments);
     };
 
     // Protection contre destroy()
     const originalDestroy = Phaser.GameObjects.GameObject.prototype.destroy;
     Phaser.GameObjects.GameObject.prototype.destroy = function() {
-        if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle")) {
+        if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle") && !this.getData("safeAction")) {
             console.warn("Triche détectée : tentative de suppression d'un obstacle via destroy().");
             logCheatAttempt("destroyObstacle");
             return this;
@@ -427,7 +436,7 @@ window.addEventListener('DOMContentLoaded', () => {
     // Protection contre setActive/setVisible
     const originalSetActive = Phaser.GameObjects.GameObject.prototype.setActive;
     Phaser.GameObjects.GameObject.prototype.setActive = function(value) {
-        if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle") && !value) {
+        if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle") && !value && !this.getData("safeAction")) {
             console.warn("Triche détectée : tentative de désactivation d'un obstacle.");
             logCheatAttempt("disableObstacle");
             return this;
@@ -437,7 +446,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
     const originalSetVisible = Phaser.GameObjects.GameObject.prototype.setVisible;
     Phaser.GameObjects.GameObject.prototype.setVisible = function(value) {
-        if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle") && !value) {
+        if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle") && !value && !this.getData("safeAction")) {
             console.warn("Triche détectée : tentative de masquage d'un obstacle.");
             logCheatAttempt("hideObstacle");
             return this;
