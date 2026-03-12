@@ -264,10 +264,6 @@ class MainScene extends Phaser.Scene {
 
         this.physics.pause();
         showMenuState("menu");
-
-        // Protection contre la suppression des obstacles via la console
-        this.obstacles.setImmovable(true);
-        this.obstacles.setAllowGravity(false);
     }
 
     update(_, delta) {
@@ -301,7 +297,7 @@ class MainScene extends Phaser.Scene {
             btnSecret.classList.add("hidden");
         }
 
-        // Vérification de l'intégrité des obstacles
+        // Suppression des obstacles hors écran
         this.obstacles.getChildren().forEach(obstacle => {
             if (obstacle.y > 800) obstacle.destroy();
         });
@@ -327,7 +323,8 @@ class MainScene extends Phaser.Scene {
         for (let i = 0; i < numObstacles; i++) {
             const obstacle = this.obstacles.create(shuffled[i], -100, "obstacle").setScale(0.85);
             obstacle.body.setCircle(30, 15, 15);
-            obstacle.setImmovable(true);
+            // Rendre les obstacles plus difficiles à supprimer
+            obstacle.setData("isObstacle", true);
         }
 
         if (numObstacles < 3) {
@@ -409,17 +406,31 @@ const phaserConfig = {
     scene: [BootScene, MainScene]
 };
 
-// Protection contre la triche via la console (suppression des obstacles)
+// Protection contre la triche via la console
 window.addEventListener('DOMContentLoaded', () => {
     setupDomHandlers();
     window.gameInstance = new Phaser.Game(phaserConfig);
 
     // Empêcher l'accès aux scènes Phaser depuis la console
+    const originalGameInstance = window.gameInstance;
     Object.defineProperty(window, 'gameInstance', {
-        get: () => {},
-        set: (value) => {
+        get: () => {
             console.warn("Accès interdit à gameInstance depuis la console.");
+            return {};
+        },
+        set: () => {
+            console.warn("Modification interdite de gameInstance depuis la console.");
         },
         configurable: false
     });
+
+    // Empêcher la suppression des obstacles via la console
+    const originalDestroy = Phaser.GameObjects.GameObject.prototype.destroy;
+    Phaser.GameObjects.GameObject.prototype.destroy = function() {
+        if (this.getData && this.getData("isObstacle")) {
+            console.warn("Suppression d'un obstacle bloquée.");
+            return this;
+        }
+        return originalDestroy.call(this);
+    };
 });
