@@ -144,39 +144,18 @@
   const parcheminOverlay = document.getElementById("parcheminOverlay");
 
   function playClick() { clickSfx.currentTime = 0; clickSfx.play().catch(() => {}); }
+  
+  // La musique démarre au premier clic et ne s'arrête plus
   function startMusic() { if (!musicStarted) { music.volume = 0.3; music.play().catch(() => {}); musicStarted = true; } }
 
- function updateBackground() {
+  function updateBackground() {
     sceneEl.style.backgroundImage = backgrounds[currentText];
-    sceneEl.style.backgroundRepeat = "no-repeat"; 
-    sceneEl.style.backgroundPosition = "center bottom"; 
-    sceneEl.style.backgroundSize = "cover";
+    sceneEl.style.backgroundRepeat = "no-repeat"; sceneEl.style.backgroundPosition = "center bottom"; sceneEl.style.backgroundSize = "cover";
 
-    if (indiceImages[currentText]) { 
-        indiceEl.src = indiceImages[currentText]; 
-        indiceEl.style.display = "block"; 
-    } else { 
-        indiceEl.style.display = "none"; 
-    }
+    if (indiceImages[currentText]) { indiceEl.src = indiceImages[currentText]; indiceEl.style.display = "block"; } else { indiceEl.style.display = "none"; }
     hintBulb.style.display = (currentText === "journal_ouvert") ? "flex" : "none";
-
-    // --- LOGIQUE DE CHANGEMENT DE SON CORRIGÉE ---
-    // Vérifie bien que ton fichier s'appelle exactement "ocean.mp3" (ou change le nom ici)
-    const nouvelleMusique = (currentText === "pont" || currentText === "ile_loin") ? "Sons/bateau.wav" : "Sons/ocean.mp3";
-    
-    // On utilise endsWith pour être sûr que le navigateur lit bien la fin du lien
-    if (!music.src.endsWith(nouvelleMusique)) {
-        music.src = nouvelleMusique;
-        music.load(); // Force le navigateur à charger le nouveau fichier audio
-        
-        if (musicStarted) { 
-            // On ajoute un petit délai (50ms) pour laisser le temps au fichier de se charger avant de faire play()
-            setTimeout(() => {
-                music.play().catch((erreur) => console.log("Erreur audio : ", erreur));
-            }, 50);
-        }
-    }
   }
+
   function typeText() {
     isTyping = true; arrowEl.style.display = "none"; choicesEl.innerHTML = ""; textEl.textContent = "";
     const current = dialogues[index]; let charIndex = 0;
@@ -264,4 +243,3 @@
 </script>
 </body>
 </html>
-
