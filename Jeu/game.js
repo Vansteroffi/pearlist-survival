@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, orderBy, limit, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // --- CONFIGURATION FIREBASE ---
 const firebaseConfig = {
@@ -24,9 +24,9 @@ const ALLOWED_DOMAINS = ["2026.icam.fr", "2027.icam.fr", "2028.icam.fr", "2029.i
 let currentUser = null;
 let isMuted = false;
 let gameStartTime = 0;
-let gameSessionId = null;
 const Bus = new Phaser.Events.EventEmitter();
 
+// Encapsulation de GameState pour empêcher les modifications directes
 // --- ETAT DU JEU ---
 const GameState = (() => {
     let score = 0;
@@ -45,25 +45,15 @@ const GameState = (() => {
 
 // --- AUTHENTIFICATION ---
 onAuthStateChanged(auth, async (user) => {
-    // Attend que le DOM soit chargé
-    if (!document.getElementById("error-msg")) {
-        setTimeout(() => onAuthStateChanged(auth, user), 500);
-        return;
-    }
-
     const errorEl = document.getElementById("error-msg");
     const logoutBtn = document.getElementById("btn-logout");
     const loginBtn = document.getElementById("btn-login");
     const authStatus = document.getElementById("auth-status");
 
-    if (!errorEl || !logoutBtn || !loginBtn || !authStatus) {
-        console.error("Éléments DOM manquants pour l'authentification.");
-        return;
-    }
-
     if (user) {
         const domain = user.email.split('@')[1];
         if (ALLOWED_DOMAINS.includes(domain)) {
+            // Vérification si banni
             const userRef = doc(db, "users", user.uid);
             const userSnap = await getDoc(userRef);
             if (userSnap.exists() && userSnap.data().banned) {
@@ -97,16 +87,22 @@ onAuthStateChanged(auth, async (user) => {
 
 // --- CLASSEMENT ---
 async function loadLeaderboard() {
+    const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
+    const snap = await getDocs(q);
+    let html = "";
+    let rank = 1;
+
+    snap.forEach((d) => {
+        const data = d.data();
+        const displayVal = Math.floor(data.score || 0);
+        html += `<li><span>#${rank} ${data.name}</span> <b>${displayVal}</b></li>`;
+        rank++;
+    });
+
+    document.getElementById("live-highscore-list").innerHTML = html;
+    document.getElementById("lb-title").innerText = "🏆 TOP MILLES";
+    document.getElementById("modal-highscore-list").innerHTML = html;
     try {
-        const liveList = document.getElementById("live-highscore-list");
-        const modalList = document.getElementById("modal-highscore-list");
-        const lbTitle = document.getElementById("lb-title");
-
-        if (!liveList || !modalList || !lbTitle) {
-            console.error("Éléments DOM manquants pour le leaderboard.");
-            return;
-        }
-
         const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
         const snap = await getDocs(q);
         let html = "";
@@ -116,21 +112,26 @@ async function loadLeaderboard() {
             html += `<li><span>#${rank} ${data.name}</span> <b>${Math.floor(data.score || 0)}</b></li>`;
             rank++;
         });
-        liveList.innerHTML = html;
-        modalList.innerHTML = html;
-        lbTitle.innerText = "🏆 TOP MILLES";
+        document.getElementById("live-highscore-list").innerHTML = html;
+        document.getElementById("modal-highscore-list").innerHTML = html;
+        document.getElementById("lb-title").innerText = "🏆 TOP MILLES";
     } catch(e) { console.error("Erreur leaderboard:", e); }
 }
 
 async function saveScoreIfBest(newScore) {
     if (!currentUser) return;
+    const maxPossibleScore = 30000;
+    if (newScore > maxPossibleScore) {
+        alert("Score invalide détecté !");
     if (newScore > 30000) {
         logCheatAttempt("highScore", { attemptedScore: newScore });
         return;
     }
+
     const userRef = doc(db, "leaderboard", currentUser.uid);
     const snap = await getDoc(userRef);
     const roundedScore = Math.floor(newScore);
+
     let bestScore = roundedScore;
     let totalTime = Math.floor((Date.now() - gameStartTime) / 1000);
 
@@ -139,28 +140,45 @@ async function saveScoreIfBest(newScore) {
         bestScore = Math.max(data.score || 0, roundedScore);
         totalTime = (data.totalTime || 0) + totalTime;
     }
-    await setDoc(userRef, { name: currentUser.displayName, score: bestScore, totalTime: totalTime, date: serverTimestamp() }, { merge: true });
+
+    await setDoc(userRef, {
+        name: currentUser.displayName,
+        score: bestScore,
+        totalTime: totalTime,
+        date: Date.now()
+    }, { merge: true });
+
+    await setDoc(userRef, { name: currentUser.displayName, score: bestScore, totalTime: totalTime, date: Date.now() }, { merge: true });
     loadLeaderboard();
 }
 
-// --- LOG DES TENTATIVES DE TRICHE ---
 async function logCheatAttempt(type, details = {}) {
     if (!currentUser) return;
     const userRef = doc(db, "users", currentUser.uid);
     const userSnap = await getDoc(userRef);
+    let cheatCount = 1;
+    if (userSnap.exists()) {
+        cheatCount = (userSnap.data().cheatCount || 0) + 1;
+    }
     let cheatCount = (userSnap.exists() ? (userSnap.data().cheatCount || 0) : 0) + 1;
 
-    await addDoc(collection(db, "cheatLogs"), {
+    await setDoc(doc(db, "cheatLogs", `${currentUser.uid}_${Date.now()}`), {
         userId: currentUser.uid,
         userName: currentUser.displayName,
-        type,
-        details,
-        timestamp: serverTimestamp(),
-        gameSessionId
+        type: type,
+        details: details,
+        timestamp: Date.now()
+        userId: currentUser.uid, userName: currentUser.displayName, type, details, timestamp: Date.now()
     });
-
     await setDoc(userRef, { cheatCount }, { merge: true });
 
+    await setDoc(userRef, { cheatCount: cheatCount }, { merge: true });
+
+    if (cheatCount === 1) {
+        alert("⚠️ Attention : Une tentative de triche a été détectée.");
+    } else if (cheatCount === 2) {
+        alert("⚠️ Dernier avertissement avant blocage.");
+    } else if (cheatCount >= 3) {
     if (cheatCount === 1) alert("⚠️ Attention : Une tentative de triche a été détectée.");
     else if (cheatCount === 2) alert("⚠️ Dernier avertissement avant blocage.");
     else if (cheatCount >= 3) {
@@ -168,24 +186,6 @@ async function logCheatAttempt(type, details = {}) {
         await setDoc(userRef, { banned: true, banReason: "Triche répétée" }, { merge: true });
         signOut(auth).then(() => window.location.reload());
     }
-}
-
-// --- PREUVE DE JEU (PROOF OF PLAY) ---
-function setupProofOfPlay() {
-    gameSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    setInterval(async () => {
-        if (!GameState.getPlaying() || !currentUser) return;
-        const scene = window.game?.scene?.scenes.find(s => s.scene.key === "MainScene");
-        await addDoc(collection(db, "gameSessions"), {
-            userId: currentUser.uid,
-            userName: currentUser.displayName,
-            score: GameState.getScore(),
-            pearls: GameState.getPearls(),
-            obstacles: scene?.obstacles?.getChildren().length || 0,
-            timestamp: serverTimestamp(),
-            sessionId: gameSessionId
-        });
-    }, 5000);
 }
 
 // --- JEU PHASER ---
@@ -211,6 +211,12 @@ class BootScene extends Phaser.Scene {
 }
 
 class MainScene extends Phaser.Scene {
+    constructor() {
+        super("MainScene");
+        this.obstacles = null;
+        this.pearls = null;
+        this.isGameOver = false;
+    }
     constructor() { super("MainScene"); }
 
     create() {
@@ -248,6 +254,9 @@ class MainScene extends Phaser.Scene {
             this.coinEffect = this.sound.add('coin_sound', { volume: 0.5 });
             this.sound.mute = isMuted;
             this.sea.play();
+            } catch(e) {
+            console.error("Erreur audio:", e);
+        }
         } catch(e) { console.error("Audio error", e); }
 
         this.physics.add.overlap(this.player, this.obstacles, () => this.gameOver(), null, this);
@@ -260,8 +269,12 @@ class MainScene extends Phaser.Scene {
         this.cursors = this.input.keyboard.createCursorKeys();
         this.setupInputHandlers();
 
+        // NETTOYAGE ET GESTION DES EVENEMENTS (Correctif Crash)
+        // GESTION DES EVENEMENTS BUS (Correction Crash)
         Bus.removeAllListeners();
+
         Bus.on("start", () => {
+            if (!this.scene.isActive("MainScene")) return;
             if (this.isGameOver) return;
             gameStartTime = Date.now();
             GameState.setPlaying(true);
@@ -269,33 +282,34 @@ class MainScene extends Phaser.Scene {
             showMenuState("play");
             if(this.sea) this.sea.stop();
             if(this.music) this.music.play();
+         });
+
+         Bus.on("restart", () => {
+            // On stoque tous les sons avant de quitter pour éviter le freeze
         });
         Bus.on("restart", () => {
             this.sound.stopAll();
+            // On détruit les émetteurs de particules pour libérer la mémoire
+            if(this.trailEmitter) this.trailEmitter.destroy();
+            if(this.pearlEmitter) this.pearlEmitter.destroy();
             this.scene.restart();
         });
 
-        // Vérifie que les éléments DOM existent avant de les utiliser
-        const btnSecretTrigger = document.getElementById("btn-secret-trigger");
-        const btnCloseSecret = document.getElementById("btn-close-secret");
-        if (btnSecretTrigger) {
-            btnSecretTrigger.onclick = () => {
-                this.physics.pause();
-                GameState.setPlaying(false);
-                if(this.music) this.music.pause();
-                const secretModal = document.getElementById("secret-modal");
-                if (secretModal) secretModal.classList.remove("hidden");
-            };
-        }
-        if (btnCloseSecret) {
-            btnCloseSecret.onclick = () => {
-                const secretModal = document.getElementById("secret-modal");
-                if (secretModal) secretModal.classList.add("hidden");
-                this.physics.resume();
-                GameState.setPlaying(true);
-                if(this.music && !isMuted) this.music.resume();
-            };
-        }
+        // Gestion du bouton secret
+        // BOUTON SECRET
+        document.getElementById("btn-secret-trigger").onclick = () => {
+            this.physics.pause();
+            GameState.setPlaying(false);
+            if(this.music) this.music.pause();
+            document.getElementById("secret-modal").classList.remove("hidden");
+        };
+
+        document.getElementById("btn-close-secret").onclick = () => {
+            document.getElementById("secret-modal").classList.add("hidden");
+            this.physics.resume();
+            GameState.setPlaying(true);
+            if(this.music && !isMuted) this.music.resume();
+        };
 
         this.physics.pause();
         showMenuState("menu");
@@ -307,6 +321,9 @@ class MainScene extends Phaser.Scene {
         this.input.on("pointerdown", (p) => { dragStartX = p.x; hasMoved = false; });
         this.input.on("pointermove", (p) => {
             if(!GameState.getPlaying() || !p.isDown || hasMoved) return;
+            const dragDistance = p.x - dragStartX;
+            if (Math.abs(dragDistance) > 25) {
+                this.changeLane(dragDistance > 0 ? 1 : -1);
             if (Math.abs(p.x - dragStartX) > 25) {
                 this.changeLane(p.x > dragStartX ? 1 : -1);
                 hasMoved = true;
@@ -338,23 +355,34 @@ class MainScene extends Phaser.Scene {
         }
 
         GameState.addScore(move * 0.01);
-        const scoreDisplay = document.getElementById("score-display");
-        const pearlsDisplay = document.getElementById("pearls-display");
-        if (scoreDisplay) scoreDisplay.textContent = Math.floor(GameState.getScore());
-        if (pearlsDisplay) pearlsDisplay.textContent = GameState.getPearls();
+        document.getElementById("score-display").textContent = Math.floor(GameState.getScore());
+        document.getElementById("pearls-display").textContent = GameState.getPearls();
 
+        const currentMilles = Math.floor(GameState.getScore());
+        const btnSecret = document.getElementById("btn-secret-trigger");
+        if (currentMilles >= 50 && currentMilles <= 100) {
+            btnSecret.classList.remove("hidden");
+        } else {
+            btnSecret.classList.add("hidden");
+        }
+        // Affichage bouton secret (50-100 milles)
         const score = Math.floor(GameState.getScore());
         const btnS = document.getElementById("btn-secret-trigger");
-        if(btnS) {
-            if(score >= 50 && score <= 100) btnS.classList.remove("hidden");
-            else btnS.classList.add("hidden");
-        }
+        if(score >= 50 && score <= 100) btnS.classList.remove("hidden");
+        else btnS.classList.add("hidden");
 
+        // Nettoyage automatique des obstacles
+        this.obstacles.getChildren().forEach(obstacle => {
+            if (obstacle.y > 800) obstacle.destroy();
+        });
         this.obstacles.getChildren().forEach(o => { if(o.y > 800) o.destroy(); });
     }
 
     changeLane(dir) {
         const next = this.laneIndex + dir;
+        if (next < 0 || next > 2) return;
+        this.laneIndex = next;
+        this.tweens.add({ targets: this.player, x: [130, 240, 350][this.laneIndex], duration: 150, ease: "Power2" });
         if (next >= 0 && next <= 2) {
             this.laneIndex = next;
             this.tweens.add({ targets: this.player, x: [130, 240, 350][this.laneIndex], duration: 150, ease: "Power2" });
@@ -362,6 +390,14 @@ class MainScene extends Phaser.Scene {
     }
 
     spawnWave() {
+        const lanes = [130, 240, 350];
+        const shuffled = lanes.sort(() => 0.5 - Math.random());
+        const numObstacles = Math.random() < 0.45 ? 2 : 1;
+
+        for (let i = 0; i < numObstacles; i++) {
+            const obstacle = this.obstacles.create(shuffled[i], -100, "obstacle").setScale(0.85);
+            obstacle.body.setCircle(30, 15, 15);
+            obstacle.setData("isObstacle", true);
         const lanes = [130, 240, 350].sort(() => 0.5 - Math.random());
         const numObs = Math.random() < 0.45 ? 2 : 1;
         for (let i = 0; i < numObs; i++) {
@@ -369,6 +405,12 @@ class MainScene extends Phaser.Scene {
             obs.body.setCircle(30, 15, 15);
             obs.setData("isObstacle", true);
         }
+
+        if (numObstacles < 3) {
+            const emptyLaneIndex = numObstacles;
+            if(Math.random() < 0.45) {
+                this.pearls.create(shuffled[emptyLaneIndex], -150, "pearl").setScale(0.6).body.setCircle(20);
+            }
         if (numObs < 3 && Math.random() < 0.45) {
             this.pearls.create(lanes[numObs], -150, "pearl").setScale(0.6).body.setCircle(20);
         }
@@ -383,10 +425,8 @@ class MainScene extends Phaser.Scene {
         this.cameras.main.shake(250, 0.02);
         if(this.music) this.music.stop();
         if(this.crash) this.crash.play();
-        const finalScoreEl = document.getElementById("final-score");
-        const playerNameEl = document.getElementById("player-name-end");
-        if (finalScoreEl) finalScoreEl.textContent = Math.floor(GameState.getScore());
-        if (playerNameEl) playerNameEl.textContent = currentUser ? currentUser.displayName.split(' ')[0] : "Marin";
+        document.getElementById("final-score").textContent = Math.floor(GameState.getScore());
+        document.getElementById("player-name-end").textContent = currentUser ? currentUser.displayName.split(' ')[0] : "Marin";
         saveScoreIfBest(GameState.getScore());
         showMenuState("gameover");
     }
@@ -394,88 +434,61 @@ class MainScene extends Phaser.Scene {
 
 // --- GESTION INTERFACE (DOM) ---
 function showMenuState(s) {
+    ["main-menu", "howto", "game-over", "hud", "leaderboard-modal"].forEach(id => document.getElementById(id)?.classList.add("hidden"));
     const ids = ["main-menu", "howto", "game-over", "hud", "leaderboard-modal"];
-    ids.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.classList.add("hidden");
-    });
-    if (s === "menu" && document.getElementById("main-menu")) document.getElementById("main-menu").classList.remove("hidden");
-    if (s === "play" && document.getElementById("hud")) document.getElementById("hud").classList.remove("hidden");
-    if (s === "gameover" && document.getElementById("game-over")) document.getElementById("game-over").classList.remove("hidden");
+    ids.forEach(id => document.getElementById(id)?.classList.add("hidden"));
+    if (s === "menu") document.getElementById("main-menu").classList.remove("hidden");
+    if (s === "play") document.getElementById("hud").classList.remove("hidden");
+    if (s === "gameover") document.getElementById("game-over").classList.remove("hidden");
 }
 
+function setupDomHandlers(gameInstance) {
 function setupDomHandlers(game) {
-    const btnLogin = document.getElementById("btn-login");
-    const btnLogout = document.getElementById("btn-logout");
-    const btnPlay = document.getElementById("btn-play");
-    const btnRestart = document.getElementById("btn-restart");
-    const btnSettings = document.getElementById("btn-settings");
-    const btnShowLeaderboard = document.getElementById("btn-show-leaderboard");
-    const btnShowPrizes = document.getElementById("btn-show-prizes");
-    const btnBackToRank = document.getElementById("btn-back-to-rank");
-    const btnCloseModal = document.getElementById("btn-close-modal");
-    const closeModalX = document.getElementById("close-modal-x");
-    const btnHowto = document.getElementById("btn-howto");
-    const btnBackMenu = document.getElementById("btn-back-menu");
+    document.getElementById("btn-login").onclick = () => signInWithPopup(auth, provider);
+    document.getElementById("btn-logout").onclick = () => signOut(auth).then(() => window.location.reload());
+    document.getElementById("btn-play").onclick = () => Bus.emit("start");
+    document.getElementById("btn-restart").onclick = () => Bus.emit("restart");
+    
+    document.getElementById("btn-restart").onclick = () => {
+        showMenuState("play"); // Feedback visuel immédiat
+        Bus.emit("restart");
+    };
 
-    if (btnLogin) btnLogin.onclick = () => signInWithPopup(auth, provider);
-    if (btnLogout) btnLogout.onclick = () => signOut(auth).then(() => window.location.reload());
-    if (btnPlay) btnPlay.onclick = () => Bus.emit("start");
-    if (btnRestart) btnRestart.onclick = () => { showMenuState("play"); Bus.emit("restart"); };
-    if (btnSettings) btnSettings.onclick = (e) => { isMuted = !isMuted; game.sound.mute = isMuted; e.target.innerText = isMuted ? "🔇" : "🔊"; };
-    if (btnShowLeaderboard) btnShowLeaderboard.onclick = () => {
-        const leaderboardModal = document.getElementById("leaderboard-modal");
-        const viewRankings = document.getElementById("view-rankings");
-        const viewPrizes = document.getElementById("view-prizes");
-        if (leaderboardModal) leaderboardModal.classList.remove("hidden");
-        if (viewRankings) viewRankings.classList.remove("hidden");
-        if (viewPrizes) viewPrizes.classList.add("hidden");
+    document.getElementById("btn-settings").onclick = () => {
+    document.getElementById("btn-settings").onclick = (e) => {
+        isMuted = !isMuted;
+        if(gameInstance) gameInstance.sound.mute = isMuted;
+        document.getElementById("btn-settings").innerText = isMuted ? "🔇" : "🔊";
+        game.sound.mute = isMuted;
+        e.target.innerText = isMuted ? "🔇" : "🔊";
+    };
+
+    // Leaderboard & Prix
+    document.getElementById("btn-show-leaderboard").onclick = () => {
+        document.getElementById("leaderboard-modal").classList.remove("hidden");
+        document.getElementById("view-rankings").classList.remove("hidden");
+        document.getElementById("view-prizes").classList.add("hidden");
         loadLeaderboard();
     };
-    if (btnShowPrizes && btnBackToRank) {
-        btnShowPrizes.onclick = () => {
-            const viewRankings = document.getElementById("view-rankings");
-            const viewPrizes = document.getElementById("view-prizes");
-            if (viewRankings && viewPrizes) {
-                viewRankings.classList.add("hidden");
-                viewPrizes.classList.remove("hidden");
-            }
-        };
-        btnBackToRank.onclick = () => {
-            const viewRankings = document.getElementById("view-rankings");
-            const viewPrizes = document.getElementById("view-prizes");
-            if (viewRankings && viewPrizes) {
-                viewPrizes.classList.add("hidden");
-                viewRankings.classList.remove("hidden");
-            }
-        };
-    }
-    if (btnCloseModal) btnCloseModal.onclick = () => {
-        const leaderboardModal = document.getElementById("leaderboard-modal");
-        if (leaderboardModal) leaderboardModal.classList.add("hidden");
+    document.getElementById("btn-show-prizes").onclick = () => {
+        document.getElementById("view-rankings").classList.add("hidden");
+        document.getElementById("view-prizes").classList.remove("hidden");
     };
-    if (closeModalX) closeModalX.onclick = () => {
-        const leaderboardModal = document.getElementById("leaderboard-modal");
-        if (leaderboardModal) leaderboardModal.classList.add("hidden");
+    document.getElementById("btn-back-to-rank").onclick = () => {
+        document.getElementById("view-prizes").classList.add("hidden");
+        document.getElementById("view-rankings").classList.remove("hidden");
     };
-    if (btnHowto && btnBackMenu) {
-        btnHowto.onclick = () => {
-            const mainMenu = document.getElementById("main-menu");
-            const howto = document.getElementById("howto");
-            if (mainMenu && howto) {
-                mainMenu.classList.add("hidden");
-                howto.classList.remove("hidden");
-            }
-        };
-        btnBackMenu.onclick = () => {
-            const mainMenu = document.getElementById("main-menu");
-            const howto = document.getElementById("howto");
-            if (mainMenu && howto) {
-                howto.classList.add("hidden");
-                mainMenu.classList.remove("hidden");
-            }
-        };
-    }
+    document.getElementById("btn-close-modal").onclick = () => document.getElementById("leaderboard-modal").classList.add("hidden");
+    document.getElementById("close-modal-x").onclick = () => document.getElementById("leaderboard-modal").classList.add("hidden");
+    
+    document.getElementById("btn-howto").onclick = () => {
+        document.getElementById("main-menu").classList.add("hidden");
+        document.getElementById("howto").classList.remove("hidden");
+    };
+    document.getElementById("btn-back-menu").onclick = () => {
+        document.getElementById("howto").classList.add("hidden");
+        document.getElementById("main-menu").classList.remove("hidden");
+    };
 }
 
 // --- INITIALISATION ---
@@ -486,27 +499,47 @@ const phaserConfig = {
     scene: [BootScene, MainScene]
 };
 
+// INITIALISATION ET PROTECTIONS
 window.addEventListener('DOMContentLoaded', () => {
     const game = new Phaser.Game(phaserConfig);
-    window.game = game;
+    setupDomHandlers(game);
 
-    // Initialise les protections après le chargement
-    game.events.once('boot', () => {
-        setupDomHandlers(game);
-        setupProofOfPlay();
-
-        // Anti-triche pour la suppression d'obstacles
-        const originalDestroy = Phaser.GameObjects.GameObject.prototype.destroy;
-        Phaser.GameObjects.GameObject.prototype.destroy = function() {
-            const stack = new Error().stack;
-            if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle")) {
-                const ok = stack && (stack.includes("MainScene") || stack.includes("phaser"));
-                if (!ok && window.logCheatAttempt) {
-                    logCheatAttempt("manualDestroy");
-                    return this;
-                }
-            }
-            return originalDestroy.call(this);
-        };
+    // Blocage console
+    Object.defineProperty(window, 'gameInstance', {
+        get: () => { console.warn("Accès interdit."); return {}; },
+        configurable: false
     });
+
+    // PROTECTION INTELLIGENTE (Stack Trace)
+    // ANTI-TRICHE (STACK TRACE)
+    const originalDestroy = Phaser.GameObjects.GameObject.prototype.destroy;
+    Phaser.GameObjects.GameObject.prototype.destroy = function() {
+        const stack = new Error().stack;
+        if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle")) {
+            // On autorise si l'appel vient de MainScene ou de Phaser lui-même
+            const isInternal = stack && (stack.includes("MainScene") || stack.includes("phaser.min.js") || stack.includes("phaser.js"));
+            if (!isInternal) {
+                console.warn("Triche bloquée.");
+                logCheatAttempt("manualDestroy");
+                return this;
+            }
+            const ok = stack && (stack.includes("MainScene") || stack.includes("phaser"));
+            if (!ok) { logCheatAttempt("manualDestroy"); return this; }
+        }
+        return originalDestroy.call(this);
+    };
+
+    const originalSetActive = Phaser.GameObjects.GameObject.prototype.setActive;
+    Phaser.GameObjects.GameObject.prototype.setActive = function(value) {
+        const stack = new Error().stack;
+        if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle") && !value) {
+            const isInternal = stack && (stack.includes("MainScene") || stack.includes("phaser.min.js"));
+            if (!isInternal) {
+                console.warn("Triche bloquée.");
+                logCheatAttempt("manualDisable");
+                return this;
+            }
+        }
+        return originalSetActive.call(this, value);
+    };
 });
