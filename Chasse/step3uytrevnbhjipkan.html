@@ -28,7 +28,7 @@
     .indice-image:hover { transform: translateX(-50%) scale(1.05); }
 
     .dialogue-box { width: 100%; background-color: #fff1e0; border-top: 4px solid #3e2723; padding: 20px; position: relative; cursor: pointer; z-index: 10; }
-    .text { font-size: 1.4rem; line-height: 1.4; min-height: 4.2em; }
+    .text { font-size: 1.4rem; line-height: 1.4; min-height: 4.2em; white-space: pre-line; /* Permet d'afficher les sauts de ligne (\n) correctement */ }
     .choices { margin-top: 10px; border-top: 2px dashed rgba(62, 39, 35, 0.3); padding-top: 5px; }
     .choices:empty { border-top: none; }
     
@@ -45,26 +45,28 @@
       position: absolute;
       top: 0; left: 0; right: 0; bottom: 0;
       background-image: url('Images/parchemin.png');
-      background-size: cover;
+      background-size: 100% 100%; /* Force l'image à prendre exactement la taille 9:16 */
       background-position: center;
-      background-color: rgba(0, 0, 0, 0.9); /* Fallback si l'image ne charge pas */
-      z-index: 200; /* Passe au-dessus de tout le reste */
+      background-color: rgba(0, 0, 0, 0.9); 
+      z-index: 200; 
       display: none;
       flex-direction: column;
       justify-content: center;
       align-items: center;
-      padding: 30px;
+      padding: 15% 10%;
       cursor: pointer;
     }
     .parchemin-text {
-      font-family: monospace; /* Police monospace idéale pour le code morse */
-      font-size: 1.2rem;
-      color: #3e2723; /* Marron foncé pour coller au style parchemin */
+      font-family: monospace; 
+      font-size: clamp(0.7rem, 2.5vw, 1.1rem); /* Taille adaptative */
+      color: #3e2723; 
       text-align: center;
-      line-height: 1.6;
-      word-break: break-all; /* Force le passage à la ligne du morse */
-      max-height: 90%;
+      line-height: 1.5;
+      word-break: break-all; 
+      max-height: 100%;
       overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #3e2723 transparent;
     }
   </style>
 </head>
@@ -106,8 +108,8 @@
 <script>
   const texts = { 
     pont: [ "J'espère bientôt arriver." ], 
-    ile_loin: [ "Terre! \n j'apperçois une île!", "Elle semble déserte.", "C'est une croix sur la plage ?" ], 
-    ile_proche: [ "Une croix est dessinée sur le sol.", "C'est pas discret discret hein.", "Heuresement que j'ai pris ma pelle" ], 
+    ile_loin: [ "Terre! \nj'aperçois une île!", "Elle semble déserte.", "C'est une croix sur la plage ?" ], 
+    ile_proche: [ "Une croix est dessinée sur le sol.", "C'est pas discret discret hein.", "Heureusement que j'ai pris ma pelle" ], 
     ile_trou: [ "Pfiout c'était loooooooooooooooooooooooooooong", "Alors, qu'est ce qu'on a là ?" ], 
     journal: [ "On dirait un journal de bord", "C'est peut-être celui de Barbe d'Or." ], 
     journal_ouvert: [ "Hein ?", "Mais qu'est ce que c'est que ça ???", "Voici la première partie du mot de passe pour la suite: 6394" ] 
@@ -135,12 +137,12 @@
     journal: { label: "Ouvrir le journal", next: "journal_ouvert" }
   };
 
-  let currentText = "pont"; let dialogues = texts[currentText]; let index = 0; let isTyping = false; let musicStarted = false;
+  /* Ajout de typingInterval */
+  let currentText = "pont"; let dialogues = texts[currentText]; let index = 0; let isTyping = false; let musicStarted = false; let typingInterval = null;
 
   const textEl = document.getElementById("text"); const arrowEl = document.getElementById("arrow"); const dialogueBox = document.getElementById("dialogueBox"); const choicesEl = document.getElementById("choices"); const sceneEl = document.getElementById("scene"); const indiceEl = document.getElementById("indiceImage"); const hintBulb = document.getElementById("hintBulb");
   const music = document.getElementById("bgMusic"); const clickSfx = document.getElementById("clickSound"); const muteBtn = document.getElementById("muteBtn"); const muteIcon = document.getElementById("muteIcon"); const homeBtn = document.getElementById("homeBtn");
   
-  /* Nouveau: sélection de l'overlay parchemin */
   const parcheminOverlay = document.getElementById("parcheminOverlay");
 
   function playClick() { clickSfx.currentTime = 0; clickSfx.play().catch(() => {}); }
@@ -158,9 +160,24 @@
     isTyping = true; arrowEl.style.display = "none"; choicesEl.innerHTML = ""; textEl.textContent = "";
     const current = dialogues[index]; let charIndex = 0;
 
-    const interval = setInterval(() => {
+    /* Nettoyage de l'intervalle précédent */
+    clearInterval(typingInterval);
+
+    typingInterval = setInterval(() => {
       textEl.textContent += current[charIndex++];
-      if (charIndex >= current.length) { clearInterval(interval); isTyping = false; if (index < dialogues.length - 1) arrowEl.style.display = "block"; else if (progression[currentText]) showChoices(); }
+      if (charIndex >= current.length) { 
+        clearInterval(typingInterval); 
+        isTyping = false; 
+        
+        /* Gestion de la fin de phrase : on affiche les choix ou la flèche */
+        if (index < dialogues.length - 1) {
+            arrowEl.style.display = "block"; 
+        } else if (progression[currentText]) {
+            showChoices(); 
+        } else {
+            arrowEl.style.display = "block"; /* Affiche la flèche à la toute fin pour pouvoir relancer */
+        }
+      }
     }, 40);
   }
 
@@ -174,25 +191,57 @@
   }
 
   function goToScene(scene) { currentText = scene; dialogues = texts[scene]; index = 0; updateBackground(); typeText(); }
-  function nextDialogue() { if (isTyping) return; index++; if (index < dialogues.length) { typeText(); } }
+
+  /* Nouvelle fonction nextDialogue pour gérer le SKIP et le RETOUR AU DÉBUT */
+  function nextDialogue() { 
+    /* Si on est en train d'écrire, on skip */
+    if (isTyping) {
+        clearInterval(typingInterval);
+        textEl.textContent = dialogues[index];
+        isTyping = false;
+        
+        if (index < dialogues.length - 1) {
+            arrowEl.style.display = "block";
+        } else if (progression[currentText]) {
+            showChoices();
+        } else {
+            arrowEl.style.display = "block";
+        }
+        return;
+    }
+
+    index++; 
+    if (index < dialogues.length) { 
+        typeText(); 
+    } else {
+        /* S'il n'y a plus de dialogue (ex: fin de journal_ouvert), on recommence la scène du début */
+        goToScene("pont");
+    }
+  }
 
   muteBtn.onclick = (e) => { e.stopPropagation(); playClick(); music.muted = !music.muted; muteIcon.src = music.muted ? "Images/mute.png" : "Images/unmute.png"; };
   homeBtn.onclick = (e) => { e.stopPropagation(); playClick(); setTimeout(() => { location.href = 'accueil.html'; }, 150); };
   hintBulb.onclick = (e) => { e.stopPropagation(); alert("Un indice se trouve entre 1500 et 1600 miles d'ici."); };
-  dialogueBox.addEventListener("click", () => { startMusic(); if (!choicesEl.children.length) { playClick(); nextDialogue(); } });
+  
+  /* Clic sur la boite de dialogue */
+  dialogueBox.addEventListener("click", () => { 
+      startMusic(); 
+      if (!choicesEl.children.length) { 
+          playClick(); 
+          nextDialogue(); 
+      } 
+  });
 
-  /* Nouveau: Gère le clic sur l'image de l'indice (le journal) */
   indiceEl.addEventListener("click", (e) => {
     e.stopPropagation();
     playClick();
-    parcheminOverlay.style.display = "flex"; // Affiche l'overlay
+    parcheminOverlay.style.display = "flex"; 
   });
 
-  /* Nouveau: Gère le clic sur l'overlay pour le fermer */
   parcheminOverlay.addEventListener("click", (e) => {
     e.stopPropagation();
     playClick();
-    parcheminOverlay.style.display = "none"; // Cache l'overlay
+    parcheminOverlay.style.display = "none"; 
   });
 
   updateBackground();
