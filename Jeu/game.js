@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, getDocs, collection, query, orderBy, limit, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // --- CONFIGURATION FIREBASE ---
 const firebaseConfig = {
@@ -76,13 +76,8 @@ onAuthStateChanged(auth, async (user) => {
             }
             currentUser = user;
             authStatus.innerHTML = `⚓ Bienvenue Capitaine <b>${user.displayName.split(' ')[0]}</b> !`;
-
-            const gameControls = document.getElementById("game-controls");
-            if (gameControls) gameControls.classList.remove("hidden");
-
-            const authSection = document.getElementById("auth-section");
-            if (authSection) authSection.classList.add("hidden");
-
+            document.getElementById("auth-section").classList.add("hidden");
+            document.getElementById("game-controls").classList.remove("hidden");
             loadLeaderboard();
         } else {
             authStatus.innerHTML = "🚫 Accès Refusé";
@@ -94,10 +89,7 @@ onAuthStateChanged(auth, async (user) => {
     } else {
         authStatus.innerHTML = "Embarque avec ton mail ICAM.";
         loginBtn.classList.remove("hidden");
-
-        const gameControls = document.getElementById("game-controls");
-        if (gameControls) gameControls.classList.add("hidden");
-
+        document.getElementById("game-controls").classList.add("hidden");
         errorEl.classList.add("hidden");
         logoutBtn.classList.add("hidden");
     }
@@ -133,7 +125,7 @@ async function loadLeaderboard() {
 async function saveScoreIfBest(newScore) {
     if (!currentUser) return;
     if (newScore > 30000) {
-        if (window.logCheatAttempt) logCheatAttempt("highScore", { attemptedScore: newScore });
+        logCheatAttempt("highScore", { attemptedScore: newScore });
         return;
     }
     const userRef = doc(db, "leaderboard", currentUser.uid);
@@ -147,7 +139,7 @@ async function saveScoreIfBest(newScore) {
         bestScore = Math.max(data.score || 0, roundedScore);
         totalTime = (data.totalTime || 0) + totalTime;
     }
-    await setDoc(userRef, { name: currentUser.displayName, score: bestScore, totalTime: totalTime, date: Date.now() }, { merge: true });
+    await setDoc(userRef, { name: currentUser.displayName, score: bestScore, totalTime: totalTime, date: serverTimestamp() }, { merge: true });
     loadLeaderboard();
 }
 
@@ -158,14 +150,15 @@ async function logCheatAttempt(type, details = {}) {
     const userSnap = await getDoc(userRef);
     let cheatCount = (userSnap.exists() ? (userSnap.data().cheatCount || 0) : 0) + 1;
 
-    await setDoc(doc(db, "cheatLogs", `${currentUser.uid}_${Date.now()}`), {
+    await addDoc(collection(db, "cheatLogs"), {
         userId: currentUser.uid,
         userName: currentUser.displayName,
         type,
         details,
-        timestamp: Date.now(),
+        timestamp: serverTimestamp(),
         gameSessionId
     });
+
     await setDoc(userRef, { cheatCount }, { merge: true });
 
     if (cheatCount === 1) alert("⚠️ Attention : Une tentative de triche a été détectée.");
@@ -175,6 +168,24 @@ async function logCheatAttempt(type, details = {}) {
         await setDoc(userRef, { banned: true, banReason: "Triche répétée" }, { merge: true });
         signOut(auth).then(() => window.location.reload());
     }
+}
+
+// --- PREUVE DE JEU (PROOF OF PLAY) ---
+function setupProofOfPlay() {
+    gameSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    setInterval(async () => {
+        if (!GameState.getPlaying() || !currentUser) return;
+        const scene = window.game?.scene?.scenes.find(s => s.scene.key === "MainScene");
+        await addDoc(collection(db, "gameSessions"), {
+            userId: currentUser.uid,
+            userName: currentUser.displayName,
+            score: GameState.getScore(),
+            pearls: GameState.getPearls(),
+            obstacles: scene?.obstacles?.getChildren().length || 0,
+            timestamp: serverTimestamp(),
+            sessionId: gameSessionId
+        });
+    }, 5000);
 }
 
 // --- JEU PHASER ---
@@ -255,7 +266,7 @@ class MainScene extends Phaser.Scene {
             gameStartTime = Date.now();
             GameState.setPlaying(true);
             this.physics.resume();
-            if (document.getElementById("hud")) showMenuState("play");
+            showMenuState("play");
             if(this.sea) this.sea.stop();
             if(this.music) this.music.play();
         });
@@ -287,7 +298,7 @@ class MainScene extends Phaser.Scene {
         }
 
         this.physics.pause();
-        if (document.getElementById("main-menu")) showMenuState("menu");
+        showMenuState("menu");
     }
 
     setupInputHandlers() {
@@ -372,14 +383,12 @@ class MainScene extends Phaser.Scene {
         this.cameras.main.shake(250, 0.02);
         if(this.music) this.music.stop();
         if(this.crash) this.crash.play();
-
         const finalScoreEl = document.getElementById("final-score");
         const playerNameEl = document.getElementById("player-name-end");
         if (finalScoreEl) finalScoreEl.textContent = Math.floor(GameState.getScore());
         if (playerNameEl) playerNameEl.textContent = currentUser ? currentUser.displayName.split(' ')[0] : "Marin";
-
         saveScoreIfBest(GameState.getScore());
-        if (document.getElementById("game-over")) showMenuState("gameover");
+        showMenuState("gameover");
     }
 }
 
@@ -399,43 +408,30 @@ function setupDomHandlers(game) {
     const btnLogin = document.getElementById("btn-login");
     const btnLogout = document.getElementById("btn-logout");
     const btnPlay = document.getElementById("btn-play");
+    const btnRestart = document.getElementById("btn-restart");
+    const btnSettings = document.getElementById("btn-settings");
+    const btnShowLeaderboard = document.getElementById("btn-show-leaderboard");
+    const btnShowPrizes = document.getElementById("btn-show-prizes");
+    const btnBackToRank = document.getElementById("btn-back-to-rank");
+    const btnCloseModal = document.getElementById("btn-close-modal");
+    const closeModalX = document.getElementById("close-modal-x");
+    const btnHowto = document.getElementById("btn-howto");
+    const btnBackMenu = document.getElementById("btn-back-menu");
 
     if (btnLogin) btnLogin.onclick = () => signInWithPopup(auth, provider);
     if (btnLogout) btnLogout.onclick = () => signOut(auth).then(() => window.location.reload());
     if (btnPlay) btnPlay.onclick = () => Bus.emit("start");
-
-    const btnRestart = document.getElementById("btn-restart");
-    if (btnRestart) {
-        btnRestart.onclick = () => {
-            if (document.getElementById("game-over")) showMenuState("play");
-            Bus.emit("restart");
-        };
-    }
-
-    const btnSettings = document.getElementById("btn-settings");
-    if (btnSettings) {
-        btnSettings.onclick = (e) => {
-            isMuted = !isMuted;
-            game.sound.mute = isMuted;
-            e.target.innerText = isMuted ? "🔇" : "🔊";
-        };
-    }
-
-    const btnShowLeaderboard = document.getElementById("btn-show-leaderboard");
-    if (btnShowLeaderboard) {
-        btnShowLeaderboard.onclick = () => {
-            const leaderboardModal = document.getElementById("leaderboard-modal");
-            if (leaderboardModal) leaderboardModal.classList.remove("hidden");
-            const viewRankings = document.getElementById("view-rankings");
-            if (viewRankings) viewRankings.classList.remove("hidden");
-            const viewPrizes = document.getElementById("view-prizes");
-            if (viewPrizes) viewPrizes.classList.add("hidden");
-            loadLeaderboard();
-        };
-    }
-
-    const btnShowPrizes = document.getElementById("btn-show-prizes");
-    const btnBackToRank = document.getElementById("btn-back-to-rank");
+    if (btnRestart) btnRestart.onclick = () => { showMenuState("play"); Bus.emit("restart"); };
+    if (btnSettings) btnSettings.onclick = (e) => { isMuted = !isMuted; game.sound.mute = isMuted; e.target.innerText = isMuted ? "🔇" : "🔊"; };
+    if (btnShowLeaderboard) btnShowLeaderboard.onclick = () => {
+        const leaderboardModal = document.getElementById("leaderboard-modal");
+        const viewRankings = document.getElementById("view-rankings");
+        const viewPrizes = document.getElementById("view-prizes");
+        if (leaderboardModal) leaderboardModal.classList.remove("hidden");
+        if (viewRankings) viewRankings.classList.remove("hidden");
+        if (viewPrizes) viewPrizes.classList.add("hidden");
+        loadLeaderboard();
+    };
     if (btnShowPrizes && btnBackToRank) {
         btnShowPrizes.onclick = () => {
             const viewRankings = document.getElementById("view-rankings");
@@ -454,24 +450,14 @@ function setupDomHandlers(game) {
             }
         };
     }
-
-    const btnCloseModal = document.getElementById("btn-close-modal");
-    const closeModalX = document.getElementById("close-modal-x");
-    if (btnCloseModal) {
-        btnCloseModal.onclick = () => {
-            const leaderboardModal = document.getElementById("leaderboard-modal");
-            if (leaderboardModal) leaderboardModal.classList.add("hidden");
-        };
-    }
-    if (closeModalX) {
-        closeModalX.onclick = () => {
-            const leaderboardModal = document.getElementById("leaderboard-modal");
-            if (leaderboardModal) leaderboardModal.classList.add("hidden");
-        };
-    }
-
-    const btnHowto = document.getElementById("btn-howto");
-    const btnBackMenu = document.getElementById("btn-back-menu");
+    if (btnCloseModal) btnCloseModal.onclick = () => {
+        const leaderboardModal = document.getElementById("leaderboard-modal");
+        if (leaderboardModal) leaderboardModal.classList.add("hidden");
+    };
+    if (closeModalX) closeModalX.onclick = () => {
+        const leaderboardModal = document.getElementById("leaderboard-modal");
+        if (leaderboardModal) leaderboardModal.classList.add("hidden");
+    };
     if (btnHowto && btnBackMenu) {
         btnHowto.onclick = () => {
             const mainMenu = document.getElementById("main-menu");
@@ -500,27 +486,27 @@ const phaserConfig = {
     scene: [BootScene, MainScene]
 };
 
-// Attend que le DOM soit entièrement chargé
 window.addEventListener('DOMContentLoaded', () => {
     const game = new Phaser.Game(phaserConfig);
-    window.game = game; // Rend le jeu accessible globalement (pour le débogage)
+    window.game = game;
 
-    // Initialise les handlers DOM après que Phaser soit prêt
+    // Initialise les protections après le chargement
     game.events.once('boot', () => {
         setupDomHandlers(game);
-    });
+        setupProofOfPlay();
 
-    // Anti-triche pour la suppression d'obstacles
-    const originalDestroy = Phaser.GameObjects.GameObject.prototype.destroy;
-    Phaser.GameObjects.GameObject.prototype.destroy = function() {
-        const stack = new Error().stack;
-        if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle")) {
-            const ok = stack && (stack.includes("MainScene") || stack.includes("phaser"));
-            if (!ok && window.logCheatAttempt) {
-                logCheatAttempt("manualDestroy");
-                return this;
+        // Anti-triche pour la suppression d'obstacles
+        const originalDestroy = Phaser.GameObjects.GameObject.prototype.destroy;
+        Phaser.GameObjects.GameObject.prototype.destroy = function() {
+            const stack = new Error().stack;
+            if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle")) {
+                const ok = stack && (stack.includes("MainScene") || stack.includes("phaser"));
+                if (!ok && window.logCheatAttempt) {
+                    logCheatAttempt("manualDestroy");
+                    return this;
+                }
             }
-        }
-        return originalDestroy.call(this);
-    };
+            return originalDestroy.call(this);
+        };
+    });
 });
