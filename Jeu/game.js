@@ -323,8 +323,6 @@ class MainScene extends Phaser.Scene {
         for (let i = 0; i < numObstacles; i++) {
             const obstacle = this.obstacles.create(shuffled[i], -100, "obstacle").setScale(0.85);
             obstacle.body.setCircle(30, 15, 15);
-            // Rendre les obstacles plus difficiles à supprimer
-            obstacle.setData("isObstacle", true);
         }
 
         if (numObstacles < 3) {
@@ -412,25 +410,24 @@ window.addEventListener('DOMContentLoaded', () => {
     window.gameInstance = new Phaser.Game(phaserConfig);
 
     // Empêcher l'accès aux scènes Phaser depuis la console
-    const originalGameInstance = window.gameInstance;
     Object.defineProperty(window, 'gameInstance', {
         get: () => {
             console.warn("Accès interdit à gameInstance depuis la console.");
             return {};
         },
-        set: () => {
+        set: (value) => {
             console.warn("Modification interdite de gameInstance depuis la console.");
         },
         configurable: false
     });
 
-    // Empêcher la suppression des obstacles via la console
-    const originalDestroy = Phaser.GameObjects.GameObject.prototype.destroy;
-    Phaser.GameObjects.GameObject.prototype.destroy = function() {
-        if (this.getData && this.getData("isObstacle")) {
-            console.warn("Suppression d'un obstacle bloquée.");
+    // Protection contre la suppression des obstacles via la console
+    const originalClear = Phaser.GameObjects.Group.prototype.clear;
+    Phaser.GameObjects.Group.prototype.clear = function() {
+        if (this.scene && this.scene.scene.key === "MainScene" && this === this.scene.obstacles) {
+            console.warn("Suppression des obstacles bloquée.");
             return this;
         }
-        return originalDestroy.call(this);
+        return originalClear.call(this, ...arguments);
     };
 });
