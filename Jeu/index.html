@@ -70,6 +70,21 @@
     .panel--paper { text-align: center; }
     #error-msg { color: #ff5252; background: rgba(0,0,0,0.4); padding: 10px; border-radius: 5px; margin: 10px 0; font-size: 0.9rem; }
   </style>
+  <script>
+  // Désactive les outils de développement et le clic droit
+  document.addEventListener('keydown', (e) => {
+      if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J'))) {
+          e.preventDefault();
+          alert("L'accès aux outils de développement est désactivé pour ce jeu.");
+      }
+  });
+
+  // Empêche le clic droit
+  document.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+  });
+</script>
+
 </head>
 <body>
   <a href="../index.html" class="home-btn">🏠</a>

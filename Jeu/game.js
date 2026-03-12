@@ -95,6 +95,7 @@ async function saveScoreIfBest(newScore) {
     const maxPossibleScore = 30000;
     if (newScore > maxPossibleScore) {
         alert("Triche détectée : score trop élevé !");
+        logCheatAttempt("highScore", newScore);
         return;
     }
 
@@ -119,6 +120,19 @@ async function saveScoreIfBest(newScore) {
     }, { merge: true });
 
     loadLeaderboard();
+}
+
+// Fonction pour journaliser les tentatives de triche
+async function logCheatAttempt(type, details = {}) {
+    if (!currentUser) return;
+    const logRef = doc(db, "cheatLogs", `${currentUser.uid}_${Date.now()}`);
+    await setDoc(logRef, {
+        userId: currentUser.uid,
+        userName: currentUser.displayName,
+        type: type,
+        details: details,
+        timestamp: Date.now()
+    });
 }
 
 class BootScene extends Phaser.Scene {
@@ -323,6 +337,7 @@ class MainScene extends Phaser.Scene {
         for (let i = 0; i < numObstacles; i++) {
             const obstacle = this.obstacles.create(shuffled[i], -100, "obstacle").setScale(0.85);
             obstacle.body.setCircle(30, 15, 15);
+            obstacle.setData("isObstacle", true); // Marque l'obstacle comme protégé
         }
 
         if (numObstacles < 3) {
@@ -421,13 +436,60 @@ window.addEventListener('DOMContentLoaded', () => {
         configurable: false
     });
 
-    // Protection contre la suppression des obstacles via la console
+    // Protection contre clear()
     const originalClear = Phaser.GameObjects.Group.prototype.clear;
     Phaser.GameObjects.Group.prototype.clear = function() {
-        if (this.scene && this.scene.scene.key === "MainScene" && this === this.scene.obstacles) {
-            console.warn("Suppression des obstacles bloquée.");
+        if (this.scene?.scene?.key === "MainScene" && this === this.scene.obstacles) {
+            console.warn("Triche détectée : tentative de suppression des obstacles via clear().");
+            logCheatAttempt("clearObstacles");
             return this;
         }
         return originalClear.call(this, ...arguments);
+    };
+
+    // Protection contre destroy()
+    const originalDestroy = Phaser.GameObjects.GameObject.prototype.destroy;
+    Phaser.GameObjects.GameObject.prototype.destroy = function() {
+        if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle")) {
+            console.warn("Triche détectée : tentative de suppression d'un obstacle via destroy().");
+            logCheatAttempt("destroyObstacle");
+            if (this.scene.gameOver) {
+                this.scene.gameOver(); // Termine la partie
+            }
+            return this;
+        }
+        return originalDestroy.call(this);
+    };
+
+    // Protection contre setActive/setVisible
+    const originalSetActive = Phaser.GameObjects.GameObject.prototype.setActive;
+    Phaser.GameObjects.GameObject.prototype.setActive = function(value) {
+        if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle") && !value) {
+            console.warn("Triche détectée : tentative de désactivation d'un obstacle.");
+            logCheatAttempt("disableObstacle");
+            return this;
+        }
+        return originalSetActive.call(this, value);
+    };
+
+    const originalSetVisible = Phaser.GameObjects.GameObject.prototype.setVisible;
+    Phaser.GameObjects.GameObject.prototype.setVisible = function(value) {
+        if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle") && !value) {
+            console.warn("Triche détectée : tentative de masquage d'un obstacle.");
+            logCheatAttempt("hideObstacle");
+            return this;
+        }
+        return originalSetVisible.call(this, value);
+    };
+
+    // Protection contre remove()
+    const originalRemove = Phaser.GameObjects.Group.prototype.remove;
+    Phaser.GameObjects.Group.prototype.remove = function(child, destroy, silent) {
+        if (this.scene?.scene?.key === "MainScene" && this === this.scene.obstacles) {
+            console.warn("Triche détectée : tentative de suppression d'un obstacle via remove().");
+            logCheatAttempt("removeObstacle");
+            return this;
+        }
+        return originalRemove.call(this, child, destroy, silent);
     };
 });
