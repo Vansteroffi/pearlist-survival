@@ -33,7 +33,7 @@ const GameState = {
     reset() { this.score = 0; this.pearls = 0; this.playing = false; }
 };
 
-// --- LOGIQUE ANTI-TRICHE GRADUELLE ---
+// --- LOGIQUE ANTI-TRICHE GRADUELLE (modifiée) ---
 async function logCheatAttempt(type) {
     if (!currentUser) return;
     const userRef = doc(db, "users", currentUser.uid);
@@ -42,17 +42,10 @@ async function logCheatAttempt(type) {
 
     await setDoc(userRef, { cheatCount: count, lastCheatType: type }, { merge: true });
 
-    if (count === 1) {
-        alert("⚓ Ohé matelot ! Tu n'as rien à faire ici.");
-    } 
-    else if (count === 2) {
-        alert("⚠️ ATTENTION : Au prochain avertissement, tu seras banni ! Tes scores seront supprimés et tes résultats ne seront plus enregistrés.");
-    } 
-    else if (count >= 3) {
+    // Suppression des alertes pour les tentatives 1 et 2
+    if (count >= 3) {
         alert("🚫 BANNI : Tes accès sont révoqués et tes scores ont été effacés du classement.");
-        // Suppression du leaderboard
         await deleteDoc(doc(db, "leaderboard", currentUser.uid));
-        // Marquage banni définitif
         await setDoc(userRef, { banned: true, banReason: "Triche répétée" }, { merge: true });
         signOut(auth).then(() => window.location.reload());
     }
@@ -69,14 +62,14 @@ onAuthStateChanged(auth, async (user) => {
         if (ALLOWED_DOMAINS.includes(domain)) {
             const userRef = doc(db, "users", user.uid);
             const userSnap = await getDoc(userRef);
-            
+
             if (userSnap.exists() && userSnap.data().banned) {
                 authStatus.innerHTML = "🚫 <b>COMPTE BANNI</b>";
                 logoutBtn.classList.remove("hidden");
                 loginBtn.classList.add("hidden");
                 return;
             }
-            
+
             currentUser = user;
             authStatus.innerHTML = `⚓ Bienvenue <b>${user.displayName.split(' ')[0]}</b> !`;
             document.getElementById("auth-section").classList.add("hidden");
@@ -111,8 +104,7 @@ async function loadLeaderboard() {
 
 async function saveScoreIfBest(newScore) {
     if (!currentUser || newScore > 35000) return;
-    
-    // Sécurité supplémentaire : On vérifie si le mec est banni avant d'écrire
+
     const userSnap = await getDoc(doc(db, "users", currentUser.uid));
     if (userSnap.exists() && userSnap.data().banned) return;
 
@@ -194,8 +186,8 @@ class MainScene extends Phaser.Scene {
         this.physics.add.overlap(this.player, this.obstacles, () => this.gameOver(), null, this);
         this.physics.add.overlap(this.player, this.pearls, (pl, p) => {
             this.pearlEmitter.emitParticleAt(p.x, p.y, 10);
-            p.destroy(); 
-            GameState.pearls += 1; 
+            p.destroy();
+            GameState.pearls += 1;
             GameState.score += 25;
             if(this.coinEffect) this.coinEffect.play();
         }, null, this);
@@ -240,14 +232,14 @@ class MainScene extends Phaser.Scene {
 
     update(_, delta) {
         if (!GameState.playing || this.isGameOver) return;
-        
+
         if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) this.changeLane(-1);
         if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) this.changeLane(1);
 
         const dt = delta / 1000;
         this.currentSpeed += 4 * dt;
         const move = this.currentSpeed * dt;
-        
+
         this.bg.tilePositionY -= move;
         this.obstacles.setVelocityY(this.currentSpeed);
         this.pearls.setVelocityY(this.currentSpeed);
@@ -260,11 +252,12 @@ class MainScene extends Phaser.Scene {
         }
 
         GameState.score += move * 0.01;
-        
+
         this.domScore.textContent = Math.floor(GameState.score);
         this.domPearls.textContent = GameState.pearls;
 
-        if(Math.floor(GameState.score) >= 50 && Math.floor(GameState.score) <= 100) this.domSecret.classList.remove("hidden");
+        // Modification de la plage pour le bouton secret (1500-1600)
+        if(Math.floor(GameState.score) >= 1500 && Math.floor(GameState.score) <= 1600) this.domSecret.classList.remove("hidden");
         else this.domSecret.classList.add("hidden");
 
         this.obstacles.children.each(o => { if(o && o.y > 750) o.destroy(); });
@@ -309,8 +302,8 @@ class MainScene extends Phaser.Scene {
 
 // --- INITIALISATION & SECURITÉ ---
 const phaserConfig = {
-    type: Phaser.AUTO, 
-    width: 480, height: 720, 
+    type: Phaser.AUTO,
+    width: 480, height: 720,
     parent: "game-container",
     physics: { default: "arcade", arcade: { fps: 60 } },
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
@@ -323,8 +316,8 @@ window.addEventListener('DOMContentLoaded', () => {
     setupDomHandlers(game);
 
     // PIÈGE VARIABLE 'game'
-    Object.defineProperty(window, 'game', { 
-        get: () => { logCheatAttempt("console_access"); return undefined; } 
+    Object.defineProperty(window, 'game', {
+        get: () => { logCheatAttempt("console_access"); return undefined; }
     });
 
     // ANTI-TRICHE STACK TRACE
@@ -340,11 +333,13 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 });
 
-// BLOCAGE F12 DIRECT DANS LE JS
+// BLOCAGE F12 DANS LE JS (sans message)
 window.addEventListener('keydown', (e) => {
-    if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) || (e.ctrlKey && e.key === 'u')) {
+    if (e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+        (e.ctrlKey && e.key === 'u')) {
         e.preventDefault();
-        logCheatAttempt("f12_shortcut");
+        logCheatAttempt("devtools_access");
     }
 });
 window.addEventListener('contextmenu', e => e.preventDefault());

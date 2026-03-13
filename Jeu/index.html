@@ -6,7 +6,6 @@
   <title>Pearlist - L'Odyssée ICAM</title>
   <link rel="icon" type="image/png" href="/favicon.png" />
   <link href="https://fonts.googleapis.com/css2?family=Almendra+SC&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css" />
   <style>
     body, h1, h2, h3, button, .brand__title, .hud__label, .hud__value {
       font-family: 'Almendra SC', serif !important;
@@ -29,9 +28,17 @@
       background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;
       z-index: 1000;
     }
-    .panel--paper { text-align: center; width: 90%; max-width: 400px; padding: 20px; }
-    .highscore-list { overflow-y: auto; max-height: 250px; margin: 10px 0; list-style: none; padding: 0; }
-    .highscore-list li { display: flex; justify-content: space-between; padding: 5px 10px; border-bottom: 1px solid rgba(0,0,0,0.1); }
+    .panel--paper {
+      text-align: center; width: 90%; max-width: 400px; padding: 20px;
+      background: rgba(255, 255, 255, 0.9); border-radius: 10px;
+    }
+    .highscore-list {
+      overflow-y: auto; max-height: 250px; margin: 10px 0; list-style: none; padding: 0;
+    }
+    .highscore-list li {
+      display: flex; justify-content: space-between; padding: 5px 10px;
+      border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
     .settings-btn {
       position: absolute; top: 15px; right: 15px; z-index: 1001;
       cursor: pointer; font-size: 22px; background: rgba(0,0,0,0.6);
@@ -42,23 +49,12 @@
     .btn-gold { background: #ffb700 !important; color: #3e2723 !important; font-weight: bold; }
     #error-msg { color: #ff5252; background: rgba(0,0,0,0.2); padding: 5px; border-radius: 5px; margin: 5px 0; font-size: 0.8rem; }
   </style>
+  <!-- Suppression du bloc F12 dans index.html (conservation uniquement du blocage clic droit) -->
   <script>
-  // Désactive F12, Ctrl+Maj+I/J/C et Ctrl+U
-  document.addEventListener('keydown', (e) => {
-      if (
-          e.key === 'F12' ||
-          (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
-          (e.ctrlKey && e.key === 'u')
-      ) {
-          e.preventDefault();
-          alert("L'accès aux outils de développement est désactivé pour cette régate !");
-      }
-  });
-
-  // Empêche le clic droit
-  document.addEventListener('contextmenu', (e) => {
+    // Empêche uniquement le clic droit (plus de message pour F12)
+    document.addEventListener('contextmenu', (e) => {
       e.preventDefault();
-  });
+    });
   </script>
 </head>
 <body>
@@ -81,12 +77,10 @@
         <div id="game-container" class="game-container">
           <div id="btn-settings" class="settings-btn">🔊</div>
 
-          <!-- HUD avec bouton secret invisible -->
           <div id="hud" class="hud hidden" style="left: 20px; transform: none; flex-direction: column; align-items: flex-start; gap: 8px;">
             <div class="hud__pill" style="position: relative;">
               <div class="hud__label">Milles</div>
               <div class="hud__value" id="score-display">0</div>
-              <!-- Bouton secret invisible (cliquable entre 1500 et 1600 milles) -->
               <button id="btn-secret-trigger" class="hidden" style="position: absolute; inset: 0; opacity: 0; z-index: 10;"></button>
             </div>
             <div class="hud__pill">
@@ -101,9 +95,9 @@
               <h1>PEARLIST</h1>
               <p id="auth-status">Embarque avec ton mail ICAM.</p>
               <div id="auth-section">
-                 <button id="btn-login" class="btn btn-primary btn-lg">🔑 CONNEXION GOOGLE</button>
-                 <div id="error-msg" class="hidden"></div>
-                 <button id="btn-logout" class="btn hidden" style="margin-top: 10px; font-size: 0.8rem;">CHANGER DE COMPTE</button>
+                <button id="btn-login" class="btn btn-primary btn-lg">🔑 CONNEXION GOOGLE</button>
+                <div id="error-msg" class="hidden"></div>
+                <button id="btn-logout" class="btn hidden" style="margin-top: 10px; font-size: 0.8rem;">CHANGER DE COMPTE</button>
               </div>
               <div id="game-controls" class="hidden">
                 <button id="btn-play" class="btn btn-primary btn-lg">PRENDRE LA MER</button>
@@ -112,12 +106,12 @@
             </div>
           </div>
 
-          <!-- Autres modales (inchangées) -->
+          <!-- Autres modales -->
           <div id="leaderboard-modal" class="overlay hidden" style="z-index: 2000;">
             <div class="panel--paper" style="position: relative;">
               <button id="close-modal-x" style="position: absolute; top: 10px; right: 15px; background: none; border: none; font-size: 32px; cursor: pointer;">&times;</button>
               <div id="view-rankings">
-                <h2 id="lb-title">🏆 TOP MILLES</h2>
+                <h2>🏆 TOP MILLES</h2>
                 <ul id="modal-highscore-list" class="highscore-list"></ul>
                 <button id="btn-show-prizes" class="btn btn-gold" style="width: 100%; margin-bottom: 10px;">🎁 VOIR LES TRÉSORS</button>
                 <button id="btn-close-modal" class="btn btn-primary" style="width: 100%;">RETOUR</button>
@@ -140,7 +134,6 @@
             </div>
           </div>
 
-          <!-- Modal secrète (pour la chasse au trésor) -->
           <div id="secret-modal" class="overlay hidden" style="z-index: 3000;">
             <div class="panel--paper">
               <h2>📜 CLEF DE DÉCHIFFRAGE</h2>
@@ -168,7 +161,6 @@
     </main>
   </div>
 
-  <!-- Chargement des bibliothèques -->
   <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser-arcade-physics.min.js"></script>
   <script type="module" src="game.js"></script>
 </body>
