@@ -257,7 +257,7 @@ class MainScene extends Phaser.Scene {
         this.domPearls.textContent = GameState.pearls;
 
         // Modification de la plage pour le bouton secret (1500-1600)
-        if(Math.floor(GameState.score) >= 1500 && Math.floor(GameState.score) <= 1600) this.domSecret.classList.remove("hidden");
+        if(Math.floor(GameState.score) >= 50 && Math.floor(GameState.score) <= 100) this.domSecret.classList.remove("hidden");
         else this.domSecret.classList.add("hidden");
 
         this.obstacles.children.each(o => { if(o && o.y > 750) o.destroy(); });
@@ -375,4 +375,4 @@ function showMenuState(s) {
     if (s === "menu") document.getElementById("main-menu").classList.remove("hidden");
     if (s === "play") document.getElementById("hud").classList.remove("hidden");
     if (s === "gameover") document.getElementById("game-over").classList.remove("hidden");
-}
+}F
