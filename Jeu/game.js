@@ -315,6 +315,14 @@ window.addEventListener('DOMContentLoaded', () => {
     const game = new Phaser.Game(phaserConfig);
     setupDomHandlers(game);
 
+    const btnSecret = document.getElementById("btn-secret-trigger");
+    if (btnSecret) {
+        btnSecret.onclick = () => {
+            const secretModal = document.getElementById("secret-modal");
+            if (secretModal) secretModal.classList.remove("hidden");
+        };
+    }
+
     // PIÈGE VARIABLE 'game'
     Object.defineProperty(window, 'game', {
         get: () => { logCheatAttempt("console_access"); return undefined; }
