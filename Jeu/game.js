@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, collection, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // --- CONFIGURATION FIREBASE ---
 const firebaseConfig = {
@@ -262,7 +262,7 @@ class MainScene extends Phaser.Scene {
         this.domScore.textContent = currentScore;
         this.domPearls.textContent = GameState.pearls;
 
-        // MODIFICATION UNIQUE : plage changée de 50-100 à 1500-1600
+        // Condition modifiée pour 1500-1600 milles
         if(currentScore >= 1500 && currentScore <= 1600) {
             this.domSecret.classList.remove("hidden");
         } else {
@@ -324,6 +324,23 @@ window.addEventListener('DOMContentLoaded', () => {
     const game = new Phaser.Game(phaserConfig);
     setupDomHandlers(game);
 
+    // Configuration du bouton secret
+    const btnSecret = document.getElementById("btn-secret-trigger");
+    if (btnSecret) {
+        btnSecret.onclick = () => {
+            const secretModal = document.getElementById("secret-modal");
+            if (secretModal) secretModal.classList.remove("hidden");
+        };
+    }
+
+    const btnCloseSecret = document.getElementById("btn-close-secret");
+    if (btnCloseSecret) {
+        btnCloseSecret.onclick = () => {
+            const secretModal = document.getElementById("secret-modal");
+            if (secretModal) secretModal.classList.add("hidden");
+        };
+    }
+
     // PIÈGE VARIABLE 'game'
     Object.defineProperty(window, 'game', {
         get: () => { logCheatAttempt("console_access"); return undefined; }
@@ -335,7 +352,8 @@ window.addEventListener('DOMContentLoaded', () => {
         if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle")) {
             const s = new Error().stack;
             if (!s || (!s.includes("MainScene") && !s.includes("phaser"))) {
-                logCheatAttempt("manual_destroy"); return this;
+                logCheatAttempt("manual_destroy");
+                return this;
             }
         }
         return _dest.call(this);
@@ -354,51 +372,35 @@ window.addEventListener('keydown', (e) => {
 window.addEventListener('contextmenu', e => e.preventDefault());
 
 function setupDomHandlers(game) {
-    document.getElementById("btn-login").onclick = () => signInWithPopup(auth, provider);
-    document.getElementById("btn-logout").onclick = () => signOut(auth).then(() => window.location.reload());
-    document.getElementById("btn-play").onclick = () => Bus.emit("start");
-    document.getElementById("btn-restart").onclick = () => Bus.emit("restart");
-    document.getElementById("btn-settings").onclick = (e) => {
-        isMuted = !isMuted; game.sound.mute = isMuted;
+    document.getElementById("btn-login")?.onclick = () => signInWithPopup(auth, provider);
+    document.getElementById("btn-logout")?.onclick = () => signOut(auth).then(() => window.location.reload());
+    document.getElementById("btn-play")?.onclick = () => Bus.emit("start");
+    document.getElementById("btn-restart")?.onclick = () => Bus.emit("restart");
+    document.getElementById("btn-settings")?.onclick = (e) => {
+        isMuted = !isMuted;
+        game.sound.mute = isMuted;
         e.target.innerText = isMuted ? "🔇" : "🔊";
     };
-    document.getElementById("btn-show-leaderboard").onclick = () => {
-        document.getElementById("leaderboard-modal").classList.remove("hidden");
+    document.getElementById("btn-show-leaderboard")?.onclick = () => {
+        document.getElementById("leaderboard-modal")?.classList.remove("hidden");
         loadLeaderboard();
     };
-    document.getElementById("btn-close-modal").onclick = () => document.getElementById("leaderboard-modal").classList.add("hidden");
-    document.getElementById("close-modal-x").onclick = () => document.getElementById("leaderboard-modal").classList.add("hidden");
-    document.getElementById("btn-howto").onclick = () => {
-        document.getElementById("main-menu").classList.add("hidden");
-        document.getElementById("howto").classList.remove("hidden");
+    document.getElementById("btn-close-modal")?.onclick = () => document.getElementById("leaderboard-modal")?.classList.add("hidden");
+    document.getElementById("close-modal-x")?.onclick = () => document.getElementById("leaderboard-modal")?.classList.add("hidden");
+    document.getElementById("btn-howto")?.onclick = () => {
+        document.getElementById("main-menu")?.classList.add("hidden");
+        document.getElementById("howto")?.classList.remove("hidden");
     };
-    document.getElementById("btn-back-menu").onclick = () => {
-        document.getElementById("howto").classList.add("hidden");
-        document.getElementById("main-menu").classList.remove("hidden");
+    document.getElementById("btn-back-menu")?.onclick = () => {
+        document.getElementById("howto")?.classList.add("hidden");
+        document.getElementById("main-menu")?.classList.remove("hidden");
     };
-
-    // AJOUT UNIQUE : configuration du bouton secret
-    const btnSecret = document.getElementById("btn-secret-trigger");
-    if (btnSecret) {
-        btnSecret.onclick = () => {
-            const secretModal = document.getElementById("secret-modal");
-            if (secretModal) secretModal.classList.remove("hidden");
-        };
-    }
-
-    const btnCloseSecret = document.getElementById("btn-close-secret");
-    if (btnCloseSecret) {
-        btnCloseSecret.onclick = () => {
-            const secretModal = document.getElementById("secret-modal");
-            if (secretModal) secretModal.classList.add("hidden");
-        };
-    }
 }
 
 function showMenuState(s) {
     const ids = ["main-menu", "howto", "game-over", "hud", "leaderboard-modal"];
     ids.forEach(id => document.getElementById(id)?.classList.add("hidden"));
-    if (s === "menu") document.getElementById("main-menu").classList.remove("hidden");
-    if (s === "play") document.getElementById("hud").classList.remove("hidden");
-    if (s === "gameover") document.getElementById("game-over").classList.remove("hidden");
+    if (s === "menu") document.getElementById("main-menu")?.classList.remove("hidden");
+    if (s === "play") document.getElementById("hud")?.classList.remove("hidden");
+    if (s === "gameover") document.getElementById("game-over")?.classList.remove("hidden");
 }
