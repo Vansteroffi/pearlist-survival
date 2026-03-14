@@ -43,10 +43,10 @@ async function logCheatAttempt(type) {
 
     if (count === 1) {
         alert("⚓ Ohé matelot ! Tu n'as rien à faire ici.");
-    } 
+    }
     else if (count === 2) {
         alert("⚠️ ATTENTION : Au prochain avertissement, tu seras banni ! Tes scores seront supprimés et tes résultats ne seront plus enregistrés.");
-    } 
+    }
     else if (count >= 3) {
         alert("🚫 BANNI : Tes accès sont révoqués et tes scores ont été effacés du classement.");
         await deleteDoc(doc(db, "leaderboard", currentUser.uid));
@@ -66,14 +66,14 @@ onAuthStateChanged(auth, async (user) => {
         if (ALLOWED_DOMAINS.includes(domain)) {
             const userRef = doc(db, "users", user.uid);
             const userSnap = await getDoc(userRef);
-            
+
             if (userSnap.exists() && userSnap.data().banned) {
                 authStatus.innerHTML = "🚫 <b>COMPTE BANNI</b>";
                 logoutBtn.classList.remove("hidden");
                 loginBtn.classList.add("hidden");
                 return;
             }
-            
+
             currentUser = user;
             authStatus.innerHTML = `⚓ Bienvenue <b>${user.displayName.split(' ')[0]}</b> !`;
             document.getElementById("auth-section").classList.add("hidden");
@@ -149,10 +149,14 @@ class MainScene extends Phaser.Scene {
     constructor() { super("MainScene"); }
 
     create() {
+        // Références aux éléments DOM
         this.domScore = document.getElementById("score-display");
         this.domPearls = document.getElementById("pearls-display");
         this.domSecret = document.getElementById("btn-secret-trigger");
+        this.secretModal = document.getElementById("secret-modal");
+        this.btnCloseSecret = document.getElementById("btn-close-secret");
 
+        // État du jeu
         this.isGameOver = false;
         GameState.reset();
         this.currentSpeed = 300;
@@ -160,27 +164,32 @@ class MainScene extends Phaser.Scene {
         this.distanceTraveledSinceLastSpawn = 0;
         this.spawnDistanceThreshold = 450;
 
+        // Arrière-plan
         this.bg = this.add.tileSprite(0, 0, 480, 720, "background").setOrigin(0);
 
+        // Effets de particules
         this.trailEmitter = this.add.particles(0, 0, "p_white", {
             speedY: { min: 100, max: 200 }, scale: { start: 1.5, end: 0 },
             alpha: { start: 0.5, end: 0 }, lifespan: 600, frequency: 30, blendMode: 'ADD'
         });
 
-        // Joueur remonté pour mobile (y: 540)
+        // Joueur
         this.player = this.physics.add.sprite(240, 540, "player").setScale(0.8);
         this.player.body.setCircle(this.player.width * 0.2, this.player.width * 0.3, this.player.height * 0.3);
-        
+
         this.trailEmitter.startFollow(this.player);
         this.trailEmitter.followOffset.set(0, 35);
 
+        // Particules pour les perles
         this.pearlEmitter = this.add.particles(0, 0, "p_gold", {
             speed: { min: 80, max: 150 }, scale: { start: 2, end: 0 }, lifespan: 400, emitting: false
         });
 
+        // Groupes d'obstacles et de perles
         this.obstacles = this.physics.add.group();
         this.pearls = this.physics.add.group();
 
+        // Sons
         try {
             this.music = this.sound.add('music_action', { loop: true, volume: 0.4 });
             this.crash = this.sound.add('crash_sound', { volume: 0.7 });
@@ -188,18 +197,21 @@ class MainScene extends Phaser.Scene {
             this.sound.mute = isMuted;
         } catch(e) {}
 
+        // Collisions
         this.physics.add.overlap(this.player, this.obstacles, () => this.gameOver(), null, this);
         this.physics.add.overlap(this.player, this.pearls, (pl, p) => {
             this.pearlEmitter.emitParticleAt(p.x, p.y, 10);
-            p.destroy(); 
-            GameState.pearls += 1; 
+            p.destroy();
+            GameState.pearls += 1;
             GameState.score += 25;
             if(this.coinEffect) this.coinEffect.play();
         }, null, this);
 
+        // Contrôles
         this.cursors = this.input.keyboard.createCursorKeys();
         this.setupInputHandlers();
 
+        // Gestion des événements du bus
         Bus.removeAllListeners();
         Bus.on("start", () => {
             GameState.playing = true;
@@ -213,6 +225,23 @@ class MainScene extends Phaser.Scene {
             this.scene.restart();
         });
 
+        // Bouton secret : pause le jeu et affiche le modal
+        this.domSecret.onclick = () => {
+            this.physics.pause();
+            GameState.playing = false;
+            if(this.music) this.music.pause();
+            this.secretModal.classList.remove("hidden");
+        };
+
+        // Bouton de fermeture du modal secret
+        this.btnCloseSecret.onclick = () => {
+            this.secretModal.classList.add("hidden");
+            this.physics.resume();
+            GameState.playing = true;
+            if(this.music && !isMuted) this.music.resume();
+        };
+
+        // Initialisation
         this.physics.pause();
         showMenuState("menu");
     }
@@ -236,8 +265,8 @@ class MainScene extends Phaser.Scene {
 
     update(_, delta) {
         if (!GameState.playing || this.isGameOver) return;
-        
-        // --- GESTION DES FLÈCHES (FIXED) ---
+
+        // Gestion des flèches
         if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) {
             this.changeLane(-1);
         } else if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) {
@@ -247,7 +276,7 @@ class MainScene extends Phaser.Scene {
         const dt = delta / 1000;
         this.currentSpeed += 4 * dt;
         const move = this.currentSpeed * dt;
-        
+
         this.bg.tilePositionY -= move;
         this.obstacles.setVelocityY(this.currentSpeed);
         this.pearls.setVelocityY(this.currentSpeed);
@@ -261,11 +290,11 @@ class MainScene extends Phaser.Scene {
 
         GameState.score += move * 0.01;
         const currentScore = Math.floor(GameState.score);
-        
+
         this.domScore.textContent = currentScore;
         this.domPearls.textContent = GameState.pearls;
 
-        // --- BOUTON SECRET HUD (50-100) ---
+        // Affichage du bouton secret entre 50 et 100 miles
         if (currentScore >= 50 && currentScore <= 100) {
             this.domSecret.classList.remove("hidden");
         } else {
@@ -314,8 +343,8 @@ class MainScene extends Phaser.Scene {
 
 // --- INITIALISATION & SECURITÉ ---
 const phaserConfig = {
-    type: Phaser.AUTO, 
-    width: 480, height: 720, 
+    type: Phaser.AUTO,
+    width: 480, height: 720,
     parent: "game-container",
     physics: { default: "arcade", arcade: { fps: 60 } },
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
@@ -327,12 +356,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const game = new Phaser.Game(phaserConfig);
     setupDomHandlers(game);
 
-    // PIÈGE VARIABLE 'game'
-    Object.defineProperty(window, 'game', { 
-        get: () => { logCheatAttempt("console_access"); return undefined; } 
+    // Piège pour la variable 'game' dans la console
+    Object.defineProperty(window, 'game', {
+        get: () => { logCheatAttempt("console_access"); return undefined; }
     });
 
-    // ANTI-TRICHE MANIPULATION OBJETS
+    // Anti-triche : manipulation des objets
     const _dest = Phaser.GameObjects.GameObject.prototype.destroy;
     Phaser.GameObjects.GameObject.prototype.destroy = function() {
         if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle")) {
@@ -345,7 +374,7 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 });
 
-// INTERCEPTION F12 DISCRETE
+// Interception des raccourcis F12 et clic droit
 window.addEventListener('keydown', (e) => {
     if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
         e.preventDefault();
