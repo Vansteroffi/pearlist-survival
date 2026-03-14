@@ -236,11 +236,18 @@ class MainScene extends Phaser.Scene {
 
     update(_, delta) {
         if (!GameState.playing || this.isGameOver) return;
-        
+    
+    // --- GESTION DES FLÈCHES CLAVIER ---
+        if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) {
+            this.changeLane(-1);
+        } else if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) {
+            this.changeLane(1);
+        }
+
         const dt = delta / 1000;
         this.currentSpeed += 4 * dt;
         const move = this.currentSpeed * dt;
-        
+    
         this.bg.tilePositionY -= move;
         this.obstacles.setVelocityY(this.currentSpeed);
         this.pearls.setVelocityY(this.currentSpeed);
