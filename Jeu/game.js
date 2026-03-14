@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, collection, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, doc, setDoc, getDoc, getDocs, deleteDoc, collection, query, orderBy, limit, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // --- CONFIGURATION FIREBASE ---
 const firebaseConfig = {
@@ -23,6 +23,7 @@ provider.setCustomParameters({ prompt: 'select_account' });
 const ALLOWED_DOMAINS = ["2026.icam.fr", "2027.icam.fr", "2028.icam.fr", "2029.icam.fr", "2030.icam.fr", "2031.icam.fr", "icam.fr"];
 let currentUser = null;
 let isMuted = false;
+let gameStartTime = 0;
 const Bus = new Phaser.Events.EventEmitter();
 
 const GameState = {
@@ -32,25 +33,29 @@ const GameState = {
     reset() { this.score = 0; this.pearls = 0; this.playing = false; }
 };
 
-// --- LOGIQUE ANTI-TRICHE GRADUELLE ---
+// --- LOGIQUE ANTI-TRICHE GRADUELLE (modifiée) ---
 async function logCheatAttempt(type) {
     if (!currentUser) return;
     const userRef = doc(db, "users", currentUser.uid);
     const userSnap = await getDoc(userRef);
     let count = (userSnap.exists() ? (userSnap.data().cheatCount || 0) : 0) + 1;
 
-    await setDoc(userRef, { cheatCount: count, lastCheatType: type }, { merge: true });
+    // Enregistrement silencieux des tentatives 1 et 2
+    await setDoc(userRef, {
+        cheatCount: count,
+        lastCheatType: type,
+        lastCheatTime: serverTimestamp()
+    }, { merge: true });
 
-    if (count === 1) {
-        alert("⚓ Ohé matelot ! Tu n'as rien à faire ici.");
-    } 
-    else if (count === 2) {
-        alert("⚠️ ATTENTION : Au prochain avertissement, tu seras banni ! Tes scores seront supprimés et tes résultats ne seront plus enregistrés.");
-    } 
-    else if (count >= 3) {
+    // Seule alerte pour le bannissement
+    if (count >= 3) {
         alert("🚫 BANNI : Tes accès sont révoqués et tes scores ont été effacés du classement.");
         await deleteDoc(doc(db, "leaderboard", currentUser.uid));
-        await setDoc(userRef, { banned: true, banReason: "Triche répétée" }, { merge: true });
+        await setDoc(userRef, {
+            banned: true,
+            banReason: "Triche répétée",
+            banTime: serverTimestamp()
+        }, { merge: true });
         signOut(auth).then(() => window.location.reload());
     }
 }
@@ -61,23 +66,28 @@ onAuthStateChanged(auth, async (user) => {
     const loginBtn = document.getElementById("btn-login");
     const authStatus = document.getElementById("auth-status");
 
+    if (!logoutBtn || !loginBtn || !authStatus) {
+        setTimeout(() => onAuthStateChanged(auth, user), 500);
+        return;
+    }
+
     if (user) {
         const domain = user.email.split('@')[1];
         if (ALLOWED_DOMAINS.includes(domain)) {
             const userRef = doc(db, "users", user.uid);
             const userSnap = await getDoc(userRef);
-            
+
             if (userSnap.exists() && userSnap.data().banned) {
                 authStatus.innerHTML = "🚫 <b>COMPTE BANNI</b>";
                 logoutBtn.classList.remove("hidden");
                 loginBtn.classList.add("hidden");
                 return;
             }
-            
+
             currentUser = user;
             authStatus.innerHTML = `⚓ Bienvenue <b>${user.displayName.split(' ')[0]}</b> !`;
-            document.getElementById("auth-section").classList.add("hidden");
-            document.getElementById("game-controls").classList.remove("hidden");
+            document.getElementById("auth-section")?.classList.add("hidden");
+            document.getElementById("game-controls")?.classList.remove("hidden");
             loadLeaderboard();
         } else {
             authStatus.innerHTML = "🚫 Mail ICAM requis";
@@ -86,13 +96,18 @@ onAuthStateChanged(auth, async (user) => {
         }
     } else {
         loginBtn.classList.remove("hidden");
-        document.getElementById("game-controls").classList.add("hidden");
+        document.getElementById("game-controls")?.classList.add("hidden");
     }
 });
 
 // --- CLASSEMENT ---
 async function loadLeaderboard() {
     try {
+        const liveList = document.getElementById("live-highscore-list");
+        const modalList = document.getElementById("modal-highscore-list");
+
+        if (!liveList || !modalList) return;
+
         const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(10));
         const snap = await getDocs(q);
         let html = "";
@@ -101,13 +116,14 @@ async function loadLeaderboard() {
             html += `<li><span>#${rank} ${d.data().name}</span> <b>${Math.floor(d.data().score || 0)}</b></li>`;
             rank++;
         });
-        document.getElementById("live-highscore-list").innerHTML = html;
-        document.getElementById("modal-highscore-list").innerHTML = html;
+        liveList.innerHTML = html;
+        modalList.innerHTML = html;
     } catch(e) { console.error(e); }
 }
 
 async function saveScoreIfBest(newScore) {
     if (!currentUser || newScore > 35000) return;
+
     const userSnap = await getDoc(doc(db, "users", currentUser.uid));
     if (userSnap.exists() && userSnap.data().banned) return;
 
@@ -120,7 +136,7 @@ async function saveScoreIfBest(newScore) {
     await setDoc(userRef, {
         name: currentUser.displayName,
         score: bestScore,
-        date: Date.now()
+        date: serverTimestamp()
     }, { merge: true });
     loadLeaderboard();
 }
@@ -167,10 +183,8 @@ class MainScene extends Phaser.Scene {
             alpha: { start: 0.5, end: 0 }, lifespan: 600, frequency: 30, blendMode: 'ADD'
         });
 
-        // Joueur remonté pour mobile (y: 540)
-        this.player = this.physics.add.sprite(240, 540, "player").setScale(0.8);
+        this.player = this.physics.add.sprite(240, 600, "player").setScale(0.8);
         this.player.body.setCircle(this.player.width * 0.2, this.player.width * 0.3, this.player.height * 0.3);
-        
         this.trailEmitter.startFollow(this.player);
         this.trailEmitter.followOffset.set(0, 35);
 
@@ -191,8 +205,8 @@ class MainScene extends Phaser.Scene {
         this.physics.add.overlap(this.player, this.obstacles, () => this.gameOver(), null, this);
         this.physics.add.overlap(this.player, this.pearls, (pl, p) => {
             this.pearlEmitter.emitParticleAt(p.x, p.y, 10);
-            p.destroy(); 
-            GameState.pearls += 1; 
+            p.destroy();
+            GameState.pearls += 1;
             GameState.score += 25;
             if(this.coinEffect) this.coinEffect.play();
         }, null, this);
@@ -202,6 +216,7 @@ class MainScene extends Phaser.Scene {
 
         Bus.removeAllListeners();
         Bus.on("start", () => {
+            gameStartTime = Date.now();
             GameState.playing = true;
             this.physics.resume();
             showMenuState("play");
@@ -236,18 +251,14 @@ class MainScene extends Phaser.Scene {
 
     update(_, delta) {
         if (!GameState.playing || this.isGameOver) return;
-        
-        // --- GESTION DES FLÈCHES (FIXED) ---
-        if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) {
-            this.changeLane(-1);
-        } else if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) {
-            this.changeLane(1);
-        }
+
+        if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) this.changeLane(-1);
+        if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) this.changeLane(1);
 
         const dt = delta / 1000;
         this.currentSpeed += 4 * dt;
         const move = this.currentSpeed * dt;
-        
+
         this.bg.tilePositionY -= move;
         this.obstacles.setVelocityY(this.currentSpeed);
         this.pearls.setVelocityY(this.currentSpeed);
@@ -261,12 +272,12 @@ class MainScene extends Phaser.Scene {
 
         GameState.score += move * 0.01;
         const currentScore = Math.floor(GameState.score);
-        
+
         this.domScore.textContent = currentScore;
         this.domPearls.textContent = GameState.pearls;
 
-        // --- BOUTON SECRET HUD (50-100) ---
-        if (currentScore >= 50 && currentScore <= 100) {
+        // Condition modifiée pour 1500-1600 milles
+        if(currentScore >= 1500 && currentScore <= 1600) {
             this.domSecret.classList.remove("hidden");
         } else {
             this.domSecret.classList.add("hidden");
@@ -314,8 +325,8 @@ class MainScene extends Phaser.Scene {
 
 // --- INITIALISATION & SECURITÉ ---
 const phaserConfig = {
-    type: Phaser.AUTO, 
-    width: 480, height: 720, 
+    type: Phaser.AUTO,
+    width: 480, height: 720,
     parent: "game-container",
     physics: { default: "arcade", arcade: { fps: 60 } },
     scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
@@ -327,9 +338,26 @@ window.addEventListener('DOMContentLoaded', () => {
     const game = new Phaser.Game(phaserConfig);
     setupDomHandlers(game);
 
+    // Configuration du bouton secret
+    const btnSecret = document.getElementById("btn-secret-trigger");
+    if (btnSecret) {
+        btnSecret.onclick = () => {
+            const secretModal = document.getElementById("secret-modal");
+            if (secretModal) secretModal.classList.remove("hidden");
+        };
+    }
+
+    const btnCloseSecret = document.getElementById("btn-close-secret");
+    if (btnCloseSecret) {
+        btnCloseSecret.onclick = () => {
+            const secretModal = document.getElementById("secret-modal");
+            if (secretModal) secretModal.classList.add("hidden");
+        };
+    }
+
     // PIÈGE VARIABLE 'game'
-    Object.defineProperty(window, 'game', { 
-        get: () => { logCheatAttempt("console_access"); return undefined; } 
+    Object.defineProperty(window, 'game', {
+        get: () => { logCheatAttempt("console_access"); return undefined; }
     });
 
     // ANTI-TRICHE MANIPULATION OBJETS
@@ -338,51 +366,55 @@ window.addEventListener('DOMContentLoaded', () => {
         if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle")) {
             const s = new Error().stack;
             if (!s || (!s.includes("MainScene") && !s.includes("phaser"))) {
-                logCheatAttempt("manual_destroy"); return this;
+                logCheatAttempt("manual_destroy");
+                return this;
             }
         }
         return _dest.call(this);
     };
 });
 
-// INTERCEPTION F12 DISCRETE
+// BLOCAGE F12 DANS LE JS (sans message)
 window.addEventListener('keydown', (e) => {
-    if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
+    if (e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
+        (e.ctrlKey && e.key === 'u')) {
         e.preventDefault();
-        logCheatAttempt("f12_shortcut");
+        logCheatAttempt("devtools_access");
     }
 });
 window.addEventListener('contextmenu', e => e.preventDefault());
 
 function setupDomHandlers(game) {
-    document.getElementById("btn-login").onclick = () => signInWithPopup(auth, provider);
-    document.getElementById("btn-logout").onclick = () => signOut(auth).then(() => window.location.reload());
-    document.getElementById("btn-play").onclick = () => Bus.emit("start");
-    document.getElementById("btn-restart").onclick = () => Bus.emit("restart");
-    document.getElementById("btn-settings").onclick = (e) => {
-        isMuted = !isMuted; game.sound.mute = isMuted;
+    document.getElementById("btn-login")?.onclick = () => signInWithPopup(auth, provider);
+    document.getElementById("btn-logout")?.onclick = () => signOut(auth).then(() => window.location.reload());
+    document.getElementById("btn-play")?.onclick = () => Bus.emit("start");
+    document.getElementById("btn-restart")?.onclick = () => Bus.emit("restart");
+    document.getElementById("btn-settings")?.onclick = (e) => {
+        isMuted = !isMuted;
+        game.sound.mute = isMuted;
         e.target.innerText = isMuted ? "🔇" : "🔊";
     };
-    document.getElementById("btn-show-leaderboard").onclick = () => {
-        document.getElementById("leaderboard-modal").classList.remove("hidden");
+    document.getElementById("btn-show-leaderboard")?.onclick = () => {
+        document.getElementById("leaderboard-modal")?.classList.remove("hidden");
         loadLeaderboard();
     };
-    document.getElementById("btn-close-modal").onclick = () => document.getElementById("leaderboard-modal").classList.add("hidden");
-    document.getElementById("close-modal-x").onclick = () => document.getElementById("leaderboard-modal").classList.add("hidden");
-    document.getElementById("btn-howto").onclick = () => {
-        document.getElementById("main-menu").classList.add("hidden");
-        document.getElementById("howto").classList.remove("hidden");
+    document.getElementById("btn-close-modal")?.onclick = () => document.getElementById("leaderboard-modal")?.classList.add("hidden");
+    document.getElementById("close-modal-x")?.onclick = () => document.getElementById("leaderboard-modal")?.classList.add("hidden");
+    document.getElementById("btn-howto")?.onclick = () => {
+        document.getElementById("main-menu")?.classList.add("hidden");
+        document.getElementById("howto")?.classList.remove("hidden");
     };
-    document.getElementById("btn-back-menu").onclick = () => {
-        document.getElementById("howto").classList.add("hidden");
-        document.getElementById("main-menu").classList.remove("hidden");
+    document.getElementById("btn-back-menu")?.onclick = () => {
+        document.getElementById("howto")?.classList.add("hidden");
+        document.getElementById("main-menu")?.classList.remove("hidden");
     };
 }
 
 function showMenuState(s) {
     const ids = ["main-menu", "howto", "game-over", "hud", "leaderboard-modal"];
     ids.forEach(id => document.getElementById(id)?.classList.add("hidden"));
-    if (s === "menu") document.getElementById("main-menu").classList.remove("hidden");
-    if (s === "play") document.getElementById("hud").classList.remove("hidden");
-    if (s === "gameover") document.getElementById("game-over").classList.remove("hidden");
+    if (s === "menu") document.getElementById("main-menu")?.classList.remove("hidden");
+    if (s === "play") document.getElementById("hud")?.classList.remove("hidden");
+    if (s === "gameover") document.getElementById("game-over")?.classList.remove("hidden");
 }
