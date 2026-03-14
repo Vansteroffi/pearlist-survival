@@ -23,7 +23,6 @@ provider.setCustomParameters({ prompt: 'select_account' });
 const ALLOWED_DOMAINS = ["2026.icam.fr", "2027.icam.fr", "2028.icam.fr", "2029.icam.fr", "2030.icam.fr", "2031.icam.fr", "icam.fr"];
 let currentUser = null;
 let isMuted = false;
-let gameStartTime = 0;
 const Bus = new Phaser.Events.EventEmitter();
 
 const GameState = {
@@ -33,7 +32,7 @@ const GameState = {
     reset() { this.score = 0; this.pearls = 0; this.playing = false; }
 };
 
-// --- LOGIQUE ANTI-TRICHE GRADUELLE (modifiée) ---
+// --- LOGIQUE ANTI-TRICHE GRADUELLE (Sans message doublon) ---
 async function logCheatAttempt(type) {
     if (!currentUser) return;
     const userRef = doc(db, "users", currentUser.uid);
@@ -42,9 +41,14 @@ async function logCheatAttempt(type) {
 
     await setDoc(userRef, { cheatCount: count, lastCheatType: type }, { merge: true });
 
-    // Suppression des alertes pour les tentatives 1 et 2
-    if (count >= 3) {
-        alert("🚫 BANNI : Tes accès sont révoqués et tes scores ont été effacés du classement.");
+    if (count === 1) {
+        alert("⚓ Ohé matelot ! Tu n'as rien à faire ici.");
+    } 
+    else if (count === 2) {
+        alert("⚠️ ATTENTION : Au prochain avertissement, tu seras banni ! Tes scores seront supprimés et tes résultats ne seront plus enregistrés.");
+    } 
+    else if (count >= 3) {
+        alert("🚫 BANNI : Tes accès sont révoqués et tes scores ont été effacés.");
         await deleteDoc(doc(db, "leaderboard", currentUser.uid));
         await setDoc(userRef, { banned: true, banReason: "Triche répétée" }, { merge: true });
         signOut(auth).then(() => window.location.reload());
@@ -62,14 +66,14 @@ onAuthStateChanged(auth, async (user) => {
         if (ALLOWED_DOMAINS.includes(domain)) {
             const userRef = doc(db, "users", user.uid);
             const userSnap = await getDoc(userRef);
-
+            
             if (userSnap.exists() && userSnap.data().banned) {
                 authStatus.innerHTML = "🚫 <b>COMPTE BANNI</b>";
                 logoutBtn.classList.remove("hidden");
                 loginBtn.classList.add("hidden");
                 return;
             }
-
+            
             currentUser = user;
             authStatus.innerHTML = `⚓ Bienvenue <b>${user.displayName.split(' ')[0]}</b> !`;
             document.getElementById("auth-section").classList.add("hidden");
@@ -104,7 +108,6 @@ async function loadLeaderboard() {
 
 async function saveScoreIfBest(newScore) {
     if (!currentUser || newScore > 35000) return;
-
     const userSnap = await getDoc(doc(db, "users", currentUser.uid));
     if (userSnap.exists() && userSnap.data().banned) return;
 
@@ -164,8 +167,10 @@ class MainScene extends Phaser.Scene {
             alpha: { start: 0.5, end: 0 }, lifespan: 600, frequency: 30, blendMode: 'ADD'
         });
 
-        this.player = this.physics.add.sprite(240, 600, "player").setScale(0.8);
+        // --- AJUSTEMENT MOBILE : On remonte le joueur (y: 580 au lieu de 600) ---
+        this.player = this.physics.add.sprite(240, 580, "player").setScale(0.8);
         this.player.body.setCircle(this.player.width * 0.2, this.player.width * 0.3, this.player.height * 0.3);
+        
         this.trailEmitter.startFollow(this.player);
         this.trailEmitter.followOffset.set(0, 35);
 
@@ -186,8 +191,8 @@ class MainScene extends Phaser.Scene {
         this.physics.add.overlap(this.player, this.obstacles, () => this.gameOver(), null, this);
         this.physics.add.overlap(this.player, this.pearls, (pl, p) => {
             this.pearlEmitter.emitParticleAt(p.x, p.y, 10);
-            p.destroy();
-            GameState.pearls += 1;
+            p.destroy(); 
+            GameState.pearls += 1; 
             GameState.score += 25;
             if(this.coinEffect) this.coinEffect.play();
         }, null, this);
@@ -197,7 +202,6 @@ class MainScene extends Phaser.Scene {
 
         Bus.removeAllListeners();
         Bus.on("start", () => {
-            gameStartTime = Date.now();
             GameState.playing = true;
             this.physics.resume();
             showMenuState("play");
@@ -219,7 +223,7 @@ class MainScene extends Phaser.Scene {
         this.input.on("pointerdown", (p) => { dragStartX = p.x; hasMoved = false; });
         this.input.on("pointermove", (p) => {
             if(!GameState.playing || !p.isDown || hasMoved) return;
-            if (Math.abs(p.x - dragStartX) > 30) {
+            if (Math.abs(p.x - dragStartX) > 20) { // Sensibilité augmentée
                 this.changeLane(p.x > dragStartX ? 1 : -1);
                 hasMoved = true;
             }
@@ -232,14 +236,11 @@ class MainScene extends Phaser.Scene {
 
     update(_, delta) {
         if (!GameState.playing || this.isGameOver) return;
-
-        if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) this.changeLane(-1);
-        if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) this.changeLane(1);
-
+        
         const dt = delta / 1000;
         this.currentSpeed += 4 * dt;
         const move = this.currentSpeed * dt;
-
+        
         this.bg.tilePositionY -= move;
         this.obstacles.setVelocityY(this.currentSpeed);
         this.pearls.setVelocityY(this.currentSpeed);
@@ -252,13 +253,8 @@ class MainScene extends Phaser.Scene {
         }
 
         GameState.score += move * 0.01;
-
         this.domScore.textContent = Math.floor(GameState.score);
         this.domPearls.textContent = GameState.pearls;
-
-        // Modification de la plage pour le bouton secret (1500-1600)
-        if(Math.floor(GameState.score) >= 50 && Math.floor(GameState.score) <= 100) this.domSecret.classList.remove("hidden");
-        else this.domSecret.classList.add("hidden");
 
         this.obstacles.children.each(o => { if(o && o.y > 750) o.destroy(); });
         this.pearls.children.each(p => { if(p && p.y > 750) p.destroy(); });
@@ -302,11 +298,16 @@ class MainScene extends Phaser.Scene {
 
 // --- INITIALISATION & SECURITÉ ---
 const phaserConfig = {
-    type: Phaser.AUTO,
-    width: 480, height: 720,
+    type: Phaser.AUTO, 
+    width: 480, 
+    height: 720, 
     parent: "game-container",
     physics: { default: "arcade", arcade: { fps: 60 } },
-    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
+    scale: { 
+        mode: Phaser.Scale.FIT, // S'adapte à l'écran
+        autoCenter: Phaser.Scale.CENTER_BOTH,
+        expandParent: false // Évite de déborder
+    },
     scene: [BootScene, MainScene],
     powerPreference: 'high-performance'
 };
@@ -315,20 +316,10 @@ window.addEventListener('DOMContentLoaded', () => {
     const game = new Phaser.Game(phaserConfig);
     setupDomHandlers(game);
 
-    const btnSecret = document.getElementById("btn-secret-trigger");
-    if (btnSecret) {
-        btnSecret.onclick = () => {
-            const secretModal = document.getElementById("secret-modal");
-            if (secretModal) secretModal.classList.remove("hidden");
-        };
-    }
-
-    // PIÈGE VARIABLE 'game'
-    Object.defineProperty(window, 'game', {
-        get: () => { logCheatAttempt("console_access"); return undefined; }
+    Object.defineProperty(window, 'game', { 
+        get: () => { logCheatAttempt("console_access"); return undefined; } 
     });
 
-    // ANTI-TRICHE STACK TRACE
     const _dest = Phaser.GameObjects.GameObject.prototype.destroy;
     Phaser.GameObjects.GameObject.prototype.destroy = function() {
         if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle")) {
@@ -341,13 +332,11 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 });
 
-// BLOCAGE F12 DANS LE JS (sans message)
+// INTERCEPTION F12 (LOG SANS MESSAGE ALERTE DOUBLON)
 window.addEventListener('keydown', (e) => {
-    if (e.key === 'F12' ||
-        (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'J' || e.key === 'C')) ||
-        (e.ctrlKey && e.key === 'u')) {
+    if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
         e.preventDefault();
-        logCheatAttempt("devtools_access");
+        logCheatAttempt("f12_shortcut");
     }
 });
 window.addEventListener('contextmenu', e => e.preventDefault());
@@ -383,4 +372,4 @@ function showMenuState(s) {
     if (s === "menu") document.getElementById("main-menu").classList.remove("hidden");
     if (s === "play") document.getElementById("hud").classList.remove("hidden");
     if (s === "gameover") document.getElementById("game-over").classList.remove("hidden");
-}F
+}
