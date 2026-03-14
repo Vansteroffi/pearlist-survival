@@ -32,7 +32,7 @@ const GameState = {
     reset() { this.score = 0; this.pearls = 0; this.playing = false; }
 };
 
-// --- LOGIQUE ANTI-TRICHE GRADUELLE (Sans message doublon) ---
+// --- LOGIQUE ANTI-TRICHE GRADUELLE ---
 async function logCheatAttempt(type) {
     if (!currentUser) return;
     const userRef = doc(db, "users", currentUser.uid);
@@ -48,7 +48,7 @@ async function logCheatAttempt(type) {
         alert("⚠️ ATTENTION : Au prochain avertissement, tu seras banni ! Tes scores seront supprimés et tes résultats ne seront plus enregistrés.");
     } 
     else if (count >= 3) {
-        alert("🚫 BANNI : Tes accès sont révoqués et tes scores ont été effacés.");
+        alert("🚫 BANNI : Tes accès sont révoqués et tes scores ont été effacés du classement.");
         await deleteDoc(doc(db, "leaderboard", currentUser.uid));
         await setDoc(userRef, { banned: true, banReason: "Triche répétée" }, { merge: true });
         signOut(auth).then(() => window.location.reload());
@@ -167,8 +167,8 @@ class MainScene extends Phaser.Scene {
             alpha: { start: 0.5, end: 0 }, lifespan: 600, frequency: 30, blendMode: 'ADD'
         });
 
-        // --- AJUSTEMENT MOBILE : On remonte le joueur (y: 580 au lieu de 600) ---
-        this.player = this.physics.add.sprite(240, 580, "player").setScale(0.8);
+        // Joueur remonté pour mobile (y: 540)
+        this.player = this.physics.add.sprite(240, 540, "player").setScale(0.8);
         this.player.body.setCircle(this.player.width * 0.2, this.player.width * 0.3, this.player.height * 0.3);
         
         this.trailEmitter.startFollow(this.player);
@@ -223,7 +223,7 @@ class MainScene extends Phaser.Scene {
         this.input.on("pointerdown", (p) => { dragStartX = p.x; hasMoved = false; });
         this.input.on("pointermove", (p) => {
             if(!GameState.playing || !p.isDown || hasMoved) return;
-            if (Math.abs(p.x - dragStartX) > 20) { // Sensibilité augmentée
+            if (Math.abs(p.x - dragStartX) > 20) {
                 this.changeLane(p.x > dragStartX ? 1 : -1);
                 hasMoved = true;
             }
@@ -236,8 +236,8 @@ class MainScene extends Phaser.Scene {
 
     update(_, delta) {
         if (!GameState.playing || this.isGameOver) return;
-    
-    // --- GESTION DES FLÈCHES CLAVIER ---
+        
+        // --- GESTION DES FLÈCHES (FIXED) ---
         if (Phaser.Input.Keyboard.JustDown(this.cursors.left)) {
             this.changeLane(-1);
         } else if (Phaser.Input.Keyboard.JustDown(this.cursors.right)) {
@@ -247,7 +247,7 @@ class MainScene extends Phaser.Scene {
         const dt = delta / 1000;
         this.currentSpeed += 4 * dt;
         const move = this.currentSpeed * dt;
-    
+        
         this.bg.tilePositionY -= move;
         this.obstacles.setVelocityY(this.currentSpeed);
         this.pearls.setVelocityY(this.currentSpeed);
@@ -260,8 +260,17 @@ class MainScene extends Phaser.Scene {
         }
 
         GameState.score += move * 0.01;
-        this.domScore.textContent = Math.floor(GameState.score);
+        const currentScore = Math.floor(GameState.score);
+        
+        this.domScore.textContent = currentScore;
         this.domPearls.textContent = GameState.pearls;
+
+        // --- BOUTON SECRET HUD (50-100) ---
+        if (currentScore >= 50 && currentScore <= 100) {
+            this.domSecret.classList.remove("hidden");
+        } else {
+            this.domSecret.classList.add("hidden");
+        }
 
         this.obstacles.children.each(o => { if(o && o.y > 750) o.destroy(); });
         this.pearls.children.each(p => { if(p && p.y > 750) p.destroy(); });
@@ -306,15 +315,10 @@ class MainScene extends Phaser.Scene {
 // --- INITIALISATION & SECURITÉ ---
 const phaserConfig = {
     type: Phaser.AUTO, 
-    width: 480, 
-    height: 720, 
+    width: 480, height: 720, 
     parent: "game-container",
     physics: { default: "arcade", arcade: { fps: 60 } },
-    scale: { 
-        mode: Phaser.Scale.FIT, // S'adapte à l'écran
-        autoCenter: Phaser.Scale.CENTER_BOTH,
-        expandParent: false // Évite de déborder
-    },
+    scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_BOTH },
     scene: [BootScene, MainScene],
     powerPreference: 'high-performance'
 };
@@ -323,10 +327,12 @@ window.addEventListener('DOMContentLoaded', () => {
     const game = new Phaser.Game(phaserConfig);
     setupDomHandlers(game);
 
+    // PIÈGE VARIABLE 'game'
     Object.defineProperty(window, 'game', { 
         get: () => { logCheatAttempt("console_access"); return undefined; } 
     });
 
+    // ANTI-TRICHE MANIPULATION OBJETS
     const _dest = Phaser.GameObjects.GameObject.prototype.destroy;
     Phaser.GameObjects.GameObject.prototype.destroy = function() {
         if (this.scene?.scene?.key === "MainScene" && this.getData("isObstacle")) {
@@ -339,7 +345,7 @@ window.addEventListener('DOMContentLoaded', () => {
     };
 });
 
-// INTERCEPTION F12 (LOG SANS MESSAGE ALERTE DOUBLON)
+// INTERCEPTION F12 DISCRETE
 window.addEventListener('keydown', (e) => {
     if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I')) {
         e.preventDefault();
