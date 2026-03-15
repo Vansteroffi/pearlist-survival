@@ -48,7 +48,7 @@ async function logCheatAttempt(type) {
         alert("⚠️ ATTENTION : Au prochain avertissement, tu seras banni ! Tes scores seront supprimés et tes résultats ne seront plus enregistrés.");
     }
     else if (count >= 3) {
-        alert("🚫 BANNI : Tes accès sont révoqués et tes scores ont été effacés du classement.");
+        alert("🚫 BANNI : Tes accès sont révoqués et tes scores ont été effacés du classement. Contact Jean Danielou si il s'agit d'une erreur.");
         await deleteDoc(doc(db, "leaderboard", currentUser.uid));
         await setDoc(userRef, { banned: true, banReason: "Triche répétée" }, { merge: true });
         signOut(auth).then(() => window.location.reload());
@@ -295,7 +295,7 @@ class MainScene extends Phaser.Scene {
         this.domPearls.textContent = GameState.pearls;
 
         // Affichage du bouton secret entre 50 et 100 miles
-        if (currentScore >= 50 && currentScore <= 100) {
+        if (currentScore >= 1500 && currentScore <= 1600) {
             this.domSecret.classList.remove("hidden");
         } else {
             this.domSecret.classList.add("hidden");
