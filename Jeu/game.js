@@ -33,25 +33,46 @@ const GameState = {
 };
 
 // --- LOGIQUE ANTI-TRICHE GRADUELLE ---
+let isLogging = false; // Sécurité : empêche de lancer 50 requêtes en même temps
+
 async function logCheatAttempt(type) {
-    if (!currentUser) return;
-    const userRef = doc(db, "users", currentUser.uid);
-    const userSnap = await getDoc(userRef);
-    let count = (userSnap.exists() ? (userSnap.data().cheatCount || 0) : 0) + 1;
+    // Si pas d'utilisateur OU si on est déjà en train de logger, on arrête tout.
+    if (!currentUser || isLogging) return;
 
-    await setDoc(userRef, { cheatCount: count, lastCheatType: type }, { merge: true });
+    isLogging = true; // On verrouille
 
-    if (count === 1) {
-        alert("⚓ Ohé matelot ! Tu n'as rien à faire ici.");
-    }
-    else if (count === 2) {
-        alert("⚠️ ATTENTION : Au prochain avertissement, tu seras banni ! Tes scores seront supprimés et tes résultats ne seront plus enregistrés.");
-    }
-    else if (count >= 3) {
-        alert("🚫 BANNI : Tes accès sont révoqués et tes scores ont été effacés du classement. Contact Jean Danielou si il s'agit d'une erreur.");
-        await deleteDoc(doc(db, "leaderboard", currentUser.uid));
-        await setDoc(userRef, { banned: true, banReason: "Triche répétée" }, { merge: true });
-        signOut(auth).then(() => window.location.reload());
+    try {
+        const userRef = doc(db, "users", currentUser.uid);
+        const userSnap = await getDoc(userRef);
+        
+        let count = (userSnap.exists() ? (userSnap.data().cheatCount || 0) : 0) + 1;
+
+        // On met à jour Firebase
+        await setDoc(userRef, { 
+            cheatCount: count, 
+            lastCheatType: type,
+            lastCheatDate: Date.now() 
+        }, { merge: true });
+
+        // Alertes graduelles
+        if (count === 1) {
+            alert("⚓ Ohé matelot ! Tu n'as rien à faire ici.");
+        } 
+        else if (count === 2) {
+            alert("⚠️ ATTENTION : Au prochain avertissement, tu seras banni !");
+        } 
+        else if (count >= 3) {
+            alert("🚫 BANNI : Tes accès sont révoqués.");
+            await deleteDoc(doc(db, "leaderboard", currentUser.uid));
+            await setDoc(userRef, { banned: true }, { merge: true });
+            signOut(auth).then(() => window.location.reload());
+        }
+    } catch (e) {
+        console.error("Erreur Quota/Firebase:", e);
+    } finally {
+        // On attend 5 secondes avant de réautoriser un log 
+        // (ça laisse le temps à l'utilisateur de fermer sa console)
+        setTimeout(() => { isLogging = false; }, 5000);
     }
 }
 
