@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./vendor/react.production.min.js"></script>
+<script src="./vendor/react-dom.production.min.js"></script>
+<script src="./support.js"></script>
+<script src="./pearl-live.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Actualités — Pearlist, BDE Icam Nantes</title>
+<meta name="description" content="Le journal de bord du BDE Icam Nantes : récits des soirées, recrutements, nouveaux partenaires et vie du campus.">
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="pearlist.css">
+</helmet>
+<div data-screen-label="Actualités" style="position: relative; background: #121212; min-height: 100vh; font-family: 'Instrument Sans', sans-serif;">
+  <div aria-hidden="true" style="position: absolute; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(ellipse 60% 40% at 70% 0%, rgba(212,175,55,0.05), transparent 70%);"></div>
+
+  <header style="position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px clamp(20px, 5vw, 56px); background: rgba(18,18,18,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2A2A2A;">
+    <a href="Accueil.dc.html" style="display: flex; align-items: center; gap: 12px; color: #FFFFFF;">
+      <img src="uploads/logo-1784208362468.png" alt="Logo Pearlist" style="width: 42px; height: 42px; object-fit: contain;">
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; letter-spacing: 0.18em; font-size: 16px;">PEARLIST</span>
+    </a>
+    <nav style="display: flex; flex-wrap: wrap; gap: clamp(12px, 2.5vw, 28px); align-items: center; font-size: 13px; font-weight: 500;">
+      <a href="Accueil.dc.html" class="nav-link">Accueil</a>
+      <a href="Actualites.dc.html" style="color: #D4AF37; border-bottom: 2px solid #D4AF37; padding-bottom: 2px;">Actualités</a>
+      <a href="Evenements.dc.html" class="nav-link">Événements</a>
+      <a href="Partenaires.dc.html" class="nav-link">Partenaires</a>
+      <a href="Assos.dc.html" class="nav-link">Associations</a>
+    </nav>
+  </header>
+
+  <sc-if value="{{ readingMode }}" hint-placeholder-val="{{ false }}">
+    <article data-screen-label="Lecture d'une actu" style="position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: clamp(32px, 6vw, 64px) 20px clamp(56px, 8vw, 96px);">
+      <button onClick="{{ closeArticle }}" class="btn-back" style="display: inline-flex; align-items: center; gap: 8px; background: none; border: 1px solid #333333; border-radius: 999px; color: #D4AF37; font-family: 'Instrument Sans', sans-serif; font-size: 13px; font-weight: 600; padding: 15px 22px; cursor: pointer; margin-bottom: 28px;">← Toutes les actualités</button>
+      <span style="display: block; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.14em; color: #D4AF37; margin-bottom: 12px;">{{ current.date }}</span>
+      <h1 style="margin: 0 0 20px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: clamp(28px, 5vw, 44px); line-height: 1.12; text-wrap: balance;">{{ current.title }}</h1>
+      <div class="media-16x9" style="{{ current.cover }}">
+        <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(18,18,18,0.6), transparent 60%);"></div>
+      </div>
+      <div style="margin-bottom: 30px;"></div>
+      <sc-for list="{{ currentBody }}" as="para" hint-placeholder-count="3">
+        <p style="margin: 0 0 20px; color: #C9C9C9; font-size: 16.5px; line-height: 1.75;">{{ para }}</p>
+      </sc-for>
+    </article>
+  </sc-if>
+
+  <sc-if value="{{ listMode }}" hint-placeholder-val="{{ true }}">
+    <main style="position: relative; z-index: 1; padding: clamp(32px, 6vw, 64px) clamp(20px, 5vw, 56px) clamp(56px, 8vw, 96px); max-width: 1100px; margin: 0 auto;">
+      <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 8px;">
+        <span style="width: 34px; height: 0; border-top: 2px dashed #D4AF37;"></span>
+        <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.28em; color: #D4AF37; text-transform: uppercase;">Journal de bord</span>
+      </div>
+      <h1 style="margin: 0 0 8px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: clamp(34px, 6vw, 60px); text-transform: uppercase; letter-spacing: 0.01em;">Actualités</h1>
+      <p style="margin: 0 0 42px; color: #9A9A9A; font-size: 15px; max-width: 560px; line-height: 1.6;">Ce qui se passe sur le campus, raconté par l'équipage du BDE.</p>
+      <div style="display: flex; flex-direction: column; gap: 22px;">
+        <sc-for list="{{ articles }}" as="a" hint-placeholder-count="6">
+          <article onClick="{{ a.open }}" role="button" tabindex="0" class="news-card" style="display: grid; grid-template-columns: minmax(120px, 280px) 1fr; gap: clamp(16px, 3vw, 30px); background: #1E1E1E; border: 1px solid #2A2A2A; border-radius: 20px; padding: 16px; cursor: pointer; box-shadow: 0 10px 28px rgba(0,0,0,0.4);">
+            <div class="media-4x3" style="{{ a.cover }}"></div>
+            <div style="display: flex; flex-direction: column; gap: 8px; justify-content: center; padding-right: 8px;">
+              <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.12em; color: #D4AF37;">{{ a.date }}</span>
+              <h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(17px, 2.4vw, 22px); line-height: 1.25; text-wrap: pretty;">{{ a.title }}</h2>
+              <p style="margin: 0; color: #9A9A9A; font-size: 14px; line-height: 1.55;">{{ a.chapo }}</p>
+              <span style="color: #D4AF37; font-size: 13px; font-weight: 600;">Lire l'article →</span>
+            </div>
+          </article>
+        </sc-for>
+        <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+          <p style="margin: 0; color: #9A9A9A; font-size: 14px;">Chargement du journal de bord…</p>
+        </sc-if>
+        <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+          <div style="background: #1E1E1E; border: 1px dashed #2A2A2A; border-radius: 20px; padding: 28px; text-align: center;">
+            <p style="margin: 0 0 6px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px;">Le journal de bord est encore vierge</p>
+            <p style="margin: 0; color: #9A9A9A; font-size: 14px;">Les premières actualités du BDE arrivent bientôt.</p>
+          </div>
+        </sc-if>
+      </div>
+    </main>
+  </sc-if>
+
+  <footer data-screen-label="Pied de page" style="position: relative; z-index: 1; border-top: 1px solid #2A2A2A; background: #161616; padding: clamp(36px, 6vw, 64px) clamp(20px, 5vw, 56px) 32px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 32px; margin-bottom: 36px;">
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <img src="uploads/logo-1784208362468.png" alt="" style="width: 34px; height: 34px; object-fit: contain;">
+          <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; letter-spacing: 0.18em; font-size: 14px;">PEARLIST</span>
+        </div>
+        <p style="margin: 0; color: #9A9A9A; font-size: 13px; line-height: 1.6;">BDE ICAM NANTES<br>35 Avenue du Champ de Manœuvres<br>44470 Carquefou</p>
+        <p style="margin: 0; color: #9A9A9A; font-size: 12px;">Pearl App est réservée aux étudiants Icam.</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.2em; color: #D4AF37;">CONTACT</span>
+        <a href="mailto:[EMAIL CONTACT]" class="foot-email">[EMAIL CONTACT]</a>
+        <div style="display: flex; gap: 16px; font-size: 13px;">
+          <a href="#" class="foot-social">Instagram</a>
+          <a href="#" class="foot-social">TikTok</a>
+          <a href="#" class="foot-social">LinkedIn</a>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.2em; color: #D4AF37;">NUMÉRO SAFE</span>
+        <a href="tel:0670946260" style="display: inline-flex; align-items: center; gap: 10px; background: #1E1E1E; border: 1px solid #D4AF37; border-radius: 14px; padding: 12px 18px; width: fit-content; color: #FFFFFF;">
+          <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px; letter-spacing: 0.06em; white-space: nowrap;">06 70 94 62 60</span>
+        </a>
+        <p style="margin: 0; color: #9A9A9A; font-size: 12px; line-height: 1.5;">Disponible pendant chaque événement du BDE, pour rentrer en sécurité.</p>
+      </div>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #2A2A2A; padding-top: 20px;">
+      <span style="color: #9A9A9A; font-size: 11.5px;">© 2026 Pearlist — BDE ICAM NANTES</span>
+      <div style="display: flex; gap: 18px; font-size: 11.5px;">
+        <a href="Confidentialite.dc.html" class="foot-legal">Confidentialité</a>
+        <a href="CGU.dc.html" class="foot-legal">CGU</a>
+        <a href="Mentions-legales.dc.html" class="foot-legal">Mentions légales</a>
+      </div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = { selected: null, news: null };
+
+  componentDidMount() {
+    // Actualités publiées depuis Pearl App (miroir public, lecture seule).
+    PearlLive.fetchCollection('news').then((news) => {
+      news.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      this.setState({ news });
+    });
+  }
+
+  renderVals() {
+    const loaded = this.state.news !== null;
+    const list = this.state.news || [];
+    const sel = list.filter((a) => a.id === this.state.selected)[0] || null;
+
+    return {
+      readingMode: !!sel,
+      listMode: !sel,
+      loading: !loaded,
+      empty: loaded && list.length === 0,
+      current: sel
+        ? { date: PearlLive.shortDate(sel.createdAt), title: sel.title,
+            cover: PearlLive.cover(sel.imageUrl) }
+        : { date: '', title: '', cover: PearlLive.cover(null) },
+      currentBody: sel ? PearlLive.paragraphs(sel.body) : [],
+      closeArticle: () => { this.setState({ selected: null }); window.scrollTo(0, 0); },
+      articles: list.map((a) => ({
+        date: PearlLive.shortDate(a.createdAt),
+        title: a.title,
+        chapo: PearlLive.excerpt(a.body, 150),
+        cover: PearlLive.cover(a.imageUrl,
+          'repeating-linear-gradient(45deg, #232323 0 12px, #1a1a1a 12px 24px)'),
+        open: () => { this.setState({ selected: a.id }); window.scrollTo(0, 0); }
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

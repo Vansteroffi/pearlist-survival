@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./vendor/react.production.min.js"></script>
+<script src="./vendor/react-dom.production.min.js"></script>
+<script src="./support.js"></script>
+<script src="./pearl-live.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Événements — Pearlist, BDE Icam Nantes</title>
+<meta name="description" content="Les prochains événements du BDE Icam Nantes (soirées, afterworks, gala) et les archives des éditions passées.">
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="pearlist.css">
+</helmet>
+<div data-screen-label="Événements" style="position: relative; background: #121212; min-height: 100vh; font-family: 'Instrument Sans', sans-serif;">
+  <div aria-hidden="true" style="position: absolute; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(ellipse 60% 40% at 30% 0%, rgba(212,175,55,0.05), transparent 70%);"></div>
+
+  <header style="position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px clamp(20px, 5vw, 56px); background: rgba(18,18,18,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2A2A2A;">
+    <a href="Accueil.dc.html" style="display: flex; align-items: center; gap: 12px; color: #FFFFFF;">
+      <img src="uploads/logo-1784208362468.png" alt="Logo Pearlist" style="width: 42px; height: 42px; object-fit: contain;">
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; letter-spacing: 0.18em; font-size: 16px;">PEARLIST</span>
+    </a>
+    <nav style="display: flex; flex-wrap: wrap; gap: clamp(12px, 2.5vw, 28px); align-items: center; font-size: 13px; font-weight: 500;">
+      <a href="Accueil.dc.html" class="nav-link">Accueil</a>
+      <a href="Actualites.dc.html" class="nav-link">Actualités</a>
+      <a href="Evenements.dc.html" style="color: #D4AF37; border-bottom: 2px solid #D4AF37; padding-bottom: 2px;">Événements</a>
+      <a href="Partenaires.dc.html" class="nav-link">Partenaires</a>
+      <a href="Assos.dc.html" class="nav-link">Associations</a>
+    </nav>
+  </header>
+
+  <main style="position: relative; z-index: 1; padding: clamp(32px, 6vw, 64px) clamp(20px, 5vw, 56px) clamp(56px, 8vw, 96px); max-width: 1000px; margin: 0 auto;">
+    <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 8px;">
+      <span style="width: 34px; height: 0; border-top: 2px dashed #D4AF37;"></span>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.28em; color: #D4AF37; text-transform: uppercase;">Carnet de traversées</span>
+    </div>
+    <h1 style="margin: 0 0 8px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: clamp(34px, 6vw, 60px); text-transform: uppercase;">Événements</h1>
+    <p style="margin: 0 0 48px; color: #9A9A9A; font-size: 15px; max-width: 560px; line-height: 1.6;">Les prochaines escales du BDE, et les souvenirs de celles qu'on a déjà faites.</p>
+
+    <h2 style="margin: 0 0 24px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 20px; text-transform: uppercase; letter-spacing: 0.06em; display: flex; align-items: baseline; gap: 16px;">À venir<span style="flex: 1; border-top: 1px dashed #333333;"></span></h2>
+    <div style="display: flex; flex-direction: column; gap: 18px; margin-bottom: 64px;">
+      <sc-for list="{{ upcoming }}" as="e" hint-placeholder-count="4">
+        <article style="display: grid; grid-template-columns: 92px 1fr; gap: clamp(16px, 3vw, 28px); background: #1E1E1E; border: 1px solid #2A2A2A; border-radius: 20px; padding: 18px; box-shadow: 0 10px 28px rgba(0,0,0,0.4); align-items: center;">
+          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; background: #121212; border: 1px dashed #D4AF37; border-radius: 14px; padding: 14px 8px;">
+            <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 28px; color: #D4AF37; line-height: 1;">{{ e.day }}</span>
+            <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.14em; color: #FFFFFF;">{{ e.month }}</span>
+            <span style="font-size: 10.5px; color: #9A9A9A;">{{ e.year }}</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 7px;">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;">
+              <h3 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(17px, 2.4vw, 22px);">{{ e.title }}</h3>
+              <sc-if value="{{ e.price }}">
+                <span style="border: 1px solid #D4AF37; color: #D4AF37; border-radius: 999px; padding: 3px 12px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em;">{{ e.price }}</span>
+              </sc-if>
+            </div>
+            <span style="color: #9A9A9A; font-size: 13.5px;">{{ e.meta }}</span>
+            <p style="margin: 0; color: #C9C9C9; font-size: 13.5px; line-height: 1.55;">{{ e.desc }}</p>
+          </div>
+        </article>
+      </sc-for>
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+        <p style="margin: 0; color: #9A9A9A; font-size: 14px;">Chargement des prochaines escales…</p>
+      </sc-if>
+      <sc-if value="{{ noUpcoming }}" hint-placeholder-val="{{ false }}">
+        <div style="background: #1E1E1E; border: 1px dashed #2A2A2A; border-radius: 20px; padding: 28px; text-align: center;">
+          <p style="margin: 0 0 6px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px;">Aucune escale programmée pour l'instant</p>
+          <p style="margin: 0; color: #9A9A9A; font-size: 14px;">L'équipage prépare la suite — revenez bientôt, ou suivez-nous sur Instagram.</p>
+        </div>
+      </sc-if>
+    </div>
+
+    <sc-if value="{{ hasPast }}" hint-placeholder-val="{{ true }}">
+    <h2 style="margin: 0 0 10px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 20px; text-transform: uppercase; letter-spacing: 0.06em; display: flex; align-items: baseline; gap: 16px; color: #9A9A9A;">Archives<span style="flex: 1; border-top: 1px dashed #2A2A2A;"></span></h2>
+    <p style="margin: 0 0 24px; color: #9A9A9A; font-size: 13px;">Les escales déjà derrière nous — les photos sont dans Pearl App.</p>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr)); gap: 16px;">
+      <sc-for list="{{ past }}" as="e" hint-placeholder-count="3">
+        <article style="background: #181818; border: 1px solid #242424; border-radius: 20px; padding: 18px; display: flex; flex-direction: column; gap: 6px; opacity: 0.75;">
+          <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.12em; color: #9A9A9A;">{{ e.date }}</span>
+          <h3 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px; color: #C9C9C9;">{{ e.title }}</h3>
+          <span style="color: #9A9A9A; font-size: 13px;">{{ e.place }}</span>
+          <span style="margin-top: 6px; font-size: 11px; font-weight: 600; letter-spacing: 0.12em; color: #9A9A9A; border: 1px solid #2A2A2A; border-radius: 999px; padding: 3px 10px; width: fit-content;">TERMINÉ</span>
+        </article>
+      </sc-for>
+    </div>
+    </sc-if>
+  </main>
+
+  <footer data-screen-label="Pied de page" style="position: relative; z-index: 1; border-top: 1px solid #2A2A2A; background: #161616; padding: clamp(36px, 6vw, 64px) clamp(20px, 5vw, 56px) 32px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 32px; margin-bottom: 36px;">
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <img src="uploads/logo-1784208362468.png" alt="" style="width: 34px; height: 34px; object-fit: contain;">
+          <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; letter-spacing: 0.18em; font-size: 14px;">PEARLIST</span>
+        </div>
+        <p style="margin: 0; color: #9A9A9A; font-size: 13px; line-height: 1.6;">BDE ICAM NANTES<br>35 Avenue du Champ de Manœuvres<br>44470 Carquefou</p>
+        <p style="margin: 0; color: #9A9A9A; font-size: 12px;">Pearl App est réservée aux étudiants Icam.</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.2em; color: #D4AF37;">CONTACT</span>
+        <a href="mailto:[EMAIL CONTACT]" class="foot-email">[EMAIL CONTACT]</a>
+        <div style="display: flex; gap: 16px; font-size: 13px;">
+          <a href="#" class="foot-social">Instagram</a>
+          <a href="#" class="foot-social">TikTok</a>
+          <a href="#" class="foot-social">LinkedIn</a>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.2em; color: #D4AF37;">NUMÉRO SAFE</span>
+        <a href="tel:0670946260" style="display: inline-flex; align-items: center; gap: 10px; background: #1E1E1E; border: 1px solid #D4AF37; border-radius: 14px; padding: 12px 18px; width: fit-content; color: #FFFFFF;">
+          <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px; letter-spacing: 0.06em; white-space: nowrap;">06 70 94 62 60</span>
+        </a>
+        <p style="margin: 0; color: #9A9A9A; font-size: 12px; line-height: 1.5;">Disponible pendant chaque événement du BDE, pour rentrer en sécurité.</p>
+      </div>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #2A2A2A; padding-top: 20px;">
+      <span style="color: #9A9A9A; font-size: 11.5px;">© 2026 Pearlist — BDE ICAM NANTES</span>
+      <div style="display: flex; gap: 18px; font-size: 11.5px;">
+        <a href="Confidentialite.dc.html" class="foot-legal">Confidentialité</a>
+        <a href="CGU.dc.html" class="foot-legal">CGU</a>
+        <a href="Mentions-legales.dc.html" class="foot-legal">Mentions légales</a>
+      </div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = { events: null };
+
+  componentDidMount() {
+    // Les événements viennent du miroir public de Pearl App : ajouter une soirée
+    // dans l'application la fait apparaître ici au prochain chargement de page.
+    PearlLive.fetchCollection('events').then((events) => this.setState({ events }));
+  }
+
+  renderVals() {
+    const loaded = this.state.events !== null;
+    const split = PearlLive.splitEvents(this.state.events || []);
+
+    return {
+      loading: !loaded,
+      noUpcoming: loaded && split.upcoming.length === 0,
+      hasPast: split.past.length > 0,
+      upcoming: split.upcoming.map((e) => {
+        const badge = PearlLive.dateBadge(e);
+        return {
+          day: badge.day,
+          month: badge.month,
+          year: badge.year,
+          title: e.title,
+          price: PearlLive.priceLabel(e),
+          meta: [e.location, PearlLive.scheduleLabel(e)].filter(Boolean).join(' · '),
+          desc: e.description || ''
+        };
+      }),
+      past: split.past.map((e) => ({
+        date: PearlLive.hasRealDate(e) ? PearlLive.shortDate(e.startAt) : (e.dateLabel || ''),
+        title: e.title,
+        place: e.location || ''
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>

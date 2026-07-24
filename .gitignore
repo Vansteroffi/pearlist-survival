@@ -1,0 +1,8 @@
+# Artefacts régénérés à chaque build par build.mjs.
+# Ils ne sont volontairement PAS committés : le dépôt resterait sinon alourdi
+# à vie par chaque version de chaque affiche (Git conserve tout l'historique).
+data.json
+images/
+vendor/
+fonts/
+fonts.css

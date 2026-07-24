@@ -1,0 +1,52 @@
+/* Pearlist — palette sombre nacrée (retour aux couleurs d'origine)
+   Noir profond + or perle. Typographie affiche conservée : Bricolage Grotesque
+   (titres) + Instrument Sans (texte). Feuille commune des pages .dc.html. */
+
+html, body { margin: 0; padding: 0; background: #121212; }
+body { font-family: 'Instrument Sans', sans-serif; color: #FFFFFF; }
+a { color: #D4AF37; text-decoration: none; }
+a:hover { color: #FFFFFF; }
+a:focus-visible, button:focus-visible { outline: 2px solid #D4AF37; outline-offset: 2px; border-radius: 4px; }
+::selection { background: #D4AF37; color: #121212; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* Navigation principale — actif souligné or, cible tactile ≥44px */
+.nav-link { display: inline-block; padding: 14px 4px; color: #9A9A9A; text-decoration: none; border-bottom: 2px solid transparent; transition: color 0.2s ease, border-color 0.2s ease; }
+.nav-link:hover, .nav-link:focus-visible { color: #FFFFFF; border-bottom-color: #D4AF37; }
+
+/* Footer (bloc noir) */
+.foot-social { display: inline-block; padding: 12px 6px; color: #9A9A9A; text-decoration: none; border-radius: 4px; transition: color 0.2s ease; }
+.foot-social:hover, .foot-social:focus-visible { color: #D4AF37; }
+
+.foot-legal { display: inline-block; padding: 12px 4px; color: #9A9A9A; text-decoration: none; border-radius: 4px; transition: color 0.2s ease; }
+.foot-legal:hover, .foot-legal:focus-visible { color: #F6F2E9; }
+
+.foot-email { display: inline-block; padding: 10px 0; color: #FFFFFF; font-size: 14px; text-decoration: none; border-radius: 4px; transition: color 0.2s ease; }
+.foot-email:hover, .foot-email:focus-visible { color: #D4AF37; }
+
+/* Carte actualité cliquable — se soulève au survol */
+.news-card { transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease; }
+.news-card:hover { transform: translateY(-3px); border-color: #D4AF37 !important; box-shadow: 0 18px 40px rgba(0,0,0,0.5) !important; }
+.news-card:focus-visible { outline: 2px solid #D4AF37; outline-offset: 3px; }
+
+/* Bouton retour (lecture d'une actu) */
+.btn-back { transition: border-color 0.2s ease, background 0.2s ease; }
+.btn-back:hover, .btn-back:focus-visible { border-color: #D4AF37; background: #1E1E1E; }
+
+/* Lien "Voir le site" sur une carte partenaire */
+.partner-link { transition: color 0.2s ease; }
+.partner-link:hover, .partner-link:focus-visible { color: #FFFFFF; }
+
+/* CTA plein or ("Devenir partenaire") — or → blanc au survol */
+.btn-gold { transition: background 0.2s ease, transform 0.2s ease; }
+.btn-gold:hover, .btn-gold:focus-visible { background: #FFFFFF !important; transform: translateY(-2px); }
+
+/* Lien de sommaire (pages légales) */
+.toc-link { display: inline-block; padding: 6px 2px; transition: color 0.2s ease; }
+.toc-link:hover, .toc-link:focus-visible { color: #D4AF37; }
+
+/* Vignettes média — la mise en page vit ici, l'image réelle (Cloudinary) est
+   injectée en style lié depuis les données Pearl App. */
+.media-16x9 { position: relative; border-radius: 20px; overflow: hidden; aspect-ratio: 16 / 9; }
+.media-4x3 { position: relative; border-radius: 14px; overflow: hidden; aspect-ratio: 4 / 3; }
+.media-cover { position: relative; border-radius: 22px; overflow: hidden; }

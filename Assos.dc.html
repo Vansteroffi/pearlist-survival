@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./vendor/react.production.min.js"></script>
+<script src="./vendor/react-dom.production.min.js"></script>
+<script src="./support.js"></script>
+<script src="./pearl-live.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Associations — Pearlist, BDE Icam Nantes</title>
+<meta name="description" content="Les associations étudiantes du campus Icam Nantes portées par le BDE.">
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="pearlist.css">
+</helmet>
+<div data-screen-label="Associations" style="position: relative; background: #121212; min-height: 100vh; font-family: 'Instrument Sans', sans-serif;">
+  <div aria-hidden="true" style="position: absolute; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(ellipse 60% 40% at 30% 0%, rgba(212,175,55,0.05), transparent 70%);"></div>
+
+  <header style="position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px clamp(20px, 5vw, 56px); background: rgba(18,18,18,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2A2A2A;">
+    <a href="Accueil.dc.html" style="display: flex; align-items: center; gap: 12px; color: #FFFFFF;">
+      <img src="uploads/logo-1784208362468.png" alt="Logo Pearlist" style="width: 42px; height: 42px; object-fit: contain;">
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; letter-spacing: 0.18em; font-size: 16px;">PEARLIST</span>
+    </a>
+    <nav style="display: flex; flex-wrap: wrap; gap: clamp(12px, 2.5vw, 28px); align-items: center; font-size: 13px; font-weight: 500;">
+      <a href="Accueil.dc.html" class="nav-link">Accueil</a>
+      <a href="Actualites.dc.html" class="nav-link">Actualités</a>
+      <a href="Evenements.dc.html" class="nav-link">Événements</a>
+      <a href="Partenaires.dc.html" class="nav-link">Partenaires</a>
+      <a href="Assos.dc.html" style="color: #D4AF37; border-bottom: 2px solid #D4AF37; padding-bottom: 2px;">Associations</a>
+    </nav>
+  </header>
+
+  <main style="position: relative; z-index: 1; padding: clamp(32px, 6vw, 64px) clamp(20px, 5vw, 56px) clamp(56px, 8vw, 96px); max-width: 1100px; margin: 0 auto;">
+    <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 8px;">
+      <span style="width: 34px; height: 0; border-top: 2px dashed #D4AF37;"></span>
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.28em; color: #D4AF37; text-transform: uppercase;">La flotte du campus</span>
+    </div>
+    <h1 style="margin: 0 0 8px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: clamp(34px, 6vw, 60px); text-transform: uppercase;">Associations</h1>
+    <p style="margin: 0 0 42px; color: #9A9A9A; font-size: 15px; max-width: 560px; line-height: 1.6;">Les associations qui font vivre le campus, saison après saison.</p>
+
+    <h2 style="margin: 0 0 24px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 20px; text-transform: uppercase; letter-spacing: 0.06em; display: flex; align-items: baseline; gap: 16px;">Les associations<span style="flex: 1; border-top: 1px dashed #333333;"></span></h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 20px;">
+      <sc-for list="{{ assos }}" as="a" hint-placeholder-count="3">
+        <article style="background: #1E1E1E; border: 1px solid #2A2A2A; border-radius: 20px; padding: 26px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 10px 28px rgba(0,0,0,0.4);">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <sc-if value="{{ a.hasLogo }}">
+              <img src="{{ a.logo }}" alt="" loading="lazy" style="width: 58px; height: 58px; border-radius: 50%; object-fit: cover; background: #121212; border: 1px solid #D4AF37; flex-shrink: 0;">
+            </sc-if>
+            <sc-if value="{{ !a.hasLogo }}">
+              <div style="width: 58px; height: 58px; border-radius: 50%; background: #121212; border: 1px dashed #D4AF37; display: flex; align-items: center; justify-content: center; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 19px; color: #D4AF37; flex-shrink: 0;">{{ a.initials }}</div>
+            </sc-if>
+            <div style="display: flex; flex-direction: column; gap: 3px;">
+              <h3 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 19px;">{{ a.name }}</h3>
+              <sc-if value="{{ a.hasTheme }}">
+                <span style="color: #D4AF37; font-size: 12px; font-weight: 600; letter-spacing: 0.1em;">{{ a.theme }}</span>
+              </sc-if>
+            </div>
+          </div>
+          <p style="margin: 0; color: #9A9A9A; font-size: 14px; line-height: 1.6;">{{ a.desc }}</p>
+        </article>
+      </sc-for>
+      <sc-if value="{{ loading }}" hint-placeholder-val="{{ false }}">
+        <p style="margin: 0; color: #9A9A9A; font-size: 14px;">Chargement des associations…</p>
+      </sc-if>
+      <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+        <div style="background: #1E1E1E; border: 1px dashed #2A2A2A; border-radius: 20px; padding: 28px; text-align: center;">
+          <p style="margin: 0 0 6px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px;">Aucune association publiée pour l'instant</p>
+          <p style="margin: 0; color: #9A9A9A; font-size: 14px;">Les assos du campus arrivent bientôt sur cette page.</p>
+        </div>
+      </sc-if>
+    </div>
+
+  </main>
+
+  <footer data-screen-label="Pied de page" style="position: relative; z-index: 1; border-top: 1px solid #2A2A2A; background: #161616; padding: clamp(36px, 6vw, 64px) clamp(20px, 5vw, 56px) 32px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 32px; margin-bottom: 36px;">
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <img src="uploads/logo-1784208362468.png" alt="" style="width: 34px; height: 34px; object-fit: contain;">
+          <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; letter-spacing: 0.18em; font-size: 14px;">PEARLIST</span>
+        </div>
+        <p style="margin: 0; color: #9A9A9A; font-size: 13px; line-height: 1.6;">BDE ICAM NANTES<br>35 Avenue du Champ de Manœuvres<br>44470 Carquefou</p>
+        <p style="margin: 0; color: #9A9A9A; font-size: 12px;">Pearl App est réservée aux étudiants Icam.</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.2em; color: #D4AF37;">CONTACT</span>
+        <a href="mailto:[EMAIL CONTACT]" class="foot-email">[EMAIL CONTACT]</a>
+        <div style="display: flex; gap: 16px; font-size: 13px;">
+          <a href="#" class="foot-social">Instagram</a>
+          <a href="#" class="foot-social">TikTok</a>
+          <a href="#" class="foot-social">LinkedIn</a>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.2em; color: #D4AF37;">NUMÉRO SAFE</span>
+        <a href="tel:0670946260" style="display: inline-flex; align-items: center; gap: 10px; background: #1E1E1E; border: 1px solid #D4AF37; border-radius: 14px; padding: 12px 18px; width: fit-content; color: #FFFFFF;">
+          <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px; letter-spacing: 0.06em; white-space: nowrap;">06 70 94 62 60</span>
+        </a>
+        <p style="margin: 0; color: #9A9A9A; font-size: 12px; line-height: 1.5;">Disponible pendant chaque événement du BDE, pour rentrer en sécurité.</p>
+      </div>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #2A2A2A; padding-top: 20px;">
+      <span style="color: #9A9A9A; font-size: 11.5px;">© 2026 Pearlist — BDE ICAM NANTES</span>
+      <div style="display: flex; gap: 18px; font-size: 11.5px;">
+        <a href="Confidentialite.dc.html" class="foot-legal">Confidentialité</a>
+        <a href="CGU.dc.html" class="foot-legal">CGU</a>
+        <a href="Mentions-legales.dc.html" class="foot-legal">Mentions légales</a>
+      </div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = { assos: null };
+
+  componentDidMount() {
+    PearlLive.fetchCollection('associations').then((assos) => {
+      assos.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+      this.setState({ assos });
+    });
+  }
+
+  renderVals() {
+    const loaded = this.state.assos !== null;
+    const list = this.state.assos || [];
+
+    return {
+      loading: !loaded,
+      empty: loaded && list.length === 0,
+      assos: list.map((a) => {
+        const handle = (a.instagramUrl || '').replace(/\/+$/, '').split('/').pop();
+        return {
+          name: a.name,
+          initials: PearlLive.initials(a.name),
+          theme: handle ? '@' + handle : '',
+          hasTheme: !!handle,
+          desc: a.description || '',
+          hasLogo: !!a.logoUrl,
+          logo: a.logoUrl || ''
+        };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

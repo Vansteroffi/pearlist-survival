@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./vendor/react.production.min.js"></script>
+<script src="./vendor/react-dom.production.min.js"></script>
+<script src="./support.js"></script>
+<script src="./pearl-live.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pearlist — BDE Icam Nantes</title>
+<meta name="description" content="Le site du BDE Icam Nantes : actualités du campus, prochains événements, partenaires étudiants et associations. Pearl App est réservée aux étudiants Icam.">
+<link rel="stylesheet" href="fonts.css">
+<link rel="stylesheet" href="pearlist.css">
+<style>
+  @keyframes heroIn { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
+</style>
+</helmet>
+<div data-screen-label="Accueil" style="position: relative; background: #121212; min-height: 100vh; overflow: hidden; font-family: 'Instrument Sans', sans-serif;">
+
+  <div aria-hidden="true" style="position: absolute; inset: 0; z-index: 0; pointer-events: none; background-image: linear-gradient(rgba(212,175,55,0.045) 1px, transparent 1px), linear-gradient(90deg, rgba(212,175,55,0.045) 1px, transparent 1px); background-size: 140px 140px; mask-image: radial-gradient(ellipse 90% 80% at 50% 30%, black 0%, transparent 100%);"></div>
+  <div aria-hidden="true" style="position: absolute; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(ellipse 60% 40% at 70% 0%, rgba(212,175,55,0.06), transparent 70%), radial-gradient(ellipse 80% 60% at 20% 100%, rgba(212,175,55,0.04), transparent 70%), radial-gradient(ellipse 120% 100% at 50% 50%, transparent 55%, rgba(0,0,0,0.5) 100%);"></div>
+  <div ref="{{ compassRef }}" aria-hidden="true" style="position: absolute; top: 12%; right: -140px; width: 420px; height: 420px; z-index: 0; pointer-events: none; opacity: 0.07;">
+    <svg viewBox="0 0 200 200" style="width: 100%; height: 100%;">
+      <circle cx="100" cy="100" r="96" stroke="#D4AF37" fill="none" stroke-width="1"></circle>
+      <circle cx="100" cy="100" r="78" stroke="#D4AF37" fill="none" stroke-width="0.5" stroke-dasharray="3 6"></circle>
+      <circle cx="100" cy="100" r="10" stroke="#D4AF37" fill="none" stroke-width="1"></circle>
+      <path d="M 100 8 L 108 100 L 100 192 L 92 100 Z" stroke="#D4AF37" fill="none" stroke-width="1"></path>
+      <path d="M 8 100 L 100 92 L 192 100 L 100 108 Z" stroke="#D4AF37" fill="none" stroke-width="1"></path>
+      <path d="M 35 35 L 165 165 M 165 35 L 35 165" stroke="#D4AF37" stroke-width="0.5" stroke-dasharray="2 5"></path>
+    </svg>
+  </div>
+  <div ref="{{ compass2Ref }}" aria-hidden="true" style="position: absolute; bottom: 6%; left: -180px; width: 480px; height: 480px; z-index: 0; pointer-events: none; opacity: 0.05;">
+    <svg viewBox="0 0 200 200" style="width: 100%; height: 100%;">
+      <circle cx="100" cy="100" r="96" stroke="#D4AF37" fill="none" stroke-width="0.7" stroke-dasharray="8 6"></circle>
+      <circle cx="100" cy="100" r="60" stroke="#D4AF37" fill="none" stroke-width="0.5"></circle>
+      <path d="M 100 4 L 100 196 M 4 100 L 196 100" stroke="#D4AF37" stroke-width="0.5" stroke-dasharray="2 6"></path>
+    </svg>
+  </div>
+
+  <sc-if value="{{ showTrail }}" hint-placeholder-val="{{ true }}">
+    <svg aria-hidden="true" viewBox="0 0 100 2400" preserveAspectRatio="none" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; opacity: 0.045;">
+      <g stroke="#9A9A9A" fill="none" stroke-width="0.6" vector-effect="non-scaling-stroke">
+        <path d="M 2 180 C 10 240, 4 340, 12 420 C 18 490, 6 560, 10 660 C 14 760, 2 840, 8 960" stroke-dasharray="4 6" vector-effect="non-scaling-stroke"></path>
+        <path d="M 96 1100 C 90 1200, 98 1300, 92 1420 C 87 1520, 97 1620, 90 1740" stroke-dasharray="4 6" vector-effect="non-scaling-stroke"></path>
+        <path d="M 12 700 L 17 668 L 22 700 M 20 705 L 26 662 L 32 705 M 30 700 L 34 678 L 38 700" vector-effect="non-scaling-stroke"></path>
+        <path d="M 66 1580 L 71 1548 L 76 1580 M 74 1585 L 80 1542 L 86 1585" vector-effect="non-scaling-stroke"></path>
+        <path d="M 82 390 L 82 430 M 82 390 C 76 380, 72 382, 68 390 M 82 390 C 88 380, 92 382, 96 390 M 82 390 C 80 378, 84 372, 88 368 M 82 390 C 84 378, 80 372, 76 368" vector-effect="non-scaling-stroke"></path>
+        <path d="M 16 1960 L 16 2000 M 16 1960 C 10 1950, 6 1952, 2 1960 M 16 1960 C 22 1950, 26 1952, 30 1960 M 16 1960 C 14 1948, 18 1942, 22 1938" vector-effect="non-scaling-stroke"></path>
+        <path d="M 40 2340 C 46 2328, 60 2326, 66 2340 M 44 2334 L 44 2312 L 58 2320 L 44 2326 M 52 2334 L 52 2306" vector-effect="non-scaling-stroke"></path>
+        <path d="M 8 1240 L 8 1290 M 8 1250 C 2 1252, 0 1258, 2 1264 M 8 1250 C 14 1252, 16 1258, 14 1264 M 3 1290 C 5 1296, 11 1296, 13 1290 M 4 1244 L 12 1244" vector-effect="non-scaling-stroke"></path>
+        <path d="M 88 620 L 96 660 M 96 620 L 88 660 M 87 618 C 85 615, 87 611, 90 613 M 97 618 C 99 615, 97 611, 94 613 M 87 662 C 85 665, 87 669, 90 667 M 97 662 C 99 665, 97 669, 94 667" vector-effect="non-scaling-stroke"></path>
+        <path d="M 70 900 L 90 900 L 88 916 L 72 916 Z M 70 900 C 72 890, 88 890, 90 900 M 79 900 L 81 900 L 81 906 L 79 906 Z" vector-effect="non-scaling-stroke"></path>
+        <path d="M 6 1740 C 8 1736, 12 1736, 14 1740 C 16 1736, 20 1736, 22 1740 M 10 1748 C 12 1744, 16 1744, 18 1748 C 20 1744, 24 1744, 26 1748" vector-effect="non-scaling-stroke"></path>
+        <path d="M 74 2060 C 76 2056, 80 2056, 82 2060 C 84 2056, 88 2056, 90 2060 M 78 2068 C 80 2064, 84 2064, 86 2068" vector-effect="non-scaling-stroke"></path>
+        <path d="M 90 250 L 90 214 L 98 217 L 98 226 L 90 229 M 87 250 L 93 250" vector-effect="non-scaling-stroke"></path>
+        <path d="M 45 150 C 43 143, 47 137, 52 137 C 57 137, 61 143, 59 150 C 58 154, 55 155, 55 158 L 49 158 C 49 155, 46 154, 45 150 Z M 49 148 L 51 148 M 53 148 L 55 148 M 50 162 L 54 162" vector-effect="non-scaling-stroke"></path>
+        <circle cx="30" cy="880" r="1.2" vector-effect="non-scaling-stroke"></circle>
+        <circle cx="60" cy="1460" r="1.2" vector-effect="non-scaling-stroke"></circle>
+        <path d="M 56 1990 C 58 1984, 64 1984, 66 1990 C 68 1984, 74 1984, 76 1990" vector-effect="non-scaling-stroke"></path>
+      </g>
+    </svg>
+    <svg ref="{{ trailSvgRef }}" viewBox="0 0 100 2400" preserveAspectRatio="none" style="position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none;" aria-hidden="true">
+      <mask id="trailmask">
+        <path ref="{{ trailMaskRef }}" d="M 50 55 C 18 150, 84 225, 64 330 C 50 400, 12 445, 22 545 C 27 595, 44 618, 50 590 C 56 562, 30 548, 26 583 C 22 660, 80 705, 76 820 C 73 905, 20 950, 28 1065 L 70 1130 L 24 1210 C 40 1240, 82 1225, 80 1285 C 78 1338, 40 1330, 48 1272 C 56 1360, 22 1420, 32 1530 C 40 1615, 84 1655, 74 1775 C 66 1860, 14 1905, 24 2035 C 30 2110, 76 2155, 62 2250 L 58 2300" stroke="white" stroke-width="14" fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-dashoffset="1"></path>
+      </mask>
+      <filter id="trailglow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="4"></feGaussianBlur>
+      </filter>
+      <g mask="url(#trailmask)" stroke="#D4AF37" fill="none">
+        <path d="M 50 55 C 18 150, 84 225, 64 330 C 50 400, 12 445, 22 545 C 27 595, 44 618, 50 590 C 56 562, 30 548, 26 583 C 22 660, 80 705, 76 820 C 73 905, 20 950, 28 1065 L 70 1130 L 24 1210 C 40 1240, 82 1225, 80 1285 C 78 1338, 40 1330, 48 1272 C 56 1360, 22 1420, 32 1530 C 40 1615, 84 1655, 74 1775 C 66 1860, 14 1905, 24 2035 C 30 2110, 76 2155, 62 2250 L 58 2300" stroke-width="9" opacity="0.35" filter="url(#trailglow)" vector-effect="non-scaling-stroke"></path>
+        <path ref="{{ trailPathRef }}" d="M 50 55 C 18 150, 84 225, 64 330 C 50 400, 12 445, 22 545 C 27 595, 44 618, 50 590 C 56 562, 30 548, 26 583 C 22 660, 80 705, 76 820 C 73 905, 20 950, 28 1065 L 70 1130 L 24 1210 C 40 1240, 82 1225, 80 1285 C 78 1338, 40 1330, 48 1272 C 56 1360, 22 1420, 32 1530 C 40 1615, 84 1655, 74 1775 C 66 1860, 14 1905, 24 2035 C 30 2110, 76 2155, 62 2250 L 58 2300" stroke-width="2.5" stroke-dasharray="6 10" opacity="0.85" vector-effect="non-scaling-stroke"></path>
+      </g>
+    </svg>
+    <div ref="{{ trailTipRef }}" aria-hidden="true" style="position: absolute; left: 50%; top: 2.3%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: #FFF2C4; box-shadow: 0 0 12px 5px rgba(212,175,55,0.9), 0 0 50px 22px rgba(212,175,55,0.35); z-index: 0; pointer-events: none; opacity: 0;"></div>
+    <div ref="{{ trailEndRef }}" style="position: absolute; left: 58%; top: 95.8%; transform: translate(-50%, -50%); z-index: 0; pointer-events: none; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 46px; color: #D4AF37; opacity: 0; transition: opacity 0.6s ease; text-shadow: 0 0 18px rgba(212,175,55,0.9), 0 0 60px rgba(212,175,55,0.5);" aria-hidden="true">✕</div>
+  </sc-if>
+
+  <header style="position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px clamp(20px, 5vw, 56px); background: rgba(18,18,18,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid #2A2A2A;">
+    <a href="#" style="display: flex; align-items: center; gap: 12px; color: #FFFFFF;">
+      <img src="uploads/logo-1784208362468.png" alt="Logo Pearlist" style="width: 42px; height: 42px; object-fit: contain;">
+      <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; letter-spacing: 0.18em; font-size: 16px;">PEARLIST</span>
+    </a>
+    <nav style="display: flex; flex-wrap: wrap; gap: clamp(12px, 2.5vw, 28px); align-items: center; font-size: 13px; font-weight: 500;">
+      <a href="Accueil.dc.html" style="color: #D4AF37; border-bottom: 2px solid #D4AF37; padding-bottom: 2px;">Accueil</a>
+      <a href="Actualites.dc.html" class="nav-link">Actualités</a>
+      <a href="Evenements.dc.html" class="nav-link">Événements</a>
+      <a href="Partenaires.dc.html" class="nav-link">Partenaires</a>
+      <a href="Assos.dc.html" class="nav-link">Associations</a>
+    </nav>
+  </header>
+
+  <section data-screen-label="Hero — prochain événement" style="position: relative; z-index: 1; padding: clamp(28px, 6vw, 72px) clamp(20px, 5vw, 56px) clamp(40px, 7vw, 88px);">
+    <div style="{{ heroCover }}">
+      <sc-if value="{{ goldTint }}" hint-placeholder-val="{{ false }}">
+        <div style="position: absolute; inset: 0; background: rgba(212,175,55,0.07);"></div>
+      </sc-if>
+      <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(18,18,18,0.96) 12%, rgba(18,18,18,0.55) 55%, rgba(18,18,18,0.25) 100%);"></div>
+      <div style="position: relative; z-index: 2; padding: clamp(120px, 26vw, 220px) clamp(24px, 5vw, 56px) clamp(28px, 4vw, 48px); display: flex; flex-direction: column; gap: 18px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <span style="width: 34px; height: 0; border-top: 2px dashed #D4AF37;"></span>
+          <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.28em; color: #D4AF37; text-transform: uppercase; border: 2px solid #D4AF37; border-radius: 10px; padding: 7px 14px 6px; background: #1E1E1E; transform: rotate(-2deg); display: inline-block;">{{ hero.label }}</span>
+        </div>
+        <h1 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: clamp(38px, 8vw, 84px); line-height: 1.02; text-transform: uppercase; letter-spacing: 0.01em; text-wrap: balance;">{{ hero.title }}</h1>
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 22px; font-size: 15px;">
+          <sc-if value="{{ hero.date }}"><span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; color: #D4AF37; font-size: clamp(16px, 2.4vw, 20px); letter-spacing: 0.06em;">{{ hero.date }}</span></sc-if>
+          <sc-if value="{{ hero.place }}"><span style="color: #9A9A9A;">{{ hero.place }}</span></sc-if>
+          <sc-if value="{{ hero.price }}"><span style="border: 1px solid #D4AF37; color: #D4AF37; border-radius: 999px; padding: 5px 14px; font-size: 12px; font-weight: 600; letter-spacing: 0.08em;">{{ hero.price }}</span></sc-if>
+        </div>
+        <sc-if value="{{ hero.desc }}"><p style="margin: 0; max-width: 560px; color: #C9C9C9; font-size: 15px; line-height: 1.6;">{{ hero.desc }}</p></sc-if>
+      </div>
+    </div>
+  </section>
+
+  <section data-screen-label="À la une" style="position: relative; z-index: 1; padding: 0 clamp(20px, 5vw, 56px) clamp(48px, 7vw, 88px);">
+    <div data-reveal="true" style="display: flex; align-items: baseline; gap: 16px; margin-bottom: 26px;">
+      <h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(24px, 4vw, 36px); text-transform: uppercase; letter-spacing: 0.04em;">À la une</h2>
+      <span style="flex: 1; border-top: 1px dashed #333333;"></span>
+      <a href="Actualites.dc.html" style="font-size: 13px; font-weight: 600; color: #D4AF37;">Toutes les actus →</a>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 22px;">
+      <sc-for list="{{ feed }}" as="item" hint-placeholder-count="6">
+        <article data-reveal="true" style="background: #1E1E1E; border-radius: 20px; overflow: hidden; box-shadow: 0 10px 28px rgba(0,0,0,0.4); border: 1px solid #2A2A2A; display: flex; flex-direction: column;">
+          <div class="media-16x9" style="{{ item.cover }}">
+            <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(18,18,18,0.75), rgba(18,18,18,0) 60%);"></div>
+            <span style="position: absolute; top: 12px; left: 12px; font-family: 'Bricolage Grotesque', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.16em; padding: 5px 11px; border-radius: 999px; background: {{ item.chipBg }}; color: {{ item.chipColor }};">{{ item.type }}</span>
+          </div>
+          <div style="padding: 18px 20px 22px; display: flex; flex-direction: column; gap: 8px; flex: 1;">
+            <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.1em; color: #D4AF37;">{{ item.date }}</span>
+            <h3 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 18px; line-height: 1.25; text-wrap: pretty;">{{ item.title }}</h3>
+            <p style="margin: 0; color: #9A9A9A; font-size: 13.5px; line-height: 1.55;">{{ item.chapo }}</p>
+          </div>
+        </article>
+      </sc-for>
+    </div>
+  </section>
+
+  <section data-screen-label="Partenaires" style="position: relative; z-index: 1; padding: 0 clamp(20px, 5vw, 56px) clamp(56px, 8vw, 100px);">
+    <div data-reveal="true" style="display: flex; align-items: baseline; gap: 16px; margin-bottom: 26px;">
+      <h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(24px, 4vw, 36px); text-transform: uppercase; letter-spacing: 0.04em;">Ils nous suivent à la trace</h2>
+      <span style="flex: 1; border-top: 1px dashed #333333;"></span>
+      <a href="Partenaires.dc.html" style="font-size: 13px; font-weight: 600; color: #D4AF37;">Tous les partenaires →</a>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); gap: 22px;">
+      <sc-for list="{{ partners }}" as="p" hint-placeholder-count="3">
+        <a href="Partenaires.dc.html" data-reveal="true" style="{{ p.cover }}">
+          <span style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(18,18,18,0.94) 18%, rgba(18,18,18,0.2) 70%);"></span>
+          <span style="position: absolute; left: 20px; right: 20px; bottom: 18px; display: flex; flex-direction: column; gap: 6px;">
+            <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 20px;">{{ p.name }}</span>
+            <span style="color: #D4AF37; font-weight: 600; font-size: 14px;">{{ p.deal }}</span>
+          </span>
+        </a>
+      </sc-for>
+    </div>
+  </section>
+
+  <footer data-screen-label="Pied de page" style="position: relative; z-index: 1; border-top: 1px solid #2A2A2A; background: #161616; padding: clamp(36px, 6vw, 64px) clamp(20px, 5vw, 56px) 32px;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr)); gap: 32px; margin-bottom: 36px;">
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 10px;">
+          <img src="uploads/logo-1784208362468.png" alt="" style="width: 34px; height: 34px; object-fit: contain;">
+          <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; letter-spacing: 0.18em; font-size: 14px;">PEARLIST</span>
+        </div>
+        <p style="margin: 0; color: #9A9A9A; font-size: 13px; line-height: 1.6;">BDE ICAM NANTES<br>35 Avenue du Champ de Manœuvres<br>44470 Carquefou</p>
+        <p style="margin: 0; color: #9A9A9A; font-size: 12px;">Pearl App est réservée aux étudiants Icam.</p>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.2em; color: #D4AF37;">CONTACT</span>
+        <a href="mailto:[EMAIL CONTACT]" class="foot-email">[EMAIL CONTACT]</a>
+        <div style="display: flex; gap: 16px; font-size: 13px;">
+          <a href="#" class="foot-social">Instagram</a>
+          <a href="#" class="foot-social">TikTok</a>
+          <a href="#" class="foot-social">LinkedIn</a>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.2em; color: #D4AF37;">NUMÉRO SAFE</span>
+        <a href="tel:0670946260" style="display: inline-flex; align-items: center; gap: 10px; background: #1E1E1E; border: 1px solid #D4AF37; border-radius: 14px; padding: 12px 18px; width: fit-content; color: #FFFFFF;">
+          <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 17px; letter-spacing: 0.06em; white-space: nowrap;">06 70 94 62 60</span>
+        </a>
+        <p style="margin: 0; color: #9A9A9A; font-size: 12px; line-height: 1.5;">Disponible pendant chaque événement du BDE, pour rentrer en sécurité.</p>
+      </div>
+    </div>
+    <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid #2A2A2A; padding-top: 20px;">
+      <span style="color: #9A9A9A; font-size: 11.5px;">© 2026 Pearlist — BDE ICAM NANTES</span>
+      <div style="display: flex; gap: 18px; font-size: 11.5px;">
+        <a href="Confidentialite.dc.html" class="foot-legal">Confidentialité</a>
+        <a href="CGU.dc.html" class="foot-legal">CGU</a>
+        <a href="Mentions-legales.dc.html" class="foot-legal">Mentions légales</a>
+      </div>
+    </div>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showTrail&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Signature&quot;}, &quot;goldTint&quot;: {&quot;editor&quot;: &quot;boolean&quot;, &quot;default&quot;: true, &quot;tsType&quot;: &quot;boolean&quot;, &quot;section&quot;: &quot;Photos&quot;}}">
+class Component extends DCLogic {
+  trailSvgRef = React.createRef();
+  trailMaskRef = React.createRef();
+  trailEndRef = React.createRef();
+  trailPathRef = React.createRef();
+  trailTipRef = React.createRef();
+  compassRef = React.createRef();
+  compass2Ref = React.createRef();
+
+  state = { events: null, news: null, partners: null };
+
+  componentDidMount() {
+    // Contenus tirés du miroir public de Pearl App : publier un événement ou
+    // une actualité dans l'application les fait apparaître ici.
+    PearlLive.load(['events', 'news', 'partners']).then((d) => {
+      this.setState({ events: d.events, news: d.news, partners: d.partners });
+    });
+
+    this.reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.onScroll = () => {
+      const mp = this.trailMaskRef.current;
+      if (!mp) return;
+      const doc = document.documentElement;
+      const max = Math.max(1, doc.scrollHeight - window.innerHeight);
+      this.targetP = this.reduced ? 1 : Math.min(1, Math.max(0, window.scrollY / max));
+      if (!this.trailLen) {
+        this.trailLen = mp.getTotalLength();
+        mp.style.strokeDasharray = String(this.trailLen);
+      }
+      if (this.smoothP === undefined) this.smoothP = this.targetP;
+      if (!this.rafId) {
+        const step = () => {
+          this.rafId = 0;
+          const d = this.targetP - this.smoothP;
+          this.smoothP += Math.abs(d) < 0.0005 ? d : d * 0.07;
+          this.applyTrail(this.smoothP);
+          if (Math.abs(this.targetP - this.smoothP) > 0.0005) this.rafId = requestAnimationFrame(step);
+        };
+        this.rafId = requestAnimationFrame(step);
+      }
+      this.applyTrail(this.smoothP);
+      document.querySelectorAll('[data-reveal]').forEach(el => {
+        if (el.style.opacity === '0' && el.getBoundingClientRect().top < window.innerHeight * 0.95) {
+          el.style.opacity = '1'; el.style.transform = 'translateY(0)';
+        }
+      });
+      const rot = window.scrollY * 0.006;
+      if (this.compassRef.current) this.compassRef.current.style.transform = 'rotate(' + rot + 'deg)';
+      if (this.compass2Ref.current) this.compass2Ref.current.style.transform = 'rotate(' + (-rot * 0.7) + 'deg)';
+    };
+    window.addEventListener('scroll', this.onScroll, { passive: true });
+    this.onScroll();
+    this.observeReveals();
+  }
+
+  /** Anime les blocs à l'apparition ; rappelée après l'arrivée des données. */
+  observeReveals() {
+    if (this.reduced || !('IntersectionObserver' in window)) return;
+    const els = document.querySelectorAll('[data-reveal]:not([data-reveal-seen])');
+    els.forEach(el => {
+      el.setAttribute('data-reveal-seen', '1');
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(20px)';
+      el.style.transition = 'opacity 0.7s ease, transform 0.7s ease';
+    });
+    if (!this.io) {
+      this.io = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+          if (e.isIntersecting || e.boundingClientRect.top < 0) {
+            e.target.style.opacity = '1';
+            e.target.style.transform = 'translateY(0)';
+            this.io.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.12 });
+    }
+    els.forEach(el => this.io.observe(el));
+  }
+
+  componentDidUpdate() {
+    // Les cartes n'existent qu'une fois les données chargées.
+    this.observeReveals();
+  }
+
+  applyTrail(p) {
+    const mp = this.trailMaskRef.current;
+    if (!mp || !this.trailLen) return;
+    mp.style.strokeDashoffset = String(this.trailLen * (1 - p));
+    if (this.trailEndRef.current) this.trailEndRef.current.style.opacity = p >= 0.98 ? '1' : '0';
+    const tip = this.trailTipRef.current;
+    if (tip && !this.reduced) {
+      const pt = mp.getPointAtLength(this.trailLen * p);
+      tip.style.left = pt.x + '%';
+      tip.style.top = (pt.y / 2400 * 100) + '%';
+      tip.style.opacity = (p > 0.004 && p < 0.98) ? '1' : '0';
+    }
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('scroll', this.onScroll);
+    if (this.rafId) cancelAnimationFrame(this.rafId);
+    if (this.io) this.io.disconnect();
+  }
+
+  renderVals() {
+    const events = this.state.events || [];
+    const news = this.state.news || [];
+    const partners = this.state.partners || [];
+    const next = PearlLive.nextEvent(events);
+
+    const heroLayout = {
+      position: 'relative', borderRadius: '24px', overflow: 'hidden',
+      border: '1px solid #2A2A2A', boxShadow: '0 24px 60px rgba(0,0,0,0.5)',
+      animation: 'heroIn 0.9s ease both'
+    };
+
+    // Fil « À la une » : événements à venir et actualités récentes, mêlés.
+    const feed = []
+      .concat(PearlLive.splitEvents(events).upcoming.map((e) => ({
+        sort: e.startAt || 0,
+        type: 'ÉVÉNEMENT', chipBg: '#D4AF37', chipColor: '#121212',
+        date: PearlLive.shortDate(e.startAt),
+        title: e.title,
+        chapo: PearlLive.excerpt(e.description, 110),
+        cover: PearlLive.cover(e.posterUrl)
+      })))
+      .concat(news.map((n) => ({
+        sort: n.createdAt || 0,
+        type: 'ACTU', chipBg: '#2A2A2A', chipColor: '#D4AF37',
+        date: PearlLive.shortDate(n.createdAt),
+        title: n.title,
+        chapo: PearlLive.excerpt(n.body, 110),
+        cover: PearlLive.cover(n.imageUrl)
+      })))
+      .sort((a, b) => b.sort - a.sort)
+      .slice(0, 6);
+
+    return {
+      showTrail: this.props.showTrail ?? true,
+      goldTint: this.props.goldTint ?? false,
+      trailSvgRef: this.trailSvgRef,
+      trailMaskRef: this.trailMaskRef,
+      trailEndRef: this.trailEndRef,
+      trailPathRef: this.trailPathRef,
+      trailTipRef: this.trailTipRef,
+      compassRef: this.compassRef,
+      compass2Ref: this.compass2Ref,
+
+      heroCover: Object.assign({}, heroLayout, PearlLive.cover(
+        next && next.posterUrl,
+        'repeating-linear-gradient(45deg, #1E1E1E 0 14px, #242424 14px 28px)')),
+      hero: next
+        ? {
+            label: 'Prochaine escale',
+            title: next.title,
+            date: PearlLive.longDate(next.startAt),
+            place: next.location || '',
+            price: PearlLive.priceLabel(next),
+            desc: next.description || ''
+          }
+        : {
+            label: 'Pearlist',
+            title: 'BDE Icam Nantes',
+            date: '', place: '', price: '',
+            desc: "La prochaine escale n'est pas encore annoncée. Retrouvez toute la vie du campus dans Pearl App."
+          },
+
+      hasFeed: feed.length > 0,
+      feed: feed,
+
+      hasPartners: partners.length > 0,
+      partners: partners.slice(0, 3).map((p) => ({
+        name: p.name,
+        deal: p.perk || '',
+        cover: Object.assign({
+          position: 'relative', display: 'block', borderRadius: '20px',
+          overflow: 'hidden', minHeight: '220px', color: '#FFFFFF',
+          boxShadow: '0 10px 28px rgba(0,0,0,0.4)'
+        }, PearlLive.cover(p.imageUrl,
+          'repeating-linear-gradient(45deg, #232323 0 14px, #1E1E1E 14px 28px)'))
+      }))
+    };
+  }
+}
+</script>
+</body>
+</html>
