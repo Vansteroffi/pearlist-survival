@@ -46,7 +46,7 @@
     <h2 style="margin: 0 0 24px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 20px; text-transform: uppercase; letter-spacing: 0.06em; display: flex; align-items: baseline; gap: 16px;">À venir<span style="flex: 1; border-top: 1px dashed #333333;"></span></h2>
     <div style="display: flex; flex-direction: column; gap: 18px; margin-bottom: 64px;">
       <sc-for list="{{ upcoming }}" as="e" hint-placeholder-count="4">
-        <article class="event-row {{ e.rowClass }}" style="background: #1E1E1E; border: 1px solid #2A2A2A; border-radius: 20px; padding: 18px; box-shadow: 0 10px 28px rgba(0,0,0,0.4);">
+        <article id="{{ e.ancre }}" class="event-row {{ e.rowClass }}" style="background: #1E1E1E; border: 1px solid #2A2A2A; border-radius: 20px; padding: 18px; box-shadow: 0 10px 28px rgba(0,0,0,0.4);">
           <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; background: #121212; border: 1px dashed #D4AF37; border-radius: 14px; padding: 14px 8px;">
             <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 28px; color: #D4AF37; line-height: 1;">{{ e.day }}</span>
             <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.14em; color: #FFFFFF;">{{ e.month }}</span>
@@ -134,12 +134,43 @@
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props="{}">
 class Component extends DCLogic {
-  state = { events: null };
+  state = { events: null, cible: null };
 
   componentDidMount() {
     // Les événements viennent du miroir public de Pearl App : ajouter une soirée
     // dans l'application la fait apparaître ici au prochain chargement de page.
-    PearlLive.fetchCollection('events').then((events) => this.setState({ events }));
+    const vise = new URLSearchParams(window.location.search).get('e');
+    PearlLive.fetchCollection('events').then((events) => {
+      this.setState({ events, cible: vise || null });
+      // Arrivée depuis l'accueil (?e=<id>) : la liste peut être longue, on
+      // amène l'utilisateur sur la bonne carte et on la signale brièvement.
+      if (!vise) return;
+      // Le défilement doit attendre que la carte existe dans le DOM.
+      // ⚠️ `scrollIntoView` est inopérant ici : le runtime impose
+      // `html, body { height: 100% }` et `#dc-root { height: 100% }`, si bien que
+      // la méthode vise `#dc-root` comme conteneur défilant — alors que c'est la
+      // fenêtre qui défile réellement. On calcule donc la position à la main.
+      // On réessaie jusqu'à ce que le défilement prenne réellement : tant que
+      // la page n'a pas atteint sa hauteur définitive, la position demandée est
+      // ramenée à 0 par le navigateur. `behavior: 'smooth'` est par ailleurs
+      // ignoré par ce moteur de rendu (vérifié), d'où le défilement instantané.
+      const viser = (essais) => {
+        const cible = document.getElementById('event-' + vise);
+        const max = document.documentElement.scrollHeight - window.innerHeight;
+        if (cible && max > 0) {
+          const brut = cible.getBoundingClientRect().top + window.scrollY
+            - (window.innerHeight - cible.offsetHeight) / 2;
+          const y = Math.min(max, Math.max(0, brut));
+          window.scrollTo(0, y);
+          if (Math.abs(window.scrollY - y) < 2) return; // arrivé à destination
+        }
+        // `setTimeout` et non `requestAnimationFrame` : ce dernier ne se
+        // déclenche pas tant que la page ne compose pas d'images — typiquement
+        // quand le lien est ouvert dans un onglet d'arrière-plan.
+        if (essais > 0) setTimeout(() => viser(essais - 1), 16);
+      };
+      viser(60);
+    });
   }
 
   renderVals() {
@@ -156,12 +187,14 @@ class Component extends DCLogic {
           day: badge.day,
           month: badge.month,
           year: badge.year,
+          ancre: 'event-' + e.id,
           title: e.title,
           price: PearlLive.priceLabel(e),
           meta: [e.location, PearlLive.scheduleLabel(e)].filter(Boolean).join(' · '),
           desc: e.description || '',
           hasPoster: !!e.posterUrl,
-          rowClass: e.posterUrl ? 'has-poster' : '',
+          rowClass: (e.posterUrl ? 'has-poster' : '') +
+            (e.id === this.state.cible ? ' est-cible' : ''),
           poster: PearlLive.cover(e.posterUrl,
             'repeating-linear-gradient(45deg, #232323 0 12px, #1a1a1a 12px 24px)')
         };

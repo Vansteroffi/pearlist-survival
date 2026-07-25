@@ -133,7 +133,11 @@ class Component extends DCLogic {
     // Actualités publiées depuis Pearl App (miroir public, lecture seule).
     PearlLive.fetchCollection('news').then((news) => {
       news.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-      this.setState({ news });
+      // Arrivée depuis l'accueil (?a=<id>) : on ouvre directement l'article
+      // demandé plutôt que de laisser l'utilisateur le rechercher dans la liste.
+      const vise = new URLSearchParams(window.location.search).get('a');
+      const existe = vise && news.some((n) => n.id === vise);
+      this.setState({ news, selected: existe ? vise : null });
     });
   }
 
@@ -152,7 +156,13 @@ class Component extends DCLogic {
             hasImage: !!sel.imageUrl, cover: PearlLive.cover(sel.imageUrl) }
         : { date: '', title: '', hasImage: false, cover: PearlLive.cover(null) },
       currentBody: sel ? PearlLive.paragraphs(sel.body) : [],
-      closeArticle: () => { this.setState({ selected: null }); window.scrollTo(0, 0); },
+      closeArticle: () => {
+        this.setState({ selected: null });
+        if (window.history.replaceState) {
+          window.history.replaceState(null, '', window.location.pathname);
+        }
+        window.scrollTo(0, 0);
+      },
       articles: list.map((a) => ({
         date: PearlLive.shortDate(a.createdAt),
         title: a.title,
