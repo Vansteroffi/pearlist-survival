@@ -40,10 +40,12 @@
       <button onClick="{{ closeArticle }}" class="btn-back" style="display: inline-flex; align-items: center; gap: 8px; background: none; border: 1px solid #333333; border-radius: 999px; color: #D4AF37; font-family: 'Instrument Sans', sans-serif; font-size: 13px; font-weight: 600; padding: 15px 22px; cursor: pointer; margin-bottom: 28px;">← Toutes les actualités</button>
       <span style="display: block; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 13px; letter-spacing: 0.14em; color: #D4AF37; margin-bottom: 12px;">{{ current.date }}</span>
       <h1 style="margin: 0 0 20px; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: clamp(28px, 5vw, 44px); line-height: 1.12; text-wrap: balance;">{{ current.title }}</h1>
-      <div class="media-16x9" style="{{ current.cover }}">
-        <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(18,18,18,0.6), transparent 60%);"></div>
-      </div>
-      <div style="margin-bottom: 30px;"></div>
+      <sc-if value="{{ current.hasImage }}">
+        <div class="media-16x9" style="{{ current.cover }}">
+          <div style="position: absolute; inset: 0; background: linear-gradient(to top, rgba(18,18,18,0.6), transparent 60%);"></div>
+        </div>
+      </sc-if>
+      <div style="margin-bottom: 24px; border-top: 1px dashed #2A2A2A;"></div>
       <sc-for list="{{ currentBody }}" as="para" hint-placeholder-count="3">
         <p style="margin: 0 0 20px; color: #C9C9C9; font-size: 16.5px; line-height: 1.75;">{{ para }}</p>
       </sc-for>
@@ -60,9 +62,11 @@
       <p style="margin: 0 0 42px; color: #9A9A9A; font-size: 15px; max-width: 560px; line-height: 1.6;">Ce qui se passe sur le campus, raconté par l'équipage du BDE.</p>
       <div style="display: flex; flex-direction: column; gap: 22px;">
         <sc-for list="{{ articles }}" as="a" hint-placeholder-count="6">
-          <article onClick="{{ a.open }}" role="button" tabindex="0" class="news-card" style="display: grid; grid-template-columns: minmax(120px, 280px) 1fr; gap: clamp(16px, 3vw, 30px); background: #1E1E1E; border: 1px solid #2A2A2A; border-radius: 20px; padding: 16px; cursor: pointer; box-shadow: 0 10px 28px rgba(0,0,0,0.4);">
-            <div class="media-4x3" style="{{ a.cover }}"></div>
-            <div style="display: flex; flex-direction: column; gap: 8px; justify-content: center; padding-right: 8px;">
+          <article onClick="{{ a.open }}" role="button" tabindex="0" class="news-card {{ a.cardClass }}" style="display: grid; gap: clamp(16px, 3vw, 30px); background: #1E1E1E; border: 1px solid #2A2A2A; border-radius: 20px; padding: 16px; cursor: pointer; box-shadow: 0 10px 28px rgba(0,0,0,0.4);">
+            <sc-if value="{{ a.hasImage }}">
+              <div class="media-4x3" style="{{ a.cover }}"></div>
+            </sc-if>
+            <div class="news-body" style="display: flex; flex-direction: column; gap: 8px; justify-content: center; padding-right: 8px;">
               <span style="font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 0.12em; color: #D4AF37;">{{ a.date }}</span>
               <h2 style="margin: 0; font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: clamp(17px, 2.4vw, 22px); line-height: 1.25; text-wrap: pretty;">{{ a.title }}</h2>
               <p style="margin: 0; color: #9A9A9A; font-size: 14px; line-height: 1.55;">{{ a.chapo }}</p>
@@ -145,14 +149,16 @@ class Component extends DCLogic {
       empty: loaded && list.length === 0,
       current: sel
         ? { date: PearlLive.shortDate(sel.createdAt), title: sel.title,
-            cover: PearlLive.cover(sel.imageUrl) }
-        : { date: '', title: '', cover: PearlLive.cover(null) },
+            hasImage: !!sel.imageUrl, cover: PearlLive.cover(sel.imageUrl) }
+        : { date: '', title: '', hasImage: false, cover: PearlLive.cover(null) },
       currentBody: sel ? PearlLive.paragraphs(sel.body) : [],
       closeArticle: () => { this.setState({ selected: null }); window.scrollTo(0, 0); },
       articles: list.map((a) => ({
         date: PearlLive.shortDate(a.createdAt),
         title: a.title,
         chapo: PearlLive.excerpt(a.body, 150),
+        hasImage: !!a.imageUrl,
+        cardClass: a.imageUrl ? '' : 'no-media',
         cover: PearlLive.cover(a.imageUrl,
           'repeating-linear-gradient(45deg, #232323 0 12px, #1a1a1a 12px 24px)'),
         open: () => { this.setState({ selected: a.id }); window.scrollTo(0, 0); }

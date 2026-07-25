@@ -102,3 +102,24 @@ header > nav > a:not(.nav-link) { display: inline-block; padding: 14px 4px !impo
   header .nav-link,
   header > nav > a:not(.nav-link) { padding: 10px 9px !important; }
 }
+
+/* Actualités sans visuel.
+   Les actus n'ont plus de photo (upload retiré de l'app le 2026-07-25). Sans
+   traitement dédié, elles afficheraient le rectangle rayé de remplissage — ce
+   qui ressemble à une image cassée. On supprime donc le bloc image et on
+   assume une mise en page typographique. */
+
+/* Carte de la liste : une seule colonne quand il n'y a pas de visuel. */
+.news-card { grid-template-columns: minmax(120px, 280px) 1fr; }
+.news-card.no-media { grid-template-columns: 1fr; }
+.news-card.no-media .news-body { padding: 6px 4px; }
+
+/* Accueil : bandeau compact qui remplace la vignette et porte la pastille,
+   pour que les cartes gardent le même rythme dans la grille. */
+.card-band {
+  display: flex; align-items: center; gap: 10px;
+  padding: 18px 20px 0;
+}
+.card-band::after {
+  content: ""; flex: 1; border-top: 1px dashed #2A2A2A;
+}
