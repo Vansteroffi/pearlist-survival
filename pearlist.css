@@ -14,6 +14,11 @@ a:focus-visible, button:focus-visible { outline: 2px solid #D4AF37; outline-offs
 .nav-link { display: inline-block; padding: 14px 4px; color: #9A9A9A; text-decoration: none; border-bottom: 2px solid transparent; transition: color 0.2s ease, border-color 0.2s ease; }
 .nav-link:hover, .nav-link:focus-visible { color: #FFFFFF; border-bottom-color: #D4AF37; }
 
+/* Le lien de la page courante porte ses styles en ligne (couleur + soulignement)
+   et n'a donc pas la classe ci-dessus : sa boîte était deux fois moins haute et
+   son trait doré flottait à mi-hauteur au lieu de s'aligner sur les autres. */
+header > nav > a:not(.nav-link) { display: inline-block; padding: 14px 4px !important; }
+
 /* Footer (bloc noir) */
 .foot-social { display: inline-block; padding: 12px 6px; color: #9A9A9A; text-decoration: none; border-radius: 4px; transition: color 0.2s ease; }
 .foot-social:hover, .foot-social:focus-visible { color: #D4AF37; }
@@ -50,3 +55,50 @@ a:focus-visible, button:focus-visible { outline: 2px solid #D4AF37; outline-offs
 .media-16x9 { position: relative; border-radius: 20px; overflow: hidden; aspect-ratio: 16 / 9; }
 .media-4x3 { position: relative; border-radius: 14px; overflow: hidden; aspect-ratio: 4 / 3; }
 .media-cover { position: relative; border-radius: 22px; overflow: hidden; }
+
+/* Ligne d'un événement à venir : pastille date | texte | affiche.
+   L'affiche passe en pleine largeur sous le texte sur petit écran, sinon elle
+   écraserait le titre. Sans affiche, la mise en page reste sur deux colonnes. */
+.event-row { display: grid; grid-template-columns: 92px 1fr; gap: clamp(16px, 3vw, 28px); align-items: center; }
+.event-row.has-poster { grid-template-columns: 92px 1fr minmax(0, 200px); }
+.event-poster { border-radius: 14px; overflow: hidden; aspect-ratio: 4 / 3; width: 100%; }
+
+@media (max-width: 780px) {
+  .event-row.has-poster { grid-template-columns: 92px 1fr; }
+  .event-row.has-poster .event-poster { grid-column: 1 / -1; aspect-ratio: 16 / 9; }
+}
+
+/* En-tête sur téléphone.
+   À 375px la navigation ne disposait que de 166px à côté de la marque : ses
+   5 liens tombaient chacun sur une ligne, donnant un en-tête collant de 249px
+   (un quart de l'écran). Elle passe donc sous la marque, sur toute la largeur,
+   en une seule ligne défilante. */
+@media (max-width: 720px) {
+  header {
+    flex-wrap: wrap;
+    gap: 6px !important;
+    padding: 10px clamp(16px, 4vw, 24px) 0 !important;
+  }
+  header > a:first-child { flex: 1 1 auto; }
+
+  header > nav {
+    flex: 1 0 100%;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start;
+    gap: 2px !important;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    /* Déborde jusqu'aux bords : le défilement paraît naturel et le dernier
+       lien n'est pas collé au bord de l'écran. */
+    margin: 0 calc(-1 * clamp(16px, 4vw, 24px));
+    padding: 0 clamp(16px, 4vw, 24px);
+    scrollbar-width: none;
+  }
+  header > nav::-webkit-scrollbar { display: none; }
+
+  header > nav > a { white-space: nowrap; flex: 0 0 auto; }
+  /* Même boîte pour tous les liens, actif compris, sinon les soulignements
+     ne s'alignent pas entre eux. */
+  header .nav-link,
+  header > nav > a:not(.nav-link) { padding: 10px 9px !important; }
+}

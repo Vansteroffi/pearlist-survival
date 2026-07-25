@@ -39,7 +39,7 @@ const IMAGE_FIELDS = {
 const OUT_DIR = path.resolve("images");
 const DATA_FILE = path.resolve("data.json");
 
-const stats = { images: 0, echecs: 0, octets: 0 };
+const stats = { images: 0, echecs: 0, octets: 0, base64: 0 };
 
 /** Lecture d'une collection du miroir public. */
 async function fetchCollection(name) {
@@ -66,26 +66,66 @@ function extensionPour(contentType, url) {
 }
 
 /**
+ * Extension déduite des octets réels, et non du type déclaré : certaines
+ * images de la base annoncent `image/png` alors que leur contenu est un JPEG.
+ */
+function extensionDepuisContenu(buffer) {
+  if (buffer.length < 12) return null;
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return ".jpg";
+  if (buffer.toString("ascii", 1, 4) === "PNG") return ".png";
+  if (buffer.toString("ascii", 0, 3) === "GIF") return ".gif";
+  if (buffer.toString("ascii", 0, 4) === "RIFF" && buffer.toString("ascii", 8, 12) === "WEBP")
+    return ".webp";
+  return null;
+}
+
+/** Écrit un buffer d'image dans ./images et renvoie son chemin relatif. */
+async function ecrireImage(buffer, extensionParDefaut) {
+  const ext = extensionDepuisContenu(buffer) || extensionParDefaut || ".jpg";
+  const nom = createHash("sha1").update(buffer).digest("hex").slice(0, 16) + ext;
+  await writeFile(path.join(OUT_DIR, nom), buffer);
+  stats.images++;
+  stats.octets += buffer.length;
+  return `images/${nom}`;
+}
+
+/**
  * Télécharge une image et renvoie son chemin local.
  * En cas d'échec, renvoie l'URL d'origine : une image servie à distance vaut
  * mieux qu'une image manquante.
  */
 async function rapatrierImage(url) {
-  if (!url || typeof url !== "string" || !/^https?:\/\//i.test(url)) return url;
+  if (!url || typeof url !== "string") return url;
+
+  // Certains logos sont stockés en base64 directement dans la base. Laissés
+  // tels quels, ils gonflent `data.json` — qui est retéléchargé sur CHAQUE
+  // page — de plusieurs centaines de kilo-octets. On les sort en fichiers.
+  const dataUri = /^data:image\/[a-z0-9.+-]+;base64,(.+)$/i.exec(url);
+  if (dataUri) {
+    try {
+      const buffer = Buffer.from(dataUri[1], "base64");
+      if (!buffer.length) throw new Error("contenu vide");
+      const chemin = await ecrireImage(buffer);
+      stats.base64++;
+      return chemin;
+    } catch (err) {
+      stats.echecs++;
+      console.warn(`  ⚠ image base64 illisible (${err.message})`);
+      return url;
+    }
+  }
+
+  if (!/^https?:\/\//i.test(url)) return url;
 
   try {
     const res = await fetch(url);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
     const buffer = Buffer.from(await res.arrayBuffer());
-    const nom =
-      createHash("sha1").update(url).digest("hex").slice(0, 16) +
-      extensionPour(res.headers.get("content-type"), url);
-
-    await writeFile(path.join(OUT_DIR, nom), buffer);
-    stats.images++;
-    stats.octets += buffer.length;
-    return `images/${nom}`;
+    return await ecrireImage(
+      buffer,
+      extensionPour(res.headers.get("content-type"), url),
+    );
   } catch (err) {
     stats.echecs++;
     console.warn(`  ⚠ image non rapatriée (${err.message}) : ${url.slice(0, 70)}`);
