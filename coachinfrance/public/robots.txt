@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /merci
+
+Sitemap: https://www.coachinfrance.fr/sitemap-index.xml

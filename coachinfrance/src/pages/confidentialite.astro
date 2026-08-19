@@ -1,0 +1,56 @@
+---
+import PageTexte from "../components/PageTexte.astro";
+import { site } from "../lib/site";
+---
+
+<PageTexte
+  surtitre="Vos données"
+  titre="Politique de confidentialité"
+  description="Comment Coach in France collecte, utilise et protège vos données personnelles."
+>
+  <p>
+    {site.nom} attache de l'importance à la protection de vos données. Cette page
+    explique, sans jargon, ce que nous collectons et pourquoi.
+  </p>
+
+  <h2>Ce que nous collectons</h2>
+  <p>
+    Uniquement ce que vous nous transmettez volontairement via le formulaire de
+    contact : nom, prénom, adresse e-mail, téléphone, profil, formation visée et
+    contenu de votre message.
+  </p>
+
+  <h2>Pourquoi</h2>
+  <p>
+    Pour répondre à votre demande, étudier votre candidature et, le cas échéant,
+    vous accompagner dans votre inscription. Ces données ne sont ni revendues,
+    ni cédées, ni utilisées à des fins publicitaires.
+  </p>
+
+  <h2>Combien de temps</h2>
+  <p>
+    Les demandes sans suite sont conservées 12 mois. Les dossiers de candidature
+    aboutis suivent les durées légales applicables aux organismes de formation.
+  </p>
+
+  <h2>Traceurs et statistiques</h2>
+  <p>
+    Ce site ne dépose aucun cookie publicitaire et n'utilise aucun traceur
+    tiers. Aucune bannière de consentement n'est donc nécessaire.
+  </p>
+
+  <h2>Vos droits</h2>
+  <p>
+    Vous disposez d'un droit d'accès, de rectification, d'effacement,
+    d'opposition et de portabilité sur vos données. Pour l'exercer, écrivez à
+    <a href={`mailto:${site.email}`}>{site.email}</a>. Vous pouvez également
+    introduire une réclamation auprès de la CNIL
+    (<a href="https://www.cnil.fr" rel="noopener noreferrer" target="_blank">cnil.fr</a>).
+  </p>
+
+  <p class="a-completer">
+    À COMPLÉTER : identité et coordonnées du délégué à la protection des données
+    s'il en existe un, et liste des sous-traitants utilisés (hébergeur,
+    messagerie, outil de gestion des candidatures).
+  </p>
+</PageTexte>

@@ -1,0 +1,47 @@
+---
+import Base from "../../layouts/Base.astro";
+import CarteInterview from "../../components/CarteInterview.astro";
+import EnteteRubrique from "../../components/EnteteRubrique.astro";
+import AppelAction from "../../components/AppelAction.astro";
+import { getCollection } from "astro:content";
+import { estPublie, parDateDecroissante } from "../../lib/format";
+
+const interviews = (await getCollection("interviews"))
+  .filter(estPublie)
+  .sort(parDateDecroissante);
+---
+
+<Base
+  titre="Interviews"
+  description="Apprentis, coachs et dirigeants de clubs racontent leur parcours avec Coach in France."
+>
+  <EnteteRubrique
+    surtitre="Interviews"
+    titre="Les voix du terrain"
+    texte="Ceux qui sont passés par là en parlent mieux que nous. Apprentis, éducateurs, dirigeants de clubs : ils racontent leur parcours."
+  />
+
+  <section class="section-tight">
+    <div class="wrap">
+      {interviews.length > 0 ? (
+        <div class="grid cols-3 reveal">
+          {interviews.map((i) => (
+            <CarteInterview
+              href={`/interviews/${i.id}`}
+              nom={i.data.nom}
+              role={i.data.role}
+              citation={i.data.citation}
+              portrait={i.data.portrait}
+              alt={i.data.alt}
+              club={i.data.club}
+            />
+          ))}
+        </div>
+      ) : (
+        <p>Aucune interview publiée pour l'instant.</p>
+      )}
+    </div>
+  </section>
+
+  <AppelAction />
+</Base>

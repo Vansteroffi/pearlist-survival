@@ -1,0 +1,68 @@
+---
+import Base from "../layouts/Base.astro";
+import EnteteRubrique from "../components/EnteteRubrique.astro";
+import MurPartenaires from "../components/MurPartenaires.astro";
+import AppelAction from "../components/AppelAction.astro";
+---
+
+<Base
+  titre="Partenaires"
+  description="Les clubs professionnels, clubs amateurs de haut niveau et entreprises qui accueillent les apprentis de Coach in France."
+>
+  <EnteteRubrique
+    surtitre="Notre réseau"
+    titre="Les structures qui forment avec nous"
+    texte="Un apprenti n'apprend pas seul. Ces clubs et ces entreprises ouvrent leurs portes, encadrent et transmettent — partout en France."
+  />
+
+  <section class="section-tight">
+    <div class="wrap reveal">
+      <MurPartenaires />
+    </div>
+  </section>
+
+  <section class="section paper-2">
+    <div class="wrap devenir">
+      <div class="reveal">
+        <p class="eyebrow">Vous êtes un club ?</p>
+        <h2 class="t-h1">Accueillir un apprenti ne vous coûte presque rien</h2>
+        <p class="lede">
+          L'apprentissage est massivement financé. En échange, vous formez un
+          futur professionnel à votre culture de club, et vous gagnez une paire
+          de bras compétente toute la saison.
+        </p>
+        <a href="/contact" class="btn btn-primary">Devenir club partenaire</a>
+      </div>
+      <ul class="etapes reveal">
+        <li><span>1</span><div><h3>On échange</h3><p>Un appel pour comprendre vos besoins et le poste à pourvoir.</p></div></li>
+        <li><span>2</span><div><h3>On présélectionne</h3><p>Vous recevez des profils déjà filtrés, motivés et briefés.</p></div></li>
+        <li><span>3</span><div><h3>On gère l'administratif</h3><p>Contrat d'apprentissage, OPCO, suivi pédagogique : on s'en occupe.</p></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <AppelAction />
+</Base>
+
+<style>
+  .devenir { display: grid; gap: var(--s12); }
+  @media (min-width: 960px) {
+    .devenir { grid-template-columns: 1fr 1fr; gap: var(--s16); align-items: center; }
+  }
+  .devenir .lede { margin-block: var(--s6); }
+
+  .etapes { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s6); }
+  .etapes li { display: grid; grid-template-columns: auto 1fr; gap: var(--s4); align-items: start; }
+  .etapes span {
+    display: grid;
+    place-items: center;
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--ink-900);
+    color: var(--accent);
+    font-family: var(--font-display);
+    font-weight: 800;
+  }
+  .etapes h3 { font-family: var(--font-display); font-size: 1.125rem; margin-bottom: var(--s1); }
+  .etapes p { margin: 0; color: var(--text-soft); font-size: 0.9375rem; }
+</style>

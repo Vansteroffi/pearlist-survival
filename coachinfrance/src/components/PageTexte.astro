@@ -1,0 +1,31 @@
+---
+import Base from "../layouts/Base.astro";
+import EnteteRubrique from "./EnteteRubrique.astro";
+
+interface Props {
+  surtitre: string;
+  titre: string;
+  description: string;
+}
+const { surtitre, titre, description } = Astro.props;
+---
+
+<Base titre={titre} description={description}>
+  <EnteteRubrique surtitre={surtitre} titre={titre} />
+  <section class="section-tight">
+    <div class="wrap">
+      <div class="prose"><slot /></div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .prose { margin-inline: auto; }
+  .prose :global(.a-completer) {
+    padding: var(--s4);
+    border-left: 4px solid var(--accent);
+    background: var(--paper-2);
+    font-size: 0.9375rem;
+    color: var(--text-soft);
+  }
+</style>

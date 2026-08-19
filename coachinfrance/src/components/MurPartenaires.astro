@@ -1,0 +1,75 @@
+---
+import { getCollection } from "astro:content";
+
+interface Props {
+  /** Limite d'affichage — l'accueil n'en montre qu'un extrait. */
+  limite?: number;
+}
+const { limite } = Astro.props;
+
+const tous = (await getCollection("partenaires")).sort(
+  (a, b) => a.data.ordre - b.data.ordre || a.data.nom.localeCompare(b.data.nom, "fr"),
+);
+const partenaires = limite ? tous.slice(0, limite) : tous;
+---
+
+{partenaires.length > 0 && (
+  <ul class="mur">
+    {partenaires.map((p) => {
+      const contenu = p.data.logo
+        ? <img src={p.data.logo} alt={p.data.nom} loading="lazy" decoding="async" width="220" height="110" />
+        : <span class="nom">{p.data.nom}</span>;
+      return (
+        <li>
+          {p.data.lien
+            ? <a href={p.data.lien} target="_blank" rel="noopener noreferrer" title={p.data.nom}>{contenu}</a>
+            : contenu}
+        </li>
+      );
+    })}
+  </ul>
+)}
+
+<style>
+  .mur {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    background: var(--line);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+  .mur li {
+    display: grid;
+    place-items: center;
+    min-height: 118px;
+    padding: var(--s6);
+    background: var(--paper);
+    transition: background-color 0.3s var(--ease);
+  }
+  .mur li:hover { background: var(--paper-2); }
+  .mur a { display: grid; place-items: center; width: 100%; height: 100%; text-decoration: none; }
+  .mur img {
+    max-height: 62px;
+    width: auto;
+    object-fit: contain;
+    /* Les logos partenaires arrivent avec des couleurs très différentes : on
+     * les neutralise au repos pour garder un mur homogène, la couleur revient
+     * au survol. */
+    filter: grayscale(1);
+    opacity: 0.6;
+    transition: filter 0.3s var(--ease), opacity 0.3s var(--ease);
+  }
+  .mur li:hover img { filter: none; opacity: 1; }
+  .nom {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.9375rem;
+    text-align: center;
+    color: var(--text-soft);
+  }
+</style>

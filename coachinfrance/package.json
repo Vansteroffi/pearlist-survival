@@ -1,0 +1,20 @@
+{
+  "name": "coachinfrance",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Site vitrine Coach in France — organisme de formation & CFA sport (Vannes)",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.3",
+    "@fontsource-variable/archivo": "^5.3.0",
+    "@fontsource-variable/inter": "^5.3.0",
+    "astro": "^5.18.2",
+    "sharp": "^0.35.3"
+  }
+}

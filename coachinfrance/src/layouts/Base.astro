@@ -1,0 +1,96 @@
+---
+import "@fontsource-variable/archivo";
+import "@fontsource-variable/inter";
+import "../styles/global.css";
+import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
+import { site } from "../lib/site";
+
+interface Props {
+  titre: string;
+  description: string;
+  /** Image de partage (Open Graph). Chemin absolu depuis la racine du site. */
+  image?: string;
+  /** Empêche l'indexation — utile pour les pages techniques. */
+  noindex?: boolean;
+}
+
+const { titre, description, image = "/og-default.jpg", noindex = false } = Astro.props;
+const titreComplet = titre === site.nom ? titre : `${titre} — ${site.nom}`;
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+
+// Données structurées : permet à Google d'afficher l'organisme correctement.
+const schema = {
+  "@context": "https://schema.org",
+  "@type": "EducationalOrganization",
+  name: site.nom,
+  url: site.url,
+  email: site.email,
+  address: {
+    "@type": "PostalAddress",
+    streetAddress: site.adresse.rue,
+    postalCode: site.adresse.codePostal,
+    addressLocality: site.adresse.ville,
+    addressCountry: "FR",
+  },
+  sameAs: [site.reseaux.instagram, site.reseaux.linkedin],
+};
+---
+
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="canonical" href={canonical} />
+    <title>{titreComplet}</title>
+    <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex" />}
+    <meta name="theme-color" content="#070a0f" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={site.nom} />
+    <meta property="og:title" content={titreComplet} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={new URL(image, Astro.site).href} />
+    <meta property="og:locale" content="fr_FR" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="sitemap" href="/sitemap-index.xml" />
+    <script type="application/ld+json" set:html={JSON.stringify(schema)} />
+  </head>
+  <body>
+    <a class="skip-link" href="#contenu">Aller au contenu</a>
+    <Header />
+    <main id="contenu">
+      <slot />
+    </main>
+    <Footer />
+
+    <script>
+      // Révélation progressive des blocs au scroll. Purement décoratif : sans
+      // JavaScript, tout reste visible (la classe .is-in n'est jamais requise
+      // pour lire la page, c'est l'absence de JS qui garde .reveal invisible —
+      // on retire donc l'opacité de départ dès que le script s'exécute).
+      const cibles = document.querySelectorAll<HTMLElement>(".reveal");
+      if (cibles.length) {
+        const observateur = new IntersectionObserver(
+          (entrees) => {
+            for (const entree of entrees) {
+              if (!entree.isIntersecting) continue;
+              entree.target.classList.add("is-in");
+              observateur.unobserve(entree.target);
+            }
+          },
+          { rootMargin: "0px 0px -8% 0px", threshold: 0.08 },
+        );
+        cibles.forEach((cible) => observateur.observe(cible));
+      }
+    </script>
+    <noscript>
+      <style>.reveal { opacity: 1 !important; transform: none !important; }</style>
+    </noscript>
+  </body>
+</html>

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Administration — Coach in France</title>
+    <style>
+      /* Écran affiché le temps que l'interface se charge : sans lui, la page
+       * reste blanche quelques secondes, ce qui laisse croire à une panne. */
+      html, body { margin: 0; height: 100%; }
+      #chargement {
+        position: fixed;
+        inset: 0;
+        display: grid;
+        place-content: center;
+        justify-items: center;
+        gap: 18px;
+        background: #070a0f;
+        color: #fff;
+        font-family: system-ui, sans-serif;
+        text-align: center;
+        padding: 24px;
+      }
+      #chargement .marque {
+        display: grid;
+        place-items: center;
+        width: 56px; height: 56px;
+        border-radius: 16px;
+        background: #00e47a;
+        color: #04140b;
+        font-weight: 800;
+        font-size: 1.2rem;
+      }
+      #chargement p { margin: 0; color: #9fb0c2; font-size: 0.9rem; }
+    </style>
+  </head>
+  <body>
+    <div id="chargement">
+      <span class="marque">CF</span>
+      <strong>Espace d'administration</strong>
+      <p>Chargement de l'interface…</p>
+    </div>
+
+    <script src="https://unpkg.com/decap-cms@3.8.3/dist/decap-cms.js"></script>
+    <script>
+      // Une fois l'interface prête, l'écran de chargement disparaît.
+      window.addEventListener("load", () => {
+        setTimeout(() => document.getElementById("chargement")?.remove(), 1200);
+      });
+
+      // Après publication, on prévient l'auteur que la mise en ligne prend une
+      // minute : sans ce message, on croit que « ça n'a pas marché » et on
+      // republie en boucle.
+      window.CMS?.registerEventListener({
+        name: "postPublish",
+        handler: () => {
+          alert(
+            "C'est publié. La mise en ligne prend environ une minute :\n" +
+              "rechargez le site public dans un instant pour voir le résultat.",
+          );
+        },
+      });
+    </script>
+  </body>
+</html>

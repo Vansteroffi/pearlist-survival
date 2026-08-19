@@ -1,0 +1,35 @@
+---
+interface Props {
+  surtitre: string;
+  titre: string;
+  texte?: string;
+}
+const { surtitre, titre, texte } = Astro.props;
+---
+
+<section class="entete-rubrique on-ink">
+  <div class="wrap">
+    <p class="eyebrow">{surtitre}</p>
+    <h1 class="t-h1">{titre}</h1>
+    {texte && <p class="lede">{texte}</p>}
+  </div>
+</section>
+
+<style>
+  .entete-rubrique {
+    position: relative;
+    padding-block: clamp(var(--s16), 10vw, var(--s24)) clamp(var(--s12), 7vw, var(--s16));
+    overflow: hidden;
+  }
+  .entete-rubrique::before {
+    content: "";
+    position: absolute;
+    inset: -50% -20% auto auto;
+    width: 560px; height: 560px;
+    background: radial-gradient(circle, rgba(0, 228, 122, 0.2), transparent 65%);
+    pointer-events: none;
+  }
+  .wrap { position: relative; }
+  h1 { max-width: 18ch; }
+  .lede { margin-top: var(--s6); max-width: 58ch; }
+</style>

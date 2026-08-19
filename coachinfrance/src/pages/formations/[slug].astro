@@ -1,0 +1,195 @@
+---
+import Base from "../../layouts/Base.astro";
+import AppelAction from "../../components/AppelAction.astro";
+import { getCollection, render } from "astro:content";
+import { estPublie } from "../../lib/format";
+
+export async function getStaticPaths() {
+  const formations = (await getCollection("formations")).filter(estPublie);
+  return formations.map((formation) => ({
+    params: { slug: formation.id },
+    props: { formation },
+  }));
+}
+
+const { formation } = Astro.props;
+const { data } = formation;
+const { Content } = await render(formation);
+
+const fiche = [
+  { libelle: "Niveau", valeur: data.niveau },
+  { libelle: "Durée", valeur: data.duree },
+  { libelle: "Rythme", valeur: data.rythme },
+  { libelle: "Lieu", valeur: data.lieu },
+  { libelle: "Prérequis", valeur: data.prerequis },
+  { libelle: "Tarif", valeur: data.tarif },
+].filter((l) => l.valeur);
+---
+
+<Base titre={data.titre} description={data.accroche} image={data.visuel}>
+  <article>
+    <header class="tete on-ink">
+      <div class:list={["wrap", "tete-inner", { "avec-visuel": data.visuel }]}>
+        <div>
+          <p class="eyebrow">Formation</p>
+          <h1 class="t-h1">{data.titre}</h1>
+          <p class="lede">{data.accroche}</p>
+          <a href="/contact" class="btn btn-primary">Candidater à cette formation</a>
+        </div>
+        {data.visuel && (
+          <img class="visuel" src={data.visuel} alt={data.alt ?? ""} width="720" height="480" />
+        )}
+      </div>
+    </header>
+
+    {fiche.length > 0 && (
+      <section class="bandeau-fiche">
+        <div class="wrap">
+          <dl>
+            {fiche.map((l) => (
+              <div>
+                <dt>{l.libelle}</dt>
+                <dd>{l.valeur}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+    )}
+
+    <section class="section-tight">
+      <div class="wrap corps">
+        <div class="prose">
+          <Content />
+        </div>
+
+        <aside class="colonne">
+          {data.objectifs.length > 0 && (
+            <div class="bloc">
+              <h2>Objectifs</h2>
+              <ul class="coches">{data.objectifs.map((o) => <li>{o}</li>)}</ul>
+            </div>
+          )}
+
+          {data.debouches.length > 0 && (
+            <div class="bloc">
+              <h2>Débouchés</h2>
+              <ul class="coches">{data.debouches.map((d) => <li>{d}</li>)}</ul>
+            </div>
+          )}
+
+          {data.sessions.length > 0 && (
+            <div class="bloc">
+              <h2>Prochaines sessions</h2>
+              <ul class="sessions">
+                {data.sessions.map((s) => (
+                  <li>
+                    <strong>{s.debut}</strong>
+                    {s.places && <span>{s.places}</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {data.indicateurs.length > 0 && (
+            <div class="bloc bloc-indicateurs">
+              <h2>Indicateurs de résultats</h2>
+              <ul class="indicateurs">
+                {data.indicateurs.map((i) => (
+                  <li>
+                    <span class="valeur">{i.valeur}</span>
+                    <span class="libelle">{i.libelle}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </aside>
+      </div>
+    </section>
+  </article>
+
+  <AppelAction titre={`Envie de rejoindre le ${data.titre} ?`} />
+</Base>
+
+<style>
+  .tete { padding-block: clamp(var(--s16), 9vw, var(--s24)) var(--s12); }
+  .tete-inner { display: grid; gap: var(--s8); align-items: center; }
+  .tete h1 { max-width: 16ch; }
+  .tete .lede { margin-block: var(--s6) var(--s8); max-width: 50ch; }
+  .visuel { border-radius: var(--radius-lg); object-fit: cover; aspect-ratio: 3 / 2; width: 100%; }
+  @media (min-width: 960px) {
+    .avec-visuel { grid-template-columns: 1.1fr 0.9fr; gap: var(--s16); }
+  }
+
+  .bandeau-fiche { background: var(--paper-2); border-bottom: 1px solid var(--line); }
+  .bandeau-fiche dl {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+    gap: var(--s6);
+    margin: 0;
+    padding-block: var(--s8);
+  }
+  .bandeau-fiche dt {
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+    margin-bottom: var(--s1);
+  }
+  .bandeau-fiche dd { margin: 0; font-weight: 600; font-size: 1.0625rem; }
+
+  .corps { display: grid; gap: var(--s12); }
+  @media (min-width: 1000px) {
+    .corps { grid-template-columns: minmax(0, 1fr) 340px; gap: var(--s16); align-items: start; }
+    .colonne { position: sticky; top: 110px; }
+  }
+
+  .colonne { display: grid; gap: var(--s6); }
+  .bloc { padding: var(--s6); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+  .bloc h2 {
+    font-size: 0.75rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+    margin-bottom: var(--s4);
+  }
+  .bloc ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); }
+
+  .coches li { position: relative; padding-left: 1.6rem; font-size: 0.9375rem; }
+  .coches li::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0.55em;
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+  }
+
+  .sessions li {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--s3);
+    padding-bottom: var(--s3);
+    border-bottom: 1px solid var(--line);
+    font-size: 0.9375rem;
+  }
+  .sessions li:last-child { border-bottom: 0; padding-bottom: 0; }
+  .sessions span { color: var(--text-soft); }
+
+  .bloc-indicateurs { background: var(--ink-900); border-color: transparent; color: #fff; }
+  .bloc-indicateurs h2 { color: var(--text-on-ink-soft); }
+  .indicateurs li { display: grid; gap: 2px; }
+  .indicateurs .valeur {
+    font-family: var(--font-display);
+    font-size: 1.75rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--accent);
+    line-height: 1;
+  }
+  .indicateurs .libelle { font-size: 0.8125rem; color: var(--text-on-ink-soft); }
+</style>

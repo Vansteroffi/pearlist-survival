@@ -1,0 +1,106 @@
+---
+import Base from "../layouts/Base.astro";
+import EnteteRubrique from "../components/EnteteRubrique.astro";
+import Chiffres from "../components/Chiffres.astro";
+import AppelAction from "../components/AppelAction.astro";
+import { site } from "../lib/site";
+
+const chiffres = [
+  { valeur: "Vannes", libelle: "Notre base, en plein centre du Morbihan" },
+  { valeur: "Qualiopi", libelle: "Formation, apprentissage, bilans de compétences et VAE" },
+  { valeur: "SARL", libelle: "Société constituée en juin 2022, après cinq ans d'activité" },
+];
+---
+
+<Base
+  titre="Le centre"
+  description="Coach in France est un organisme de formation et un CFA spécialisé dans le sport, basé à Vannes et certifié Qualiopi."
+>
+  <EnteteRubrique
+    surtitre="Le centre"
+    titre="Un CFA du sport, pensé par des passionnés"
+    texte="Coach in France est né d'un constat simple : beaucoup de jeunes veulent vivre du sport, très peu savent par où commencer. On a construit le chemin."
+  />
+
+  <section class="section">
+    <div class="wrap deux-col">
+      <div class="prose reveal">
+        <h2>Notre histoire</h2>
+        <p>
+          Coach in France s'est d'abord construit comme une microentreprise, au
+          contact des clubs bretons. Cinq ans plus tard, en juin 2022, la
+          structure devient une SARL et se dote d'un centre de formation des
+          apprentis à part entière.
+        </p>
+        <p>
+          Depuis Vannes, nous développons un réseau de clubs partenaires sur tout
+          le territoire — professionnels comme amateurs de haut niveau — pour que
+          chaque apprenti trouve une structure qui lui ressemble.
+        </p>
+
+        <h2>Notre engagement pour les profils atypiques</h2>
+        <p>
+          Le sport est souvent le terrain où les personnes neuro-atypiques — HPI,
+          DYS, TDA, TDAH — expriment le mieux leurs talents. Nos parcours sont
+          conçus pour en tenir compte : rythme adapté, supports repensés,
+          accompagnement individualisé. Un référent handicap est à votre écoute.
+        </p>
+
+        <h2>Nos certifications</h2>
+        <p>
+          Coach in France est certifié <strong>Qualiopi</strong> au titre des
+          catégories suivantes : {site.qualiopi.toLowerCase()}. Cette
+          certification atteste de la qualité de nos processus et rend nos
+          formations éligibles aux financements publics et mutualisés.
+        </p>
+        <p class="note">
+          À COMPLÉTER : numéro de déclaration d'activité, numéro UAI du CFA,
+          numéro de certificat Qualiopi et organisme certificateur.
+        </p>
+      </div>
+
+      <aside class="encart reveal">
+        <h2>Nous rendre visite</h2>
+        <address>
+          {site.adresse.rue}<br />
+          {site.adresse.codePostal} {site.adresse.ville}
+        </address>
+        <p><a href={`mailto:${site.email}`} class="link-arrow">{site.email}</a></p>
+        <a href="/contact" class="btn btn-primary">Nous contacter</a>
+      </aside>
+    </div>
+  </section>
+
+  <section class="on-ink section-tight">
+    <div class="wrap"><Chiffres items={chiffres} /></div>
+  </section>
+
+  <AppelAction />
+</Base>
+
+<style>
+  .deux-col { display: grid; gap: var(--s12); }
+  @media (min-width: 1000px) {
+    .deux-col { grid-template-columns: minmax(0, 1fr) 320px; gap: var(--s16); align-items: start; }
+    .encart { position: sticky; top: 110px; }
+  }
+  .prose h2:first-child { margin-top: 0; }
+  .note {
+    padding: var(--s4);
+    border-left: 4px solid var(--accent);
+    background: var(--paper-2);
+    font-size: 0.9375rem;
+    color: var(--text-soft);
+  }
+  .encart {
+    display: grid;
+    gap: var(--s4);
+    justify-items: start;
+    padding: var(--s8);
+    border-radius: var(--radius-lg);
+    background: var(--paper-2);
+  }
+  .encart h2 { font-family: var(--font-display); font-size: 1.125rem; }
+  address { font-style: normal; line-height: 1.7; }
+  .encart p { margin: 0; }
+</style>

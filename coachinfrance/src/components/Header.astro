@@ -1,0 +1,181 @@
+---
+import { nav } from "../lib/site";
+
+const { pathname } = Astro.url;
+const estActif = (href: string) => pathname === href || pathname.startsWith(href + "/");
+---
+
+<header class="site-header" data-header>
+  <div class="wrap-wide bar">
+    <a href="/" class="brand" aria-label="Coach in France — accueil">
+      <span class="brand-mark" aria-hidden="true">CF</span>
+      <span class="brand-text">
+        <strong>Coach in France</strong>
+        <small>Organisme de formation & CFA sport</small>
+      </span>
+    </a>
+
+    <nav class="nav-desktop" aria-label="Navigation principale">
+      {nav.map((item) => (
+        <a href={item.href} class:list={["nav-link", { actif: estActif(item.href) }]}>
+          {item.libelle}
+        </a>
+      ))}
+    </nav>
+
+    <div class="header-actions">
+      <a href="/contact" class="btn btn-primary btn-sm">Candidater</a>
+      <button class="burger" type="button" aria-expanded="false" aria-controls="menu-mobile" data-burger>
+        <span class="sr-only">Ouvrir le menu</span>
+        <span aria-hidden="true"></span>
+        <span aria-hidden="true"></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="menu-mobile" id="menu-mobile" hidden data-menu>
+    <nav aria-label="Navigation mobile">
+      {nav.map((item) => <a href={item.href}>{item.libelle}</a>)}
+      <a href="/contact" class="mobile-cta">Candidater</a>
+    </nav>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: rgba(7, 10, 15, 0.72);
+    backdrop-filter: blur(14px) saturate(150%);
+    border-bottom: 1px solid var(--line-ink);
+    color: #fff;
+    transition: background-color 0.3s var(--ease);
+  }
+  .site-header[data-scrolled] { background: rgba(7, 10, 15, 0.94); }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s6);
+    min-height: 76px;
+  }
+
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s3);
+    text-decoration: none;
+    color: inherit;
+  }
+  .brand-mark {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 1.05rem;
+    letter-spacing: -0.04em;
+  }
+  .brand-text { display: flex; flex-direction: column; line-height: 1.15; }
+  .brand-text strong {
+    font-family: var(--font-display);
+    font-size: 1.0625rem;
+    letter-spacing: -0.02em;
+  }
+  .brand-text small { font-size: 0.6875rem; color: var(--text-on-ink-soft); }
+
+  .nav-desktop { display: none; gap: var(--s6); }
+  .nav-link {
+    position: relative;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    text-decoration: none;
+    color: rgba(255, 255, 255, 0.82);
+    padding-block: var(--s2);
+    transition: color 0.2s var(--ease);
+  }
+  .nav-link:hover, .nav-link.actif { color: #fff; }
+  .nav-link::after {
+    content: "";
+    position: absolute;
+    left: 0; bottom: 0;
+    height: 2px;
+    width: 100%;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s var(--ease);
+  }
+  .nav-link:hover::after, .nav-link.actif::after { transform: scaleX(1); }
+
+  .header-actions { display: flex; align-items: center; gap: var(--s3); }
+  .btn-sm { padding: 0.6rem 1.15rem; font-size: 0.875rem; }
+
+  .burger {
+    display: grid;
+    place-content: center;
+    gap: 5px;
+    width: 44px; height: 44px;
+    background: transparent;
+    border: 1px solid var(--line-ink);
+    border-radius: 12px;
+    cursor: pointer;
+  }
+  .burger span[aria-hidden] {
+    display: block;
+    width: 18px; height: 2px;
+    background: #fff;
+    transition: transform 0.3s var(--ease), opacity 0.2s var(--ease);
+  }
+  .burger[aria-expanded="true"] span:first-of-type { transform: translateY(3.5px) rotate(45deg); }
+  .burger[aria-expanded="true"] span:last-of-type { transform: translateY(-3.5px) rotate(-45deg); }
+
+  .menu-mobile { border-top: 1px solid var(--line-ink); background: var(--ink-900); }
+  .menu-mobile nav { display: flex; flex-direction: column; padding: var(--s4) 1.25rem var(--s8); }
+  .menu-mobile a {
+    padding: var(--s4) 0;
+    font-family: var(--font-display);
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-decoration: none;
+    border-bottom: 1px solid var(--line-ink);
+  }
+  .mobile-cta { color: var(--accent); }
+
+  @media (min-width: 1000px) {
+    .nav-desktop { display: flex; }
+    .burger { display: none; }
+  }
+  @media (max-width: 460px) {
+    .brand-text small { display: none; }
+    .header-actions .btn { display: none; }
+  }
+</style>
+
+<script>
+  const header = document.querySelector<HTMLElement>("[data-header]");
+  const burger = document.querySelector<HTMLButtonElement>("[data-burger]");
+  const menu = document.querySelector<HTMLElement>("[data-menu]");
+
+  // L'en-tête s'opacifie dès qu'on quitte le haut de page, pour rester lisible
+  // au-dessus des photos claires.
+  const majScroll = () => {
+    if (!header) return;
+    header.toggleAttribute("data-scrolled", window.scrollY > 12);
+  };
+  majScroll();
+  window.addEventListener("scroll", majScroll, { passive: true });
+
+  burger?.addEventListener("click", () => {
+    const ouvert = burger.getAttribute("aria-expanded") === "true";
+    burger.setAttribute("aria-expanded", String(!ouvert));
+    if (menu) menu.hidden = ouvert;
+  });
+</script>

@@ -1,0 +1,41 @@
+---
+interface Props {
+  items: { valeur: string; libelle: string }[];
+}
+const { items } = Astro.props;
+---
+
+<ul class="chiffres">
+  {items.map((item) => (
+    <li class="reveal">
+      <span class="valeur">{item.valeur}</span>
+      <span class="libelle">{item.libelle}</span>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .chiffres {
+    display: grid;
+    gap: var(--s8) var(--s6);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .chiffres li { display: grid; gap: var(--s2); }
+  .valeur {
+    font-family: var(--font-display);
+    font-size: clamp(2.75rem, 5.5vw, 4.25rem);
+    font-weight: 800;
+    line-height: 0.95;
+    letter-spacing: -0.045em;
+    color: var(--accent);
+  }
+  .libelle {
+    font-size: 0.9375rem;
+    line-height: 1.4;
+    color: var(--text-on-ink-soft);
+    max-width: 22ch;
+  }
+</style>

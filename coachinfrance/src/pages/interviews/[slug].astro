@@ -1,0 +1,74 @@
+---
+import Base from "../../layouts/Base.astro";
+import AppelAction from "../../components/AppelAction.astro";
+import { getCollection, render } from "astro:content";
+import { estPublie, dateLongue, dateIso } from "../../lib/format";
+
+export async function getStaticPaths() {
+  const interviews = (await getCollection("interviews")).filter(estPublie);
+  return interviews.map((interview) => ({
+    params: { slug: interview.id },
+    props: { interview },
+  }));
+}
+
+const { interview } = Astro.props;
+const { data } = interview;
+const { Content } = await render(interview);
+---
+
+<Base
+  titre={`${data.nom} — ${data.role}`}
+  description={data.citation}
+  image={data.portrait}
+>
+  <article>
+    <header class="tete on-ink">
+      <div class:list={["wrap", "tete-inner", { "avec-portrait": data.portrait }]}>
+        <div>
+          <p class="eyebrow">Interview</p>
+          <h1 class="t-h1">{data.nom}</h1>
+          <p class="role">{data.role}{data.club ? ` · ${data.club}` : ""}</p>
+          <blockquote class="citation">« {data.citation} »</blockquote>
+          <p class="meta">
+            <time datetime={dateIso(data.date)}>{dateLongue(data.date)}</time>
+            {data.formation && <> · Formation : {data.formation}</>}
+          </p>
+        </div>
+        {data.portrait && (
+          <img class="portrait" src={data.portrait} alt={data.alt ?? `Portrait de ${data.nom}`} width="640" height="800" />
+        )}
+      </div>
+    </header>
+
+    <div class="wrap corps">
+      <div class="prose"><Content /></div>
+    </div>
+  </article>
+
+  <AppelAction titre="Le prochain portrait, c'est peut-être le tien" />
+</Base>
+
+<style>
+  .tete { padding-block: clamp(var(--s16), 9vw, var(--s24)) var(--s16); }
+  .tete-inner { display: grid; gap: var(--s8); align-items: center; }
+  @media (min-width: 960px) {
+    .avec-portrait { grid-template-columns: 1.15fr 0.85fr; gap: var(--s16); }
+  }
+  .role { font-family: var(--font-display); font-size: 1.1rem; color: var(--accent); margin-top: var(--s2); }
+  .citation {
+    margin: var(--s8) 0 var(--s4);
+    padding-left: var(--s6);
+    border-left: 4px solid var(--accent);
+    font-family: var(--font-display);
+    font-size: clamp(1.35rem, 2.6vw, 1.9rem);
+    font-weight: 600;
+    line-height: 1.24;
+    letter-spacing: -0.025em;
+  }
+  .meta { font-size: 0.875rem; color: var(--text-on-ink-soft); margin: 0; }
+  .portrait { width: 100%; border-radius: var(--radius-lg); object-fit: cover; aspect-ratio: 4 / 5; }
+
+  .corps { padding-block: var(--s16); }
+  .prose { margin-inline: auto; }
+</style>

@@ -1,0 +1,56 @@
+---
+import PageTexte from "../components/PageTexte.astro";
+import { site } from "../lib/site";
+---
+
+<PageTexte
+  surtitre="Informations légales"
+  titre="Mentions légales"
+  description="Mentions légales du site coachinfrance.fr — éditeur, hébergeur, propriété intellectuelle."
+>
+  <h2>Éditeur du site</h2>
+  <p>
+    <strong>{site.nom}</strong> — SARL constituée le 13 juin 2022.<br />
+    Siège social : {site.adresse.rue}, {site.adresse.codePostal} {site.adresse.ville}, France.<br />
+    Gérants : Michel Bory et Laurent Mabille.<br />
+    Contact : <a href={`mailto:${site.email}`}>{site.email}</a>
+  </p>
+  <p class="a-completer">
+    À COMPLÉTER depuis l'ancien site : numéro SIRET, numéro RCS et ville
+    d'immatriculation, capital social, numéro de TVA intracommunautaire,
+    numéro de déclaration d'activité de formation, directeur de la publication
+    et numéro de téléphone.
+  </p>
+
+  <h2>Hébergeur</h2>
+  <p>
+    Netlify, Inc. — 512 2nd Street, Suite 200, San Francisco, CA 94107,
+    États-Unis. <a href="https://www.netlify.com" rel="noopener noreferrer" target="_blank">www.netlify.com</a>
+  </p>
+
+  <h2>Propriété intellectuelle</h2>
+  <p>
+    L'ensemble des contenus présents sur ce site (textes, photographies, logos,
+    identité visuelle) est la propriété de {site.nom}, sauf mention contraire.
+    Toute reproduction, même partielle, est interdite sans autorisation écrite
+    préalable.
+  </p>
+  <p>
+    Les logos des clubs et entreprises partenaires restent la propriété de leurs
+    détenteurs respectifs et sont affichés avec leur accord.
+  </p>
+
+  <h2>Responsabilité</h2>
+  <p>
+    {site.nom} s'efforce de maintenir les informations de ce site exactes et à
+    jour, sans garantir qu'elles soient exemptes d'erreur. Les liens vers des
+    sites externes n'engagent pas la responsabilité de {site.nom} quant à leur
+    contenu.
+  </p>
+
+  <h2>Signaler un contenu</h2>
+  <p>
+    Pour toute demande de correction ou de retrait, écrivez à
+    <a href={`mailto:${site.email}`}>{site.email}</a>.
+  </p>
+</PageTexte>

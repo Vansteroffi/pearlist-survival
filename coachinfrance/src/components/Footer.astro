@@ -1,0 +1,110 @@
+---
+import { site, nav } from "../lib/site";
+const annee = new Date().getFullYear();
+---
+
+<footer class="site-footer on-ink">
+  <div class="wrap">
+    <div class="haut">
+      <div class="col-marque">
+        <span class="brand-mark" aria-hidden="true">CF</span>
+        <p class="baseline">{site.baseline}, certifié Qualiopi. Basé à Vannes, présent partout en France.</p>
+        <div class="reseaux">
+          <a href={site.reseaux.instagram} rel="noopener noreferrer" target="_blank">Instagram</a>
+          <a href={site.reseaux.linkedin} rel="noopener noreferrer" target="_blank">LinkedIn</a>
+        </div>
+      </div>
+
+      <div class="col">
+        <h2>Navigation</h2>
+        <ul>
+          {nav.map((item) => <li><a href={item.href}>{item.libelle}</a></li>)}
+          <li><a href="/contact">Contact</a></li>
+        </ul>
+      </div>
+
+      <div class="col">
+        <h2>Informations</h2>
+        <ul>
+          <li><a href="/mentions-legales">Mentions légales</a></li>
+          <li><a href="/cgv">Conditions générales de vente</a></li>
+          <li><a href="/confidentialite">Confidentialité</a></li>
+          <li><a href="/accessibilite">Accessibilité & handicap</a></li>
+        </ul>
+      </div>
+
+      <div class="col">
+        <h2>Nous trouver</h2>
+        <address>
+          {site.adresse.rue}<br />
+          {site.adresse.codePostal} {site.adresse.ville}<br />
+          <a href={`mailto:${site.email}`}>{site.email}</a>
+        </address>
+      </div>
+    </div>
+
+    <div class="bas">
+      <p>© {annee} {site.nom} — SARL. Tous droits réservés.</p>
+      <p class="qualiopi">Certification Qualiopi : {site.qualiopi}.</p>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer { padding-block: var(--s16) var(--s8); }
+  .haut {
+    display: grid;
+    gap: var(--s8);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 200px), 1fr));
+  }
+  .col-marque { grid-column: span 1; max-width: 32ch; }
+  @media (min-width: 900px) { .col-marque { grid-column: span 1; } }
+
+  .brand-mark {
+    display: grid;
+    place-items: center;
+    width: 46px; height: 46px;
+    border-radius: 12px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-family: var(--font-display);
+    font-weight: 800;
+    margin-bottom: var(--s4);
+  }
+  .baseline { font-size: 0.9375rem; }
+
+  .reseaux { display: flex; gap: var(--s4); }
+  .reseaux a {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--accent);
+    text-decoration: none;
+  }
+  .reseaux a:hover { text-decoration: underline; }
+
+  .col h2 {
+    font-size: 0.75rem;
+    font-family: var(--font-display);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-on-ink-soft);
+    margin-bottom: var(--s4);
+  }
+  .col ul { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s3); }
+  .col a { font-size: 0.9375rem; text-decoration: none; color: rgba(255,255,255,0.85); }
+  .col a:hover { color: var(--accent); }
+  address { font-style: normal; font-size: 0.9375rem; color: var(--text-on-ink-soft); line-height: 1.7; }
+  address a { color: rgba(255,255,255,0.85); }
+
+  .bas {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: var(--s2) var(--s6);
+    margin-top: var(--s12);
+    padding-top: var(--s6);
+    border-top: 1px solid var(--line-ink);
+  }
+  .bas p { margin: 0; font-size: 0.8125rem; }
+  .qualiopi { max-width: 60ch; }
+</style>

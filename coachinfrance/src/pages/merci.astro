@@ -1,0 +1,30 @@
+---
+import Base from "../layouts/Base.astro";
+---
+
+<Base
+  titre="Message envoyé"
+  description="Votre message a bien été transmis à Coach in France."
+  noindex
+>
+  <section class="merci on-ink">
+    <div class="wrap">
+      <p class="eyebrow">C'est envoyé</p>
+      <h1 class="t-h1">Merci, votre message est parti.</h1>
+      <p class="lede">
+        On revient vers vous sous 48 h ouvrées. En attendant, vous pouvez jeter
+        un œil aux parcours de celles et ceux qui sont passés par là.
+      </p>
+      <div class="actions">
+        <a href="/interviews" class="btn btn-primary">Lire les interviews</a>
+        <a href="/" class="btn btn-ghost">Retour à l'accueil</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .merci { display: grid; align-content: center; min-height: 70svh; padding-block: var(--s24); }
+  .lede { margin-block: var(--s6) var(--s8); max-width: 52ch; }
+  .actions { display: flex; flex-wrap: wrap; gap: var(--s3); }
+</style>

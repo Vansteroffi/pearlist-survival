@@ -1,0 +1,51 @@
+---
+import Base from "../../layouts/Base.astro";
+import CarteActualite from "../../components/CarteActualite.astro";
+import EnteteRubrique from "../../components/EnteteRubrique.astro";
+import AppelAction from "../../components/AppelAction.astro";
+import { getCollection } from "astro:content";
+import { estPublie, parDateDecroissante } from "../../lib/format";
+
+const toutes = (await getCollection("actualites")).filter(estPublie);
+// Une actualité épinglée passe devant, sinon c'est la plus récente qui est
+// mise en avant.
+const triees = toutes.sort(
+  (a, b) => Number(b.data.epingle) - Number(a.data.epingle) || parDateDecroissante(a, b),
+);
+---
+
+<Base
+  titre="Actualités"
+  description="Les actualités de Coach in France : nouvelles sessions de formation, partenariats avec les clubs, réussites des apprentis."
+>
+  <EnteteRubrique
+    surtitre="Actualités"
+    titre="La vie du centre"
+    texte="Nouvelles sessions, partenariats signés, résultats d'examens et coulisses des clubs qui nous accueillent."
+  />
+
+  <section class="section-tight">
+    <div class="wrap">
+      {triees.length > 0 ? (
+        <div class="grid cols-3 reveal">
+          {triees.map((a, index) => (
+            <CarteActualite
+              href={`/actualites/${a.id}`}
+              titre={a.data.titre}
+              chapo={a.data.chapo}
+              date={a.data.date}
+              categorie={a.data.categorie}
+              couverture={a.data.couverture}
+              alt={a.data.alt}
+              vedette={index === 0}
+            />
+          ))}
+        </div>
+      ) : (
+        <p>Aucune actualité publiée pour l'instant.</p>
+      )}
+    </div>
+  </section>
+
+  <AppelAction />
+</Base>

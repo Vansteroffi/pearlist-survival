@@ -1,0 +1,99 @@
+---
+import { dateLongue, dateIso } from "../lib/format";
+import Fleche from "./Fleche.astro";
+
+interface Props {
+  href: string;
+  titre: string;
+  chapo: string;
+  date: Date;
+  categorie?: string;
+  couverture?: string;
+  alt?: string;
+  /** La première actualité de la liste est mise en avant sur toute la largeur. */
+  vedette?: boolean;
+}
+
+const { href, titre, chapo, date, categorie, couverture, alt, vedette = false } = Astro.props;
+---
+
+<article class:list={["carte", { vedette }]}>
+  <a href={href} class="lien-couvrant">
+    <div class="visuel">
+      {couverture
+        ? <img src={couverture} alt={alt ?? ""} loading="lazy" decoding="async" width="800" height="500" />
+        : <div class="visuel-vide" aria-hidden="true"><span>CF</span></div>}
+      {categorie && <span class="etiquette">{categorie}</span>}
+    </div>
+    <div class="texte">
+      <time datetime={dateIso(date)}>{dateLongue(date)}</time>
+      <h3 class="t-h3">{titre}</h3>
+      <p>{chapo}</p>
+      <span class="link-arrow">Lire l'article <Fleche /></span>
+    </div>
+  </a>
+</article>
+
+<style>
+  .carte {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transition: transform 0.35s var(--ease), box-shadow 0.35s var(--ease),
+      border-color 0.35s var(--ease);
+  }
+  .carte:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-lg);
+    border-color: transparent;
+  }
+
+  .lien-couvrant { display: block; text-decoration: none; color: inherit; height: 100%; }
+
+  .visuel { position: relative; aspect-ratio: 16 / 10; overflow: hidden; background: var(--paper-3); }
+  .visuel img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s var(--ease); }
+  .carte:hover .visuel img { transform: scale(1.04); }
+
+  .visuel-vide {
+    display: grid;
+    place-items: center;
+    height: 100%;
+    background: linear-gradient(135deg, var(--ink-800), var(--ink-600));
+  }
+  .visuel-vide span {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 2rem;
+    color: var(--accent);
+    opacity: 0.5;
+  }
+
+  .etiquette {
+    position: absolute;
+    top: var(--s4); left: var(--s4);
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--accent-ink);
+    font-family: var(--font-display);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .texte { padding: var(--s6); display: grid; gap: var(--s3); }
+  time { font-size: 0.8125rem; font-weight: 600; color: var(--text-soft); letter-spacing: 0.02em; }
+  .texte p { margin: 0; color: var(--text-soft); font-size: 0.9375rem; }
+
+  /* Format vedette : image à gauche, texte à droite, sur écran large. */
+  @media (min-width: 860px) {
+    .vedette { grid-column: 1 / -1; }
+    .vedette .lien-couvrant { display: grid; grid-template-columns: 1.15fr 1fr; }
+    .vedette .visuel { aspect-ratio: auto; height: 100%; min-height: 340px; }
+    .vedette .texte { align-content: center; padding: var(--s12); gap: var(--s4); }
+    .vedette h3 { font-size: clamp(1.6rem, 2.6vw, 2.25rem); }
+    .vedette p { font-size: 1.0625rem; }
+  }
+</style>

@@ -1,0 +1,39 @@
+---
+import PageTexte from "../components/PageTexte.astro";
+import { site } from "../lib/site";
+---
+
+<PageTexte
+  surtitre="Accueil de tous"
+  titre="Accessibilité & handicap"
+  description="Accessibilité du site et accueil des personnes en situation de handicap chez Coach in France."
+>
+  <h2>Accueil des personnes en situation de handicap</h2>
+  <p>
+    Nos formations sont ouvertes aux personnes en situation de handicap. Avant
+    toute inscription, un échange avec notre référent handicap permet
+    d'identifier les aménagements nécessaires : rythme, supports, modalités
+    d'évaluation, accessibilité des locaux et du club d'accueil.
+  </p>
+  <p>
+    Nous accompagnons également les profils neuro-atypiques (HPI, DYS, TDA,
+    TDAH), pour qui le terrain est souvent le meilleur terrain d'expression.
+  </p>
+  <p class="a-completer">
+    À COMPLÉTER : nom, e-mail et téléphone du référent handicap, ainsi que
+    l'accessibilité physique des locaux de Vannes.
+  </p>
+
+  <h2>Accessibilité numérique</h2>
+  <p>
+    Ce site a été conçu pour rester lisible et utilisable au clavier, avec des
+    contrastes conformes au niveau AA, des libellés de formulaire explicites, une
+    structure de titres cohérente et un respect de la préférence système
+    « animations réduites ».
+  </p>
+  <p>
+    Si vous rencontrez une difficulté d'accès à une information, signalez-la à
+    <a href={`mailto:${site.email}`}>{site.email}</a> : nous vous transmettrons
+    le contenu par un autre moyen et corrigerons le problème.
+  </p>
+</PageTexte>

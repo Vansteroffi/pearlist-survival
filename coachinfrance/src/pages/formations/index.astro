@@ -1,0 +1,48 @@
+---
+import Base from "../../layouts/Base.astro";
+import CarteFormation from "../../components/CarteFormation.astro";
+import AppelAction from "../../components/AppelAction.astro";
+import EnteteRubrique from "../../components/EnteteRubrique.astro";
+import { getCollection } from "astro:content";
+import { estPublie } from "../../lib/format";
+
+const formations = (await getCollection("formations"))
+  .filter(estPublie)
+  .sort((a, b) => a.data.ordre - b.data.ordre || a.data.titre.localeCompare(b.data.titre, "fr"));
+---
+
+<Base
+  titre="Formations"
+  description="CAP Métiers du football, management et marketing de club sportif, animation et gestion de projets, VAE : toutes les formations Coach in France, en apprentissage."
+>
+  <EnteteRubrique
+    surtitre="Nos formations"
+    titre="Choisis le métier, on s'occupe du reste"
+    texte="Toutes nos formations se préparent en apprentissage, au sein d'un club partenaire. Ton salaire tombe, ta formation est financée, et tu sors avec un diplôme et de l'expérience."
+  />
+
+  <section class="section-tight">
+    <div class="wrap">
+      {formations.length > 0 ? (
+        <div class="grid cols-3 reveal">
+          {formations.map((f) => (
+            <CarteFormation
+              href={`/formations/${f.id}`}
+              titre={f.data.titre}
+              accroche={f.data.accroche}
+              niveau={f.data.niveau}
+              duree={f.data.duree}
+              rythme={f.data.rythme}
+              visuel={f.data.visuel}
+              alt={f.data.alt}
+            />
+          ))}
+        </div>
+      ) : (
+        <p>Aucune formation publiée pour l'instant.</p>
+      )}
+    </div>
+  </section>
+
+  <AppelAction titre="Une question sur un parcours ?" texte="On préfère un vrai échange à une brochure. Écris-nous, on te répond." />
+</Base>

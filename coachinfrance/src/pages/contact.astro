@@ -1,0 +1,194 @@
+---
+import Base from "../layouts/Base.astro";
+import EnteteRubrique from "../components/EnteteRubrique.astro";
+import { site } from "../lib/site";
+import { getCollection } from "astro:content";
+import { estPublie } from "../lib/format";
+
+const formations = (await getCollection("formations"))
+  .filter(estPublie)
+  .sort((a, b) => a.data.ordre - b.data.ordre);
+---
+
+<Base
+  titre="Contact & candidature"
+  description="Déposez votre candidature ou posez votre question à Coach in France — organisme de formation et CFA sport à Vannes."
+>
+  <EnteteRubrique
+    surtitre="Contact"
+    titre="Parlons de votre projet"
+    texte="Un formulaire, deux minutes. On vous répond sous 48 h ouvrées, avec un vrai humain au bout du fil."
+  />
+
+  <section class="section-tight">
+    <div class="wrap contact">
+      <!--
+        Formulaire géré par Netlify Forms : les réponses arrivent par e-mail et
+        restent consultables dans le tableau de bord Netlify. Aucun serveur à
+        écrire, aucun abonnement à payer.
+      -->
+      <form
+        name="candidature"
+        method="POST"
+        data-netlify="true"
+        netlify-honeypot="site-web"
+        action="/merci"
+        class="formulaire"
+      >
+        <input type="hidden" name="form-name" value="candidature" />
+        <p class="piege">
+          <label>Ne pas remplir si vous êtes humain : <input name="site-web" /></label>
+        </p>
+
+        <div class="duo">
+          <p class="champ">
+            <label for="prenom">Prénom<span aria-hidden="true">*</span></label>
+            <input id="prenom" name="prenom" type="text" required autocomplete="given-name" />
+          </p>
+          <p class="champ">
+            <label for="nom">Nom<span aria-hidden="true">*</span></label>
+            <input id="nom" name="nom" type="text" required autocomplete="family-name" />
+          </p>
+        </div>
+
+        <div class="duo">
+          <p class="champ">
+            <label for="email">E-mail<span aria-hidden="true">*</span></label>
+            <input id="email" name="email" type="email" required autocomplete="email" />
+          </p>
+          <p class="champ">
+            <label for="telephone">Téléphone</label>
+            <input id="telephone" name="telephone" type="tel" autocomplete="tel" />
+          </p>
+        </div>
+
+        <p class="champ">
+          <label for="profil">Vous êtes<span aria-hidden="true">*</span></label>
+          <select id="profil" name="profil" required>
+            <option value="">Choisir…</option>
+            <option>Candidat à une formation</option>
+            <option>Parent d'un candidat</option>
+            <option>Club souhaitant accueillir un apprenti</option>
+            <option>Entreprise / partenaire</option>
+            <option>Autre</option>
+          </select>
+        </p>
+
+        <p class="champ">
+          <label for="formation">Formation concernée</label>
+          <select id="formation" name="formation">
+            <option value="">Je ne sais pas encore</option>
+            {formations.map((f) => <option value={f.data.titre}>{f.data.titre}</option>)}
+          </select>
+        </p>
+
+        <p class="champ">
+          <label for="message">Votre message<span aria-hidden="true">*</span></label>
+          <textarea id="message" name="message" rows="6" required
+            placeholder="Parlez-nous de votre parcours, de votre projet, de votre club…"></textarea>
+        </p>
+
+        <p class="consentement">
+          <label>
+            <input type="checkbox" name="consentement" required />
+            <span>
+              J'accepte que mes données soient utilisées pour traiter ma demande.
+              Elles ne sont ni revendues, ni transmises à des tiers
+              (<a href="/confidentialite">politique de confidentialité</a>).
+            </span>
+          </label>
+        </p>
+
+        <button type="submit" class="btn btn-primary">Envoyer ma demande</button>
+        <p class="obligatoire"><span aria-hidden="true">*</span> Champs obligatoires.</p>
+      </form>
+
+      <aside class="coords">
+        <div class="bloc">
+          <h2>Nous écrire</h2>
+          <p><a href={`mailto:${site.email}`}>{site.email}</a></p>
+          <p><a href={`mailto:${site.emailDirection}`}>{site.emailDirection}</a></p>
+        </div>
+        <div class="bloc">
+          <h2>Nous rencontrer</h2>
+          <address>
+            {site.adresse.rue}<br />
+            {site.adresse.codePostal} {site.adresse.ville}
+          </address>
+        </div>
+        <div class="bloc">
+          <h2>Nous suivre</h2>
+          <p>
+            <a href={site.reseaux.instagram} target="_blank" rel="noopener noreferrer">Instagram</a> ·
+            <a href={site.reseaux.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          </p>
+        </div>
+        <div class="bloc bloc-accent">
+          <h2>Situation de handicap ?</h2>
+          <p>
+            Nos parcours sont adaptables. Contactez notre référent handicap avant
+            l'inscription pour construire ensemble les aménagements nécessaires.
+          </p>
+        </div>
+      </aside>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .contact { display: grid; gap: var(--s12); }
+  @media (min-width: 1000px) {
+    .contact { grid-template-columns: minmax(0, 1fr) 320px; gap: var(--s16); align-items: start; }
+  }
+
+  .formulaire { display: grid; gap: var(--s5, 1.25rem); }
+  .duo { display: grid; gap: var(--s4); }
+  @media (min-width: 620px) { .duo { grid-template-columns: 1fr 1fr; } }
+
+  .champ { display: grid; gap: var(--s2); margin: 0; }
+  label { font-size: 0.875rem; font-weight: 600; }
+  label span[aria-hidden] { color: var(--accent-deep); margin-left: 2px; }
+
+  input, select, textarea {
+    width: 100%;
+    padding: 0.85rem 1rem;
+    border: 1.5px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--paper);
+    font: inherit;
+    font-size: 1rem;
+    color: var(--text);
+    transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+  }
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent-deep);
+    box-shadow: 0 0 0 4px rgba(0, 228, 122, 0.16);
+    outline: none;
+  }
+  textarea { resize: vertical; }
+
+  .consentement label { display: grid; grid-template-columns: auto 1fr; gap: var(--s3); align-items: start; font-weight: 400; font-size: 0.875rem; color: var(--text-soft); }
+  .consentement input { width: 18px; height: 18px; margin-top: 3px; }
+  .consentement a { color: var(--accent-deep); }
+
+  .obligatoire { font-size: 0.8125rem; color: var(--text-soft); margin: 0; }
+  .piege { position: absolute; left: -9999px; }
+
+  .coords { display: grid; gap: var(--s4); }
+  .bloc { padding: var(--s6); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+  .bloc h2 {
+    font-size: 0.75rem;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--text-soft);
+    margin-bottom: var(--s3);
+  }
+  .bloc p { margin: 0 0 var(--s2); font-size: 0.9375rem; }
+  .bloc p:last-child { margin-bottom: 0; }
+  .bloc a { color: var(--accent-deep); text-decoration: none; }
+  .bloc a:hover { text-decoration: underline; }
+  address { font-style: normal; font-size: 0.9375rem; line-height: 1.7; }
+  .bloc-accent { background: var(--ink-900); border-color: transparent; color: #fff; }
+  .bloc-accent h2 { color: var(--accent); }
+  .bloc-accent p { color: var(--text-on-ink-soft); }
+</style>

@@ -1,0 +1,101 @@
+---
+import Base from "../../layouts/Base.astro";
+import AppelAction from "../../components/AppelAction.astro";
+import CarteActualite from "../../components/CarteActualite.astro";
+import { getCollection, render } from "astro:content";
+import { estPublie, parDateDecroissante, dateLongue, dateIso } from "../../lib/format";
+
+export async function getStaticPaths() {
+  const actualites = (await getCollection("actualites")).filter(estPublie);
+  return actualites.map((actualite) => ({
+    params: { slug: actualite.id },
+    props: { actualite },
+  }));
+}
+
+const { actualite } = Astro.props;
+const { data } = actualite;
+const { Content } = await render(actualite);
+
+const suite = (await getCollection("actualites"))
+  .filter((a) => estPublie(a) && a.id !== actualite.id)
+  .sort(parDateDecroissante)
+  .slice(0, 3);
+---
+
+<Base titre={data.titre} description={data.chapo} image={data.couverture}>
+  <article>
+    <header class="tete on-ink">
+      <div class="wrap">
+        <p class="fil">
+          <a href="/actualites">Actualités</a>
+          <span aria-hidden="true">/</span>
+          <span>{data.categorie}</span>
+        </p>
+        <h1 class="t-h1">{data.titre}</h1>
+        <p class="lede">{data.chapo}</p>
+        <time datetime={dateIso(data.date)}>Publié le {dateLongue(data.date)}</time>
+      </div>
+    </header>
+
+    {data.couverture && (
+      <figure class="couverture">
+        <div class="wrap">
+          <img src={data.couverture} alt={data.alt ?? ""} width="1400" height="800" />
+        </div>
+      </figure>
+    )}
+
+    <div class="wrap corps">
+      <div class="prose"><Content /></div>
+    </div>
+  </article>
+
+  {suite.length > 0 && (
+    <section class="section paper-2">
+      <div class="wrap">
+        <h2 class="t-h2 titre-suite">À lire aussi</h2>
+        <div class="grid cols-3">
+          {suite.map((a) => (
+            <CarteActualite
+              href={`/actualites/${a.id}`}
+              titre={a.data.titre}
+              chapo={a.data.chapo}
+              date={a.data.date}
+              categorie={a.data.categorie}
+              couverture={a.data.couverture}
+              alt={a.data.alt}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  <AppelAction />
+</Base>
+
+<style>
+  .tete { padding-block: clamp(var(--s16), 9vw, var(--s24)) var(--s12); }
+  .tete h1 { max-width: 20ch; }
+  .tete .lede { margin-top: var(--s6); max-width: 58ch; }
+  .fil { display: flex; gap: var(--s2); font-size: 0.8125rem; font-weight: 600; margin-bottom: var(--s4); }
+  .fil a { color: var(--accent); text-decoration: none; }
+  .fil span:last-child { color: var(--text-on-ink-soft); }
+  time { font-size: 0.875rem; color: var(--text-on-ink-soft); }
+
+  /* L'image de couverture chevauche l'en-tête sombre : elle « sort » du bloc,
+   * ce qui donne du relief sans coût de mise en page. */
+  .couverture { margin: 0; background: linear-gradient(180deg, var(--ink-900) 50%, var(--paper) 50%); }
+  .couverture img {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    object-fit: cover;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .corps { padding-block: var(--s16); }
+  .prose { margin-inline: auto; }
+  .titre-suite { margin-bottom: var(--s8); }
+</style>

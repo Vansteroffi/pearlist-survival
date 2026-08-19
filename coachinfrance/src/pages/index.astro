@@ -1,0 +1,397 @@
+---
+import Base from "../layouts/Base.astro";
+import Chiffres from "../components/Chiffres.astro";
+import CarteFormation from "../components/CarteFormation.astro";
+import CarteActualite from "../components/CarteActualite.astro";
+import CarteInterview from "../components/CarteInterview.astro";
+import MurPartenaires from "../components/MurPartenaires.astro";
+import AppelAction from "../components/AppelAction.astro";
+import Fleche from "../components/Fleche.astro";
+import { getCollection } from "astro:content";
+import { estPublie, parDateDecroissante } from "../lib/format";
+
+const formations = (await getCollection("formations"))
+  .filter(estPublie)
+  .sort((a, b) => a.data.ordre - b.data.ordre)
+  .slice(0, 3);
+
+const actualites = (await getCollection("actualites"))
+  .filter(estPublie)
+  .sort(parDateDecroissante)
+  .slice(0, 3);
+
+const interviews = (await getCollection("interviews"))
+  .filter(estPublie)
+  .sort(parDateDecroissante)
+  .slice(0, 3);
+
+const chiffres = [
+  { valeur: "2017", libelle: "Année de création, devenu SARL en 2022" },
+  { valeur: "Qualiopi", libelle: "Certifié pour l'apprentissage, les bilans, la VAE et la formation" },
+  { valeur: "France", libelle: "Des clubs partenaires sur tout le territoire" },
+  { valeur: "100 %", libelle: "Des parcours construits autour d'un club d'accueil" },
+];
+---
+
+<Base
+  titre="Coach in France"
+  description="Organisme de formation et CFA spécialisé dans le sport, à Vannes. CAP Métiers du football, management de club, VAE — en apprentissage, avec un club partenaire."
+>
+  <!-- Héros -->
+  <section class="heros">
+    <div class="heros-fond" aria-hidden="true"></div>
+    <div class="wrap heros-contenu">
+      <p class="badge">
+        <span class="pastille" aria-hidden="true"></span>
+        Organisme de formation & CFA certifié Qualiopi
+      </p>
+      <h1 class="t-display">
+        Fais du sport<br />
+        <span class="surligne">ton métier.</span>
+      </h1>
+      <p class="lede heros-lede">
+        Depuis Vannes, Coach in France forme en apprentissage celles et ceux qui
+        veulent travailler dans le football et le sport — sur le terrain comme
+        dans les bureaux du club.
+      </p>
+      <div class="heros-actions">
+        <a href="/formations" class="btn btn-primary">Découvrir les formations</a>
+        <a href="/contact" class="btn btn-ghost">Parler de mon projet</a>
+      </div>
+    </div>
+
+    <div class="heros-bandeau" aria-hidden="true">
+      <div class="defile">
+        {Array.from({ length: 2 }).map(() => (
+          <span>
+            CAP Métiers du football · Manager général de club · Marketing sportif ·
+            Animation & gestion de projets · VAE · Formation hybride ·
+          </span>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Chiffres -->
+  <section class="on-ink section-tight">
+    <div class="wrap">
+      <Chiffres items={chiffres} />
+    </div>
+  </section>
+
+  <!-- Formations -->
+  <section class="section">
+    <div class="wrap">
+      <header class="entete reveal">
+        <div>
+          <p class="eyebrow">Nos formations</p>
+          <h2 class="t-h1">Un diplôme, un club, un métier</h2>
+        </div>
+        <p class="lede">
+          Chaque parcours associe des cours structurés et une immersion réelle en
+          club. On ne forme pas des spectateurs : on forme des professionnels du
+          sport.
+        </p>
+      </header>
+
+      {formations.length > 0 ? (
+        <div class="grid cols-3 reveal">
+          {formations.map((f) => (
+            <CarteFormation
+              href={`/formations/${f.id}`}
+              titre={f.data.titre}
+              accroche={f.data.accroche}
+              niveau={f.data.niveau}
+              duree={f.data.duree}
+              rythme={f.data.rythme}
+              visuel={f.data.visuel}
+              alt={f.data.alt}
+            />
+          ))}
+        </div>
+      ) : (
+        <p class="vide">Les formations seront publiées depuis l'espace d'administration.</p>
+      )}
+
+      <p class="apres-grille">
+        <a href="/formations" class="link-arrow">Toutes les formations <Fleche /></a>
+      </p>
+    </div>
+  </section>
+
+  <!-- Pourquoi nous -->
+  <section class="section paper-2">
+    <div class="wrap piliers">
+      <div class="reveal">
+        <p class="eyebrow">La méthode Coach in France</p>
+        <h2 class="t-h1">Formé par des gens du métier, pas par des manuels</h2>
+      </div>
+      <ul class="liste-piliers reveal">
+        <li>
+          <span class="num">01</span>
+          <h3 class="t-h3">L'apprentissage d'abord</h3>
+          <p>
+            Tu es salarié d'un club, tu apprends en travaillant, et ta formation
+            ne te coûte rien : elle est financée par l'apprentissage.
+          </p>
+        </li>
+        <li>
+          <span class="num">02</span>
+          <h3 class="t-h3">Un club pour chacun</h3>
+          <p>
+            On active notre réseau de clubs professionnels et amateurs de haut
+            niveau partout en France pour te trouver la bonne structure d'accueil.
+          </p>
+        </li>
+        <li>
+          <span class="num">03</span>
+          <h3 class="t-h3">Des profils atypiques bienvenus</h3>
+          <p>
+            HPI, DYS, TDA/TDAH : le terrain est souvent l'endroit où ces talents
+            s'expriment le mieux. Nos parcours sont adaptés en conséquence.
+          </p>
+        </li>
+        <li>
+          <span class="num">04</span>
+          <h3 class="t-h3">Présentiel, distanciel ou hybride</h3>
+          <p>
+            La formation s'adapte à ta situation géographique et au calendrier de
+            ton club, pas l'inverse.
+          </p>
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- Interviews -->
+  {interviews.length > 0 && (
+    <section class="section on-ink">
+      <div class="wrap">
+        <header class="entete reveal">
+          <div>
+            <p class="eyebrow">Ils l'ont fait</p>
+            <h2 class="t-h1">Les voix du terrain</h2>
+          </div>
+          <p class="lede">
+            Apprentis, coachs, dirigeants de clubs partenaires : ils racontent
+            leur parcours, sans filtre.
+          </p>
+        </header>
+        <div class="grid cols-3 reveal">
+          {interviews.map((i) => (
+            <CarteInterview
+              href={`/interviews/${i.id}`}
+              nom={i.data.nom}
+              role={i.data.role}
+              citation={i.data.citation}
+              portrait={i.data.portrait}
+              alt={i.data.alt}
+              club={i.data.club}
+            />
+          ))}
+        </div>
+        <p class="apres-grille">
+          <a href="/interviews" class="link-arrow">Toutes les interviews <Fleche /></a>
+        </p>
+      </div>
+    </section>
+  )}
+
+  <!-- Actualités -->
+  {actualites.length > 0 && (
+    <section class="section">
+      <div class="wrap">
+        <header class="entete reveal">
+          <div>
+            <p class="eyebrow">Actualités</p>
+            <h2 class="t-h1">La vie du centre</h2>
+          </div>
+          <p class="lede">
+            Nouvelles sessions, partenariats signés, réussites d'apprentis : ce
+            qui bouge chez Coach in France.
+          </p>
+        </header>
+        <div class="grid cols-3 reveal">
+          {actualites.map((a) => (
+            <CarteActualite
+              href={`/actualites/${a.id}`}
+              titre={a.data.titre}
+              chapo={a.data.chapo}
+              date={a.data.date}
+              categorie={a.data.categorie}
+              couverture={a.data.couverture}
+              alt={a.data.alt}
+            />
+          ))}
+        </div>
+        <p class="apres-grille">
+          <a href="/actualites" class="link-arrow">Toutes les actualités <Fleche /></a>
+        </p>
+      </div>
+    </section>
+  )}
+
+  <!-- Partenaires -->
+  <section class="section paper-2">
+    <div class="wrap">
+      <header class="entete reveal">
+        <div>
+          <p class="eyebrow">Notre réseau</p>
+          <h2 class="t-h1">Les clubs qui forment avec nous</h2>
+        </div>
+        <p class="lede">
+          Clubs professionnels, clubs amateurs de haut niveau et entreprises du
+          sport : ce sont eux qui accueillent nos apprentis.
+        </p>
+      </header>
+      <div class="reveal">
+        <MurPartenaires limite={12} />
+      </div>
+      <p class="apres-grille">
+        <a href="/partenaires" class="link-arrow">Tous les partenaires <Fleche /></a>
+      </p>
+    </div>
+  </section>
+
+  <AppelAction />
+</Base>
+
+<style>
+  /* ---- Héros ---- */
+  .heros {
+    position: relative;
+    display: grid;
+    align-content: center;
+    min-height: min(92svh, 900px);
+    padding-block: var(--s24) var(--s16);
+    background: var(--ink-900);
+    color: #fff;
+    overflow: hidden;
+  }
+
+  /* Décor entièrement en CSS : lignes de terrain en fuite + halo vert. Aucun
+   * fichier image à charger, donc un premier affichage immédiat. Remplaçable
+   * par une photo plein cadre dès qu'on en a une (voir README). */
+  .heros-fond {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(70% 55% at 78% 18%, rgba(0, 228, 122, 0.28), transparent 62%),
+      radial-gradient(50% 50% at 8% 92%, rgba(0, 228, 122, 0.1), transparent 70%),
+      repeating-linear-gradient(
+        104deg,
+        rgba(255, 255, 255, 0.045) 0 1px,
+        transparent 1px 92px
+      ),
+      linear-gradient(180deg, #070a0f 0%, #0c1622 55%, #070a0f 100%);
+  }
+  .heros-fond::after {
+    /* Voile sombre en bas : garantit le contraste du texte quel que soit le
+     * fond, y compris si une photo est ajoutée plus tard. */
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, transparent 30%, rgba(7, 10, 15, 0.85) 100%);
+  }
+
+  .heros-contenu { position: relative; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s2);
+    padding: 0.4rem 0.9rem 0.4rem 0.55rem;
+    margin-bottom: var(--s6);
+    border: 1px solid var(--line-ink);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+  }
+  .pastille {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px rgba(0, 228, 122, 0.22);
+  }
+
+  .heros h1 { max-width: 14ch; }
+  .surligne {
+    background: linear-gradient(180deg, transparent 62%, rgba(0, 228, 122, 0.35) 62%);
+    color: var(--accent);
+  }
+
+  .heros-lede { max-width: 52ch; margin-top: var(--s6); color: rgba(255, 255, 255, 0.78); }
+  .heros-actions { display: flex; flex-wrap: wrap; gap: var(--s3); margin-top: var(--s8); }
+
+  /* Bandeau défilant des intitulés de formation. */
+  .heros-bandeau {
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    border-top: 1px solid var(--line-ink);
+    background: rgba(7, 10, 15, 0.6);
+    overflow: hidden;
+    padding-block: var(--s3);
+  }
+  .defile {
+    display: flex;
+    width: max-content;
+    animation: glisse 46s linear infinite;
+  }
+  .defile span {
+    padding-right: 2rem;
+    font-family: var(--font-display);
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.42);
+    white-space: nowrap;
+  }
+  @keyframes glisse {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .defile { animation: none; }
+  }
+
+  /* ---- Sections ---- */
+  .entete {
+    display: grid;
+    gap: var(--s4);
+    margin-bottom: var(--s12);
+  }
+  .entete .lede { margin: 0; max-width: 48ch; }
+  @media (min-width: 900px) {
+    .entete { grid-template-columns: 1.1fr 0.9fr; align-items: end; gap: var(--s12); }
+  }
+
+  .apres-grille { margin: var(--s8) 0 0; }
+  .vide { color: var(--text-soft); font-style: italic; }
+
+  /* ---- Piliers ---- */
+  .piliers { display: grid; gap: var(--s12); }
+  @media (min-width: 980px) {
+    .piliers { grid-template-columns: 0.85fr 1.15fr; gap: var(--s16); align-items: start; }
+    .piliers > :first-child { position: sticky; top: 120px; }
+  }
+  .liste-piliers {
+    display: grid;
+    gap: var(--s8);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+  .liste-piliers li { display: grid; gap: var(--s2); align-content: start; }
+  .num {
+    font-family: var(--font-display);
+    font-size: 0.8125rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    color: var(--accent-deep);
+  }
+  .liste-piliers p { margin: 0; color: var(--text-soft); font-size: 0.9375rem; }
+</style>

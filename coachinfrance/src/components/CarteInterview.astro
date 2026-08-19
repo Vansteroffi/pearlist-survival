@@ -1,0 +1,84 @@
+---
+import Fleche from "./Fleche.astro";
+
+interface Props {
+  href: string;
+  nom: string;
+  role: string;
+  citation: string;
+  portrait?: string;
+  alt?: string;
+  club?: string;
+}
+
+const { href, nom, role, citation, portrait, alt, club } = Astro.props;
+---
+
+<article class="carte-itw">
+  <a href={href}>
+    <div class="portrait">
+      {portrait
+        ? <img src={portrait} alt={alt ?? `Portrait de ${nom}`} loading="lazy" decoding="async" width="600" height="750" />
+        : <div class="portrait-vide" aria-hidden="true"></div>}
+    </div>
+    <blockquote>« {citation} »</blockquote>
+    <div class="signature">
+      <strong>{nom}</strong>
+      <span>{role}{club ? ` · ${club}` : ""}</span>
+    </div>
+    <span class="link-arrow">Lire l'interview <Fleche /></span>
+  </a>
+</article>
+
+<style>
+  .carte-itw {
+    position: relative;
+    border-radius: var(--radius-lg);
+    background: var(--ink-800);
+    color: #fff;
+    overflow: hidden;
+    transition: transform 0.35s var(--ease);
+  }
+  .carte-itw:hover { transform: translateY(-4px); }
+  .carte-itw a {
+    display: grid;
+    gap: var(--s4);
+    padding: var(--s6);
+    text-decoration: none;
+    color: inherit;
+    height: 100%;
+    align-content: start;
+  }
+
+  .portrait {
+    width: 78px; height: 78px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--ink-600);
+    box-shadow: 0 0 0 3px var(--accent);
+  }
+  .portrait img { width: 100%; height: 100%; object-fit: cover; }
+  .portrait-vide { width: 100%; height: 100%; background: linear-gradient(135deg, var(--ink-600), var(--ink-700)); }
+
+  blockquote {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    line-height: 1.28;
+    letter-spacing: -0.02em;
+    /* La citation est tronquée pour que toutes les cartes gardent la même
+     * allure, quelle que soit la longueur saisie dans le back-office. */
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .signature { display: grid; gap: 2px; margin-top: auto; }
+  .signature strong { font-family: var(--font-display); font-size: 1rem; }
+  .signature span { font-size: 0.8125rem; color: var(--text-on-ink-soft); }
+
+  .carte-itw .link-arrow { color: var(--accent); }
+</style>

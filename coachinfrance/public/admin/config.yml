@@ -1,0 +1,159 @@
+# Back-office Coach in France.
+#
+# Chaque « collection » ci-dessous devient une rubrique dans l'interface
+# d'administration. Les champs doivent rester alignés avec src/content.config.ts :
+# si un champ obligatoire est ajouté ici sans l'être là-bas (ou l'inverse), le
+# site refusera de se construire — c'est le garde-fou qui évite de mettre en
+# ligne une page cassée.
+
+backend:
+  name: github
+  repo: Vansteroffi/coachinfrance # À AJUSTER si le dépôt est renommé ou déplacé.
+  branch: main
+  base_url: https://coachinfrance.netlify.app # À AJUSTER : l'URL réelle du site.
+  auth_endpoint: api/auth
+
+# Le mode « éditorial » ajoute un cycle brouillon → relecture → publication.
+publish_mode: editorial_workflow
+
+# Permet de tester le back-office en local (`npm run dev` puis /admin) sans
+# toucher au dépôt : les modifications restent sur la machine.
+local_backend: true
+
+media_folder: public/uploads
+public_folder: /uploads
+
+locale: fr
+site_url: https://www.coachinfrance.fr
+display_url: https://www.coachinfrance.fr
+logo_url: https://www.coachinfrance.fr/favicon.svg
+
+collections:
+  # ---------------------------------------------------------------- ACTUALITÉS
+  - name: actualites
+    label: Actualités
+    label_singular: une actualité
+    description: >-
+      Les nouvelles du centre : sessions qui ouvrent, partenariats signés,
+      résultats d'examens, événements.
+    folder: src/content/actualites
+    create: true
+    slug: "{{year}}-{{month}}-{{day}}-{{slug}}"
+    summary: "{{titre}} — {{date | date('DD/MM/YYYY')}}"
+    sortable_fields: [date, titre]
+    view_filters:
+      - label: Brouillons
+        field: brouillon
+        pattern: true
+    fields:
+      - { name: titre, label: Titre, widget: string, hint: "Court et concret. C'est ce qui s'affiche partout." }
+      - { name: date, label: Date de publication, widget: datetime, date_format: DD/MM/YYYY, time_format: false, picker_utc: false }
+      - { name: chapo, label: Résumé, widget: text, hint: "Deux à trois lignes. Visible sur les vignettes et dans Google." }
+      - name: categorie
+        label: Catégorie
+        widget: select
+        default: Actualité
+        options: [Actualité, Formation, Partenariat, Événement, Réussite]
+      - { name: couverture, label: Image de couverture, widget: image, required: false, hint: "Format paysage, au moins 1200 px de large." }
+      - { name: alt, label: Description de l'image, widget: string, required: false, hint: "Pour les personnes qui n'y voient pas. Ex : « Deux apprentis sur le terrain »." }
+      - { name: epingle, label: Épingler en haut de la liste, widget: boolean, default: false }
+      - { name: brouillon, label: Brouillon (invisible sur le site), widget: boolean, default: false }
+      - { name: body, label: Contenu de l'article, widget: markdown }
+
+  # ---------------------------------------------------------------- INTERVIEWS
+  - name: interviews
+    label: Interviews
+    label_singular: une interview
+    description: >-
+      Les portraits : apprentis, éducateurs, dirigeants de clubs partenaires.
+    folder: src/content/interviews
+    create: true
+    slug: "{{slug}}"
+    summary: "{{nom}} — {{role}}"
+    sortable_fields: [date, nom]
+    fields:
+      - { name: nom, label: Nom de la personne, widget: string }
+      - { name: role, label: Rôle / fonction, widget: string, hint: "Ex : « Apprenti éducateur », « Président du club »." }
+      - { name: club, label: Club ou structure, widget: string, required: false }
+      - { name: formation, label: Formation suivie, widget: string, required: false }
+      - { name: date, label: Date, widget: datetime, date_format: DD/MM/YYYY, time_format: false, picker_utc: false }
+      - { name: citation, label: Citation mise en avant, widget: text, hint: "Une phrase forte, sans les guillemets — ils sont ajoutés automatiquement." }
+      - { name: portrait, label: Photo de la personne, widget: image, required: false, hint: "Format portrait de préférence." }
+      - { name: alt, label: Description de la photo, widget: string, required: false }
+      - { name: brouillon, label: Brouillon (invisible sur le site), widget: boolean, default: false }
+      - { name: body, label: L'interview, widget: markdown, hint: "Mettez les questions en gras pour les distinguer des réponses." }
+
+  # ---------------------------------------------------------------- FORMATIONS
+  - name: formations
+    label: Formations
+    label_singular: une formation
+    description: >-
+      Les fiches de chaque parcours : contenu, durée, tarif, sessions et
+      indicateurs de résultats exigés par Qualiopi.
+    folder: src/content/formations
+    create: true
+    slug: "{{slug}}"
+    summary: "{{titre}}"
+    sortable_fields: [ordre, titre]
+    fields:
+      - { name: titre, label: Intitulé de la formation, widget: string }
+      - { name: accroche, label: Accroche, widget: text, hint: "Une à deux phrases : à qui ça s'adresse et pour quoi faire." }
+      - { name: ordre, label: Ordre d'affichage, widget: number, default: 50, value_type: int, hint: "Plus le nombre est petit, plus la formation apparaît tôt." }
+      - { name: niveau, label: Niveau du diplôme, widget: string, required: false, hint: "Ex : « Niveau 3 — CAP »." }
+      - { name: duree, label: Durée, widget: string, required: false, hint: "Ex : « 12 mois »." }
+      - { name: rythme, label: Rythme, widget: string, required: false, hint: "Ex : « Alternance 1 semaine / 3 »." }
+      - { name: lieu, label: Lieu, widget: string, default: "Vannes (56)" }
+      - { name: prerequis, label: Prérequis, widget: string, required: false }
+      - { name: tarif, label: Tarif, widget: string, required: false, hint: "Ex : « Gratuit en apprentissage » ou « 3 200 € »." }
+      - { name: visuel, label: Image de la formation, widget: image, required: false }
+      - { name: alt, label: Description de l'image, widget: string, required: false }
+      - name: objectifs
+        label: Objectifs pédagogiques
+        widget: list
+        required: false
+        field: { name: objectif, label: Objectif, widget: string }
+      - name: debouches
+        label: Débouchés
+        widget: list
+        required: false
+        field: { name: debouche, label: Métier visé, widget: string }
+      - name: sessions
+        label: Prochaines sessions
+        widget: list
+        required: false
+        summary: "{{fields.debut}}"
+        fields:
+          - { name: debut, label: Début de session, widget: string, hint: "Ex : « Rentrée septembre 2026 »." }
+          - { name: places, label: Places, widget: string, required: false, hint: "Ex : « 12 places »." }
+      - name: indicateurs
+        label: Indicateurs de résultats (obligatoires Qualiopi)
+        widget: list
+        required: false
+        summary: "{{fields.valeur}} — {{fields.libelle}}"
+        fields:
+          - { name: valeur, label: Valeur, widget: string, hint: "Ex : « 92 % »." }
+          - { name: libelle, label: Intitulé, widget: string, hint: "Ex : « Taux de réussite à l'examen 2025 »." }
+      - { name: brouillon, label: Brouillon (invisible sur le site), widget: boolean, default: false }
+      - { name: body, label: Programme détaillé, widget: markdown }
+
+  # --------------------------------------------------------------- PARTENAIRES
+  - name: partenaires
+    label: Partenaires & clubs
+    label_singular: un partenaire
+    description: Les logos affichés sur la page Partenaires et sur l'accueil.
+    folder: src/content/partenaires
+    create: true
+    slug: "{{slug}}"
+    summary: "{{nom}}"
+    sortable_fields: [ordre, nom]
+    fields:
+      - { name: nom, label: Nom du partenaire, widget: string }
+      - { name: logo, label: Logo, widget: image, required: false, hint: "PNG ou SVG à fond transparent, si possible." }
+      - { name: lien, label: Site internet, widget: string, required: false, hint: "Adresse complète, avec https://" }
+      - name: categorie
+        label: Type
+        widget: select
+        default: Club
+        options: [Club, Institution, Entreprise, Média]
+      - { name: ordre, label: Ordre d'affichage, widget: number, default: 50, value_type: int }
+      - { name: body, label: Note interne (non affichée), widget: markdown, required: false }

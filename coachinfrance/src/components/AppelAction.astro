@@ -1,0 +1,55 @@
+---
+interface Props {
+  titre?: string;
+  texte?: string;
+}
+const {
+  titre = "Prêt à faire du sport votre métier ?",
+  texte = "Dis-nous ton projet, on te rappelle sous 48 h pour en parler concrètement — sans engagement.",
+} = Astro.props;
+---
+
+<section class="cta">
+  <div class="wrap inner reveal">
+    <div>
+      <h2 class="t-h1">{titre}</h2>
+      <p class="lede">{texte}</p>
+    </div>
+    <div class="actions">
+      <a href="/contact" class="btn btn-primary">Déposer ma candidature</a>
+      <a href="/formations" class="btn btn-ghost">Voir les formations</a>
+    </div>
+  </div>
+</section>
+
+<style>
+  .cta {
+    position: relative;
+    background: var(--ink-900);
+    color: #fff;
+    padding-block: clamp(var(--s16), 8vw, var(--s24));
+    overflow: hidden;
+  }
+  /* Halo vert diffus : rappelle l'accent sans ajouter d'image à charger. */
+  .cta::before {
+    content: "";
+    position: absolute;
+    inset: -40% -10% auto auto;
+    width: 640px; height: 640px;
+    background: radial-gradient(circle, rgba(0, 228, 122, 0.22), transparent 65%);
+    pointer-events: none;
+  }
+  .inner {
+    position: relative;
+    display: grid;
+    gap: var(--s8);
+    align-items: center;
+  }
+  .inner h2 + p { margin-top: var(--s5, 1.25rem); }
+    .inner p { color: var(--text-on-ink-soft); max-width: 46ch; margin-bottom: 0; }
+  .actions { display: flex; flex-wrap: wrap; gap: var(--s3); }
+
+  @media (min-width: 900px) {
+    .inner { grid-template-columns: 1.4fr auto; gap: var(--s16); }
+  }
+</style>
